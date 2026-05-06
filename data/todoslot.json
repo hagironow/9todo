@@ -1,0 +1,213 @@
+{
+  "projects": [
+    {
+      "id": "proj_TWiPYJsGCv5LiuzHfXif6",
+      "name": "투두슬롯",
+      "color": "#8B5CF6",
+      "createdAt": "2026-05-06T02:31:13.295Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "item_task01",
+      "type": "task",
+      "title": "주간 보고서 작성",
+      "projectId": null,
+      "slot": null,
+      "deferCount": 1,
+      "completedAt": null,
+      "date": "2026-05-05",
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "id": "item_task02",
+      "type": "task",
+      "title": "팀 미팅 준비",
+      "projectId": null,
+      "slot": null,
+      "deferCount": 1,
+      "completedAt": null,
+      "date": "2026-05-05",
+      "createdAt": "2026-05-05T00:00:00.000Z",
+      "origin": "deferred"
+    },
+    {
+      "id": "item_task03",
+      "type": "task",
+      "title": "운동 30분",
+      "projectId": null,
+      "slot": {
+        "period": "evening",
+        "priority": 1
+      },
+      "deferCount": 0,
+      "completedAt": "2026-05-05T12:47:56.095Z",
+      "date": "2026-05-05",
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "id": "item_task04",
+      "type": "task",
+      "title": "독서 (30페이지)",
+      "projectId": null,
+      "slot": null,
+      "deferCount": 2,
+      "completedAt": null,
+      "date": "2026-05-05",
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "id": "item_task05",
+      "type": "task",
+      "title": "장보기",
+      "projectId": null,
+      "slot": null,
+      "deferCount": 1,
+      "completedAt": null,
+      "date": "2026-05-05",
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "id": "item_UTz4leLjzr41MuSslHL1s",
+      "type": "task",
+      "title": "운동 30분",
+      "projectId": null,
+      "slot": null,
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-05",
+      "createdAt": "2026-05-05T12:47:49.131Z"
+    },
+    {
+      "id": "item_ulsfXgetnzTAR4qXh5exw",
+      "type": "task",
+      "title": "ㄹㅇㅎㄹ",
+      "projectId": null,
+      "slot": {
+        "period": "morning",
+        "priority": 1
+      },
+      "deferCount": 0,
+      "completedAt": "2026-05-05T23:15:47.065Z",
+      "date": "2026-05-05",
+      "createdAt": "2026-05-05T13:44:52.181Z"
+    },
+    {
+      "id": "item_mVTu-HAxHGmjUKTDR4HjG",
+      "type": "task",
+      "title": "장보기",
+      "projectId": null,
+      "slot": null,
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-05",
+      "createdAt": "2026-05-05T13:49:18.035Z"
+    },
+    {
+      "id": "item_SsuDjIeskuciuGhGEh-Kb",
+      "type": "task",
+      "title": "팀 미팅 준비",
+      "projectId": null,
+      "slot": null,
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-05",
+      "createdAt": "2026-05-05T22:56:44.911Z"
+    },
+    {
+      "id": "item_7fLOdqsnYXfLlIPBlxFin",
+      "type": "task",
+      "title": "투두슬롯 poc 완료",
+      "projectId": null,
+      "slot": {
+        "period": "morning",
+        "priority": 1
+      },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T02:51:33.125Z",
+      "date": "2026-05-06",
+      "createdAt": "2026-05-06T00:21:46.917Z"
+    },
+    {
+      "id": "item_Ggsp7H7oa-yUe9NaZnTiU",
+      "type": "task",
+      "title": "ㄴㅇㄹ",
+      "projectId": null,
+      "slot": null,
+      "deferCount": 1,
+      "completedAt": null,
+      "date": "2026-05-06",
+      "createdAt": "2026-05-06T02:57:27.583Z",
+      "origin": "deferred"
+    },
+    {
+      "id": "item_hpJs4ViHXD7GTXwOYmAWh",
+      "type": "task",
+      "title": "ㅇㄴㄹㅇㄴㄹ",
+      "projectId": "proj_TWiPYJsGCv5LiuzHfXif6",
+      "slot": {
+        "period": "afternoon",
+        "priority": 1
+      },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-06",
+      "createdAt": "2026-05-06T02:57:36.409Z"
+    }
+  ],
+  "routines": [
+    {
+      "id": "rtn_morning01",
+      "type": "routine",
+      "title": "아침 일기",
+      "projectId": null,
+      "recurrence": "daily",
+      "defaultSlot": {
+        "period": "morning",
+        "priority": 3
+      },
+      "startDate": "2026-05-01",
+      "isActive": true,
+      "createdAt": "2026-05-01T00:00:00.000Z"
+    }
+  ],
+  "routineInstances": [
+    {
+      "id": "ri_inst01",
+      "routineId": "rtn_morning01",
+      "date": "2026-05-05",
+      "slot": {
+        "period": "morning",
+        "priority": 3
+      },
+      "deferCount": 0,
+      "completedAt": "2026-05-05T23:02:50.041Z"
+    },
+    {
+      "id": "ri_xUL78kewBnS-JXYBiVUXe",
+      "routineId": "rtn_morning01",
+      "date": "2026-05-06",
+      "slot": {
+        "period": "morning",
+        "priority": 3
+      },
+      "deferCount": 0,
+      "completedAt": null
+    }
+  ],
+  "goalCompass": {
+    "identity": "메이커",
+    "goals": {
+      "today": "투두슬롯 poc 완료",
+      "week": "",
+      "month": "",
+      "quarter": "",
+      "oneYear": "",
+      "fiveYear": ""
+    },
+    "affirmation": "나는 된다 \n원하는 내가 된다\n반드시 된다\n진짜로 된다"
+  },
+  "lastUsedProjectId": "proj_TWiPYJsGCv5LiuzHfXif6",
+  "activeProjectFilter": null,
+  "projectFirstMode": true
+}
