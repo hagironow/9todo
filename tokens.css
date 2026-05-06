@@ -1,0 +1,185 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  --font-heading: var(--font-poppins), 'Poppins', sans-serif;
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* ── Font Scale (Big Font — default) ── */
+  --fs-step: 16px;
+  --fs-item: 15px;
+  --fs-tag: 14px;
+  --fs-row-py: 16px;
+
+  /* ── Global Design Tokens ── */
+  --g-point: #FFB0B5;              /* 코랄 파스텔 */
+  --g-point-vivid: #FF5C65;        /* 코랄 비비드 (CTA) */
+  --g-error: #F87060;
+  --g-text-muted: #8A8A8A;
+
+  /* ── Semantic tokens ── */
+  --g-success: #22C55E;            /* 완료/통과 — 플로디 동일 */
+  --g-success-muted: rgba(34, 197, 94, 0.12);
+
+  /* ── Surface tokens (컴포넌트 배경 계층) ── */
+  --surface-primary: var(--background);
+  --surface-secondary: var(--card);
+  --surface-inset: var(--card);     /* 슬롯 내부 */
+  --surface-raised: #DCDCDC;        /* 버튼/인풋 — 카드 위 확실한 대비 */
+  --border-subtle: var(--border);   /* 카드/구분선 */
+
+  /* ── Light theme ── */
+  --background: #FFFFFF;
+  --foreground: #1A1A1A;
+  --card: #F0F0F0;
+  --card-foreground: #1A1A1A;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A1A;
+  --primary: #1A1A1A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0F0F0;
+  --secondary-foreground: #1A1A1A;
+  --muted: #F0F0F0;
+  --muted-foreground: #8A8A8A;
+  --accent: #FF5C65;                /* CTA */
+  --accent-foreground: #FFFFFF;
+  --destructive: #F87060;
+  --border: #E0E0E0;
+  --input: #E0E0E0;
+  --ring: #FFB0B5;
+  --radius: 12px;
+}
+
+.dark {
+  /* flowdy 다크 토큰 정확 복사 */
+  --background: #0f0f0f;              /* ui.css --bg-2 */
+  --foreground: #e0e0e0;              /* ui.css --text-1 */
+  --card: #181818;                    /* ui.css --bg-5 — 카드/그룹 배경 */
+  --card-foreground: #e0e0e0;
+  --popover: #141414;                 /* ui.css --bg-4 */
+  --popover-foreground: #e0e0e0;
+  --primary: #FFFFFF;                 /* ui.css --primary */
+  --primary-foreground: #000000;
+  --secondary: #1a1a1a;              /* ui.css --bg-6 */
+  --secondary-foreground: #ccc;
+  --muted: #1a1a1a;                  /* ui.css --bg-6 — hover 배경 */
+  --muted-foreground: #888;           /* flowdy --g-text-muted */
+  --accent: #FF5C65;                  /* --g-point-vivid (CTA) */
+  --accent-foreground: #FFFFFF;
+  --destructive: #ef4444;             /* ui.css --color-error */
+  --border: #1f1f1f;                  /* ui.css --border-1 */
+  --input: #2a2a2a;                   /* ui.css --border-2 */
+  --ring: #FFB0B5;                    /* --g-point */
+
+  /* surface/border aliases */
+  --surface-inset: #222222;           /* 카드(#181818)보다 한 단계 밝음 — 슬롯 내부 */
+  --surface-raised: #333333;          /* 버튼/인풋 등 카드 위 요소 — 확실한 대비 */
+  --border-subtle: var(--border);     /* #1f1f1f */
+}
+
+/* ── Small Font variant ── */
+.font-small {
+  --fs-step: 15px;
+  --fs-item: 14px;
+  --fs-tag: 14px;
+  --fs-row-py: 12px;
+}
+
+@keyframes fade-out {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.animate-fade-out {
+  animation: fade-out 2s forwards;
+}
+
+@keyframes result-pop {
+  0%   { transform: scale(0.6); opacity: 0.5; }
+  50%  { transform: scale(1.12); }
+  70%  { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes result-shake {
+  0%   { transform: translateX(0) scale(0.6); opacity: 0.5; }
+  20%  { transform: translateX(-4px) scale(1); }
+  40%  { transform: translateX(4px); }
+  60%  { transform: translateX(-2px); }
+  80%  { transform: translateX(2px); opacity: 1; }
+  100% { transform: translateX(0); }
+}
+@keyframes status-appear {
+  from { opacity: 0; transform: translateY(-4px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-result-pop {
+  animation: result-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.animate-result-shake {
+  animation: result-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+}
+
+/* ── Tag System ── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.tag-amber   { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+.tag-blue    { background: rgba(59, 130, 246, 0.12);  color: #60a5fa; }
+.tag-violet  { background: rgba(139, 92, 246, 0.12);  color: #a78bfa; }
+.tag-green   { background: rgba(34, 197, 94, 0.12);   color: #4ade80; }
+.tag-red     { background: rgba(239, 68, 68, 0.12);   color: #f87171; }
+.tag-orange  { background: rgba(249, 115, 22, 0.12);  color: #fb923c; }
+.tag-gray    { background: rgba(255, 255, 255, 0.06); color: #888; }
+.tag-gray-stroke    { background: rgba(255, 255, 255, 0.06); color: #888; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45); }
+.tag-gray-coral     { background: rgba(255, 92, 101, 0.10); color: #fff; box-shadow: inset 0 0 0 1px var(--g-point-vivid); }
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
