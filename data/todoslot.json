@@ -5,6 +5,12 @@
       "name": "투두슬롯",
       "color": "#8B5CF6",
       "createdAt": "2026-05-06T02:31:13.295Z"
+    },
+    {
+      "id": "proj_ER7m3v-tDi4S0xbjdREzV",
+      "name": "테스트",
+      "color": "#10B981",
+      "createdAt": "2026-05-06T04:59:09.588Z"
     }
   ],
   "tasks": [
@@ -150,9 +156,51 @@
         "priority": 1
       },
       "deferCount": 0,
-      "completedAt": null,
+      "completedAt": "2026-05-06T04:46:43.797Z",
       "date": "2026-05-06",
       "createdAt": "2026-05-06T02:57:36.409Z"
+    },
+    {
+      "id": "item_xxy9bpGbal--rQwCyvOEI",
+      "type": "task",
+      "title": "투두슬롯솟",
+      "projectId": "proj_TWiPYJsGCv5LiuzHfXif6",
+      "slot": {
+        "period": "afternoon",
+        "priority": 2
+      },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-06",
+      "createdAt": "2026-05-06T03:43:01.216Z"
+    },
+    {
+      "id": "item_XFIBbG-h9n4TRH73593o0",
+      "type": "task",
+      "title": "poc 완료",
+      "projectId": "proj_TWiPYJsGCv5LiuzHfXif6",
+      "slot": {
+        "period": "afternoon",
+        "priority": 3
+      },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-06",
+      "createdAt": "2026-05-06T04:43:00.492Z"
+    },
+    {
+      "id": "item_Ajwkxma370QI8dsSEg2Jl",
+      "type": "task",
+      "title": "냐옹",
+      "projectId": "proj_TWiPYJsGCv5LiuzHfXif6",
+      "slot": {
+        "period": "morning",
+        "priority": 2
+      },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T05:00:05.627Z",
+      "date": "2026-05-06",
+      "createdAt": "2026-05-06T04:59:34.775Z"
     }
   ],
   "routines": [
@@ -169,6 +217,20 @@
       "startDate": "2026-05-01",
       "isActive": true,
       "createdAt": "2026-05-01T00:00:00.000Z"
+    },
+    {
+      "title": "필라테스",
+      "projectId": null,
+      "recurrence": "weekly",
+      "defaultSlot": {
+        "period": "afternoon",
+        "priority": 1
+      },
+      "startDate": "2026-05-06",
+      "isActive": true,
+      "id": "rtn_cN3gNVinE_TFN9LxklhxR",
+      "type": "routine",
+      "createdAt": "2026-05-06T04:55:30.660Z"
     }
   ],
   "routineInstances": [
@@ -190,6 +252,17 @@
       "slot": {
         "period": "morning",
         "priority": 3
+      },
+      "deferCount": 0,
+      "completedAt": null
+    },
+    {
+      "id": "ri_HRm7aaxT853ICJ4QQgB4x",
+      "routineId": "rtn_cN3gNVinE_TFN9LxklhxR",
+      "date": "2026-05-06",
+      "slot": {
+        "period": "afternoon",
+        "priority": 1
       },
       "deferCount": 0,
       "completedAt": null

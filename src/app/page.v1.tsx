@@ -28,6 +28,7 @@ import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { useDailyRollover } from '@/hooks/useDailyRollover';
 import AppShell from '@/components/layout/AppShell';
 import GoalCompass from '@/components/goal-compass/GoalCompass';
+import GoalCompassAffirmation from '@/components/goal-compass/GoalCompassAffirmation';
 import NowFocus from '@/components/now-focus/NowFocus';
 import TimetableGrid from '@/components/timetable/TimetableGrid';
 import DateNav from '@/components/date-nav/DateNav';
@@ -95,7 +96,7 @@ function ProjectRenameModal({
           </button>
           <button
             onClick={() => { const t = value.trim(); if (t) onSave(t); }}
-            className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity"
+            className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
           >
             저장
           </button>
@@ -310,7 +311,6 @@ export default function Home() {
   const filteredSlots = useMemo(() => {
     if (!state.activeProjectFilter) return slots;
     const filter = state.activeProjectFilter;
-    const isUnassigned = filter === '__unassigned__';
     const result: Record<TimePeriod, Record<Priority, ScheduledItem | null>> = {
       morning: { 1: null, 2: null, 3: null },
       afternoon: { 1: null, 2: null, 3: null },
@@ -319,9 +319,7 @@ export default function Home() {
     for (const period of ['morning', 'afternoon', 'evening'] as TimePeriod[]) {
       for (const p of [1, 2, 3] as Priority[]) {
         const item = slots[period][p];
-        if (!item) continue;
-        const pid = 'projectId' in item ? item.projectId : null;
-        if (isUnassigned ? !pid : pid === filter) {
+        if (item && 'projectId' in item && item.projectId === filter) {
           result[period][p] = item;
         }
       }
@@ -331,22 +329,35 @@ export default function Home() {
 
   const filteredBacklog = useMemo(() => {
     if (!state.activeProjectFilter) return backlogItems;
-    const filter = state.activeProjectFilter;
-    const isUnassigned = filter === '__unassigned__';
-    return backlogItems.filter((item) => {
-      const pid = 'projectId' in item ? item.projectId : null;
-      return isUnassigned ? !pid : pid === filter;
-    });
+    return backlogItems.filter(
+      (item) => 'projectId' in item && item.projectId === state.activeProjectFilter
+    );
   }, [backlogItems, state.activeProjectFilter]);
 
-  // 루틴은 프로젝트 필터와 무관하게 항상 표시
-  const filteredRoutineSlots = routineSlots;
+  const filteredRoutineSlots = useMemo((): Record<TimePeriod, Record<Priority, ScheduledItem | null>> => {
+    if (!state.activeProjectFilter) return routineSlots;
+    const filter = state.activeProjectFilter;
+    const result: Record<TimePeriod, Record<Priority, ScheduledItem | null>> = {
+      morning:   { 1: null, 2: null, 3: null },
+      afternoon: { 1: null, 2: null, 3: null },
+      evening:   { 1: null, 2: null, 3: null },
+    };
+    for (const period of ['morning', 'afternoon', 'evening'] as TimePeriod[]) {
+      for (const p of [1, 2, 3] as Priority[]) {
+        const item = routineSlots[period][p];
+        if (item && 'projectId' in item && item.projectId === filter) {
+          result[period][p] = item;
+        }
+      }
+    }
+    return result;
+  }, [routineSlots, state.activeProjectFilter]);
 
   // Handlers
   const handleComplete = useCallback(
-    (item: ScheduledItem, timerSeconds?: number) => {
+    (item: ScheduledItem) => {
       if ('type' in item && item.type === 'task') {
-        completeTask(item.id, timerSeconds);
+        completeTask(item.id);
       } else {
         completeRoutineInstance(item.id);
       }
@@ -415,45 +426,39 @@ export default function Home() {
 
   const handleCreateInSlot = useCallback(
     (title: string, coord: SlotCoord, projectId?: string | null) => {
-      // 슬롯에 이미 태스크가 있으면 생성 불가 (필터로 숨겨진 태스크 포함)
-      const existing = slots[coord.period][coord.priority];
-      if (existing) return;
-      // 프로젝트 필터가 켜져 있으면 자동으로 해당 프로젝트 할당 (__unassigned__는 null 취급)
-      const activeFilter = state.activeProjectFilter === '__unassigned__' ? null : state.activeProjectFilter;
-      const resolvedProjectId = projectId ?? activeFilter ?? null;
-      if (resolvedProjectId) {
-        addTask(title, today, { slot: coord, projectId: resolvedProjectId });
+      if (projectId) {
+        // 프로젝트가 이미 지정됨 — 모달 스킵
+        addTask(title, today, { slot: coord, projectId });
       } else {
+        // 프로젝트 미지정 — 모달로 선택
         const task = addTask(title, today, { slot: coord, projectId: null });
         setProjectSelectTargetId(task.id);
         setProjectSelectOpen(true);
       }
     },
-    [addTask, today, state.activeProjectFilter, slots]
+    [addTask, today]
   );
 
   // 루틴 생성 — 슬롯에서 제목 입력 후 RoutineSetupModal 열기
   const handleCreateRoutine = useCallback(
     (title: string, coord: SlotCoord) => {
+      const existing = routineSlots[coord.period][coord.priority];
+      if (existing) return;
       setEditingRoutine(null);
       setRoutineModalTitle(title);
       setRoutineModalCoord(coord);
       setRoutineModalOpen(true);
     },
-    []
+    [routineSlots]
   );
 
-  // 루틴 편집 — 기존 루틴 클릭 시 (ScheduledItem → routineId로 Routine 조회)
+  // 루틴 편집 — 기존 루틴 클릭 시
   const handleEditRoutine = useCallback(
     (item: ScheduledItem) => {
-      // routineId로 state에서 최신 Routine 조회, 없으면 routineDetails fallback
       const routineId = 'routineId' in item ? (item as RoutineInstance).routineId : null;
-      const routine = routineId
-        ? state.routines.find((r) => r.id === routineId) ?? null
-        : null;
-      const resolved = routine ?? ('routineDetails' in item ? item.routineDetails : undefined) ?? null;
-      if (!resolved) return;
-      setEditingRoutine(resolved);
+      const routine = routineId ? state.routines.find((r) => r.id === routineId) ?? null : null;
+      if (!routine) return;
+      setEditingRoutine(routine);
       setRoutineModalTitle('');
       setRoutineModalCoord(null);
       setRoutineModalOpen(true);
@@ -768,11 +773,7 @@ export default function Home() {
           input.click();
         }}
         projectFirstMode={state.projectFirstMode}
-        onProjectFirstModeChange={(enabled) => {
-          setProjectFirstMode(enabled);
-          // 토글 OFF 시 프로젝트 필터 해제
-          if (!enabled) setActiveProjectFilter(null);
-        }}
+        onProjectFirstModeChange={setProjectFirstMode}
       >
         <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col gap-5">
           {/* Goal Compass */}
@@ -800,6 +801,16 @@ export default function Home() {
             <ReadOnlyBanner date={today} onGoToday={handleGoToday} />
           )}
 
+          {/* Play Section */}
+          <NowFocus
+            items={playItems}
+            projects={state.projects}
+            onComplete={handleComplete}
+            onDefer={handleDefer}
+            onRepeat={handleRepeat}
+            isReadOnly={isReadOnly}
+          />
+
           {/* Timetable Grid */}
           <TimetableGrid
             currentPeriod={currentPeriod}
@@ -818,7 +829,6 @@ export default function Home() {
             projectFirstMode={state.projectFirstMode}
             projects={state.projects}
             isReadOnly={isReadOnly}
-            onItemSelect={() => {}}
           />
 
           {/* Backlog */}
@@ -830,18 +840,9 @@ export default function Home() {
             onPlaceInSlot={handlePlaceInSlot}
             isReadOnly={isReadOnly}
           />
+
         </div>
       </AppShell>
-
-      {/* NowFocus — 우측 하단 플로팅 뽀모도로 타이머 */}
-      <NowFocus
-        items={playItems}
-        projects={state.projects}
-        onComplete={handleComplete}
-        onDefer={handleDefer}
-        onRepeat={handleRepeat}
-        isReadOnly={isReadOnly}
-      />
 
       {/* Drag Overlay */}
       <DragOverlay>

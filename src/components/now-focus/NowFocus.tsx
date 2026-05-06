@@ -1,17 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Square, Check, SkipForward, Repeat } from 'lucide-react';
+import { Play, Pause, Check, SkipForward, Minimize2, Square } from 'lucide-react';
 import { ScheduledItem, Project } from '@/lib/types';
 
 interface NowFocusProps {
   items: (ScheduledItem | null)[];
   projects: Project[];
-  onComplete: (item: ScheduledItem) => void;
+  onComplete: (item: ScheduledItem, timerSeconds?: number) => void;
   onDefer: (item: ScheduledItem) => void;
   onRepeat: (item: ScheduledItem) => void;
   isReadOnly?: boolean;
 }
+
+const POMODORO_DURATION = 25 * 60;
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -40,206 +42,193 @@ function useTimer(itemId: string | undefined) {
   }, [playing]);
 
   const play = useCallback(() => setPlaying(true), []);
-  const stop = useCallback(() => { setPlaying(false); setElapsed(0); }, []);
+  const pause = useCallback(() => setPlaying(false), []);
+  const reset = useCallback(() => { setPlaying(false); setElapsed(0); }, []);
 
-  return { playing, elapsed, play, stop };
+  const cycle = Math.floor(elapsed / POMODORO_DURATION);
+  const cycleElapsed = elapsed % POMODORO_DURATION;
+  const cycleProgress = cycleElapsed / POMODORO_DURATION;
+
+  return { playing, elapsed, cycle, cycleElapsed, cycleProgress, play, pause, reset };
 }
 
-// ── 1순위: 프로젝트 컬러 배경 ──
-function PrimaryCard({
-  item,
-  project,
-  onComplete,
-  onDefer,
-  onRepeat,
-  isReadOnly,
+// ── 확인 모달 ──
+type ConfirmType = 'defer' | 'continue';
+
+function ConfirmModal({
+  type,
+  onConfirm,
+  onCancel,
 }: {
-  item: ScheduledItem;
-  project: Project | null;
-  onComplete: (item: ScheduledItem) => void;
-  onDefer: (item: ScheduledItem) => void;
-  onRepeat: (item: ScheduledItem) => void;
-  isReadOnly?: boolean;
+  type: ConfirmType;
+  onConfirm: () => void;
+  onCancel: () => void;
 }) {
-  const { playing, elapsed, play, stop } = useTimer(item.id);
-  const title = 'title' in item ? item.title : '';
-  const bg = project?.color ?? 'var(--accent)';
+  const isDefer = type === 'defer';
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius)] p-5 shadow-xl w-80 flex flex-col gap-3 animate-slide-in-right">
+        <p className="text-base font-semibold text-[var(--foreground)]">
+          {isDefer ? '이 태스크를 미루시겠어요?' : '아직 완료되지 않았나요?'}
+        </p>
+        <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          {isDefer
+            ? '백로그에 미룬 일과 미룬 횟수가 저장돼요.'
+            : '백로그에 진행할 일과 진행 횟수가 저장돼요.'}
+        </p>
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
+          >
+            취소
+          </button>
+          <button
+            onClick={onConfirm}
+            className={[
+              'flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold transition-opacity hover:opacity-85',
+              isDefer
+                ? 'bg-red-500 text-white'
+                : 'bg-blue-500 text-white',
+            ].join(' ')}
+          >
+            {isDefer ? '미루기' : '진행하기'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 원형 타이머 ──
+function CircularTimer({
+  elapsed,
+  cycleProgress,
+  playing,
+  onPause,
+  onPlay,
+}: {
+  elapsed: number;
+  cycleElapsed: number;
+  cycleProgress: number;
+  playing: boolean;
+  onPause: () => void;
+  onPlay: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const radius = 70;
+  const stroke = 6;
+  const normalizedRadius = radius - stroke / 2;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const strokeDashoffset = circumference - cycleProgress * circumference;
 
   return (
     <div
-      className="rounded-[var(--radius)] px-6 py-5 flex items-center gap-4"
-      style={{ backgroundColor: bg }}
+      className="relative flex items-center justify-center cursor-pointer"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={playing ? onPause : onPlay}
+      title={playing ? '일시정지' : undefined}
     >
-      {/* 플레이/정지 */}
-      <button
-        onClick={playing ? stop : play}
-        className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors flex-shrink-0"
-        title={playing ? '정지' : '시작'}
-      >
-        {playing
-          ? <Square size={16} fill="white" />
-          : <Play size={20} fill="white" />
-        }
-      </button>
-
-      {/* 제목 */}
-      <div className="flex-1 min-w-0">
-        <p className="text-xl font-bold text-white leading-tight truncate">
-          {title}
-        </p>
-        {project && (
-          <span className="text-[11px] text-white/60 mt-1 block">{project.name}</span>
+      <svg width={radius * 2} height={radius * 2} className="-rotate-90">
+        <circle cx={radius} cy={radius} r={normalizedRadius} fill="none" stroke="white" strokeOpacity={0.15} strokeWidth={stroke} />
+        <circle cx={radius} cy={radius} r={normalizedRadius} fill="none" stroke="white" strokeWidth={stroke}
+          strokeDasharray={`${circumference} ${circumference}`} strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round" className="transition-[stroke-dashoffset] duration-1000 ease-linear" />
+      </svg>
+      <div className="absolute flex flex-col items-center">
+        {hovered && playing ? (
+          <Pause size={28} className="text-white" />
+        ) : (
+          <span className="font-heading text-xl font-bold text-white tabular-nums">
+            {formatTime(elapsed)}
+          </span>
         )}
-      </div>
-
-      {/* 타이머 — 항상 표시 */}
-      <span className="font-heading text-lg font-bold text-white/90 tabular-nums flex-shrink-0">
-        {formatTime(elapsed)}
-      </span>
-
-      {/* 3종 아이콘 — 항상 표시 */}
-      <div className="flex items-center gap-1.5">
-        <button
-          onClick={() => { stop(); onComplete(item); }}
-          disabled={isReadOnly}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title="완료"
-        >
-          <Check size={16} strokeWidth={2.5} />
-        </button>
-        <button
-          onClick={() => { stop(); onDefer(item); }}
-          disabled={isReadOnly}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title="미루기"
-        >
-          <SkipForward size={16} />
-        </button>
-        <button
-          onClick={() => { stop(); onRepeat(item); }}
-          disabled={isReadOnly}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title="반복"
-        >
-          <Repeat size={16} />
-        </button>
       </div>
     </div>
   );
 }
 
-// ── 2~3순위: 화이트 배경 + 다크 텍스트, 좌우 패딩 동일 ──
-function SecondaryCard({
+// ── 2~3순위: 바 형태 ──
+function SecondaryBar({
   item,
-  project,
-  priority,
   onComplete,
   onDefer,
   onRepeat,
   isReadOnly,
 }: {
   item: ScheduledItem;
-  project: Project | null;
-  priority: number;
-  onComplete: (item: ScheduledItem) => void;
+  onComplete: (item: ScheduledItem, timerSeconds?: number) => void;
   onDefer: (item: ScheduledItem) => void;
   onRepeat: (item: ScheduledItem) => void;
   isReadOnly?: boolean;
 }) {
-  const { playing, elapsed, play, stop } = useTimer(item.id);
+  const { playing, elapsed, play, pause, reset } = useTimer(item.id);
+  const [confirm, setConfirm] = useState<ConfirmType | null>(null);
   const title = 'title' in item ? item.title : '';
 
   return (
-    <div className="rounded-[var(--radius-sm)] px-6 py-3 flex items-center gap-4 bg-white dark:bg-[var(--card)] border border-[var(--border-subtle)]">
-      {/* 플레이/정지 */}
-      <button
-        onClick={playing ? stop : play}
-        className="w-8 h-8 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors flex-shrink-0"
-        title={playing ? '정지' : '시작'}
-      >
-        {playing
-          ? <Square size={12} fill="currentColor" />
-          : <Play size={14} fill="currentColor" />
-        }
-      </button>
-
-      {/* 제목 */}
-      <p className="flex-1 min-w-0 text-sm font-semibold text-[var(--foreground)] leading-tight truncate">
-        {title}
-      </p>
-
-      {/* 타이머 — 항상 표시 */}
-      <span className="font-heading text-sm font-bold text-[var(--muted-foreground)] tabular-nums flex-shrink-0">
-        {formatTime(elapsed)}
-      </span>
-
-      {/* 3종 아이콘 — 항상 표시 */}
-      <div className="flex items-center gap-1">
+    <>
+      <div className="flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-[var(--card)] border border-[var(--border-subtle)] rounded-[var(--radius-sm)]">
         <button
-          onClick={() => { stop(); onComplete(item); }}
-          disabled={isReadOnly}
-          className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title="완료"
+          onClick={playing ? pause : play}
+          className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors flex-shrink-0"
+          title={playing ? '일시정지' : '시작'}
         >
-          <Check size={12} strokeWidth={2.5} />
+          {playing ? <Pause size={11} /> : <Play size={12} fill="currentColor" />}
         </button>
-        <button
-          onClick={() => { stop(); onDefer(item); }}
-          disabled={isReadOnly}
-          className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title="미루기"
-        >
-          <SkipForward size={12} />
-        </button>
-        <button
-          onClick={() => { stop(); onRepeat(item); }}
-          disabled={isReadOnly}
-          className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          title="반복"
-        >
-          <Repeat size={12} />
-        </button>
+
+        <p className="flex-1 min-w-0 text-sm font-semibold text-[var(--foreground)] leading-tight truncate">{title}</p>
+
+        <span className="font-heading text-sm font-bold text-[var(--muted-foreground)] tabular-nums flex-shrink-0">
+          {formatTime(elapsed)}
+        </span>
+
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => { const t = elapsed; reset(); onComplete(item, t > 0 ? t : undefined); }}
+            disabled={isReadOnly}
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="완료"
+          >
+            <Check size={12} strokeWidth={2.5} />
+          </button>
+          <button
+            onClick={() => setConfirm('defer')}
+            disabled={isReadOnly}
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="미루기"
+          >
+            <Square size={10} fill="currentColor" />
+          </button>
+          <button
+            onClick={() => setConfirm('continue')}
+            disabled={isReadOnly}
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="진행하기"
+          >
+            <SkipForward size={12} />
+          </button>
+        </div>
       </div>
-    </div>
+
+      {confirm && (
+        <ConfirmModal
+          type={confirm}
+          onConfirm={() => {
+            if (confirm === 'defer') { reset(); onDefer(item); }
+            else { reset(); onRepeat(item); }
+            setConfirm(null);
+          }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+    </>
   );
 }
 
-// ── Empty — 기본 UI와 동일한 레이아웃 ──
-function EmptyCard() {
-  return (
-    <div className="rounded-[var(--radius)] px-6 py-5 flex items-center gap-4 bg-[var(--accent)]">
-      {/* 비활성 플레이 버튼 */}
-      <div className="w-10 h-10 flex items-center justify-center rounded-full bg-white/20 text-white flex-shrink-0">
-        <Play size={20} fill="white" />
-      </div>
-
-      {/* 제목 */}
-      <p className="flex-1 text-xl font-bold text-white/60">
-        지금 끝내야 할 일
-      </p>
-
-      {/* 타이머 자리 */}
-      <span className="font-heading text-lg font-bold text-white/30 tabular-nums flex-shrink-0">
-        00:00
-      </span>
-
-      {/* 3종 아이콘 비활성 */}
-      <div className="flex items-center gap-1.5">
-        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white/30">
-          <Check size={16} strokeWidth={2.5} />
-        </div>
-        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white/30">
-          <SkipForward size={16} />
-        </div>
-        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white/30">
-          <Repeat size={16} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main ──
+// ── Main: 우측 하단 플로팅 위젯 ──
 export default function NowFocus({
   items,
   projects,
@@ -248,57 +237,149 @@ export default function NowFocus({
   onRepeat,
   isReadOnly,
 }: NowFocusProps) {
-  const getProject = (item: ScheduledItem): Project | null => {
-    const pid = 'projectId' in item ? item.projectId : null;
-    return pid ? projects.find((p) => p.id === pid) ?? null : null;
-  };
+  const [minimized, setMinimized] = useState(false);
+  const [confirm, setConfirm] = useState<ConfirmType | null>(null);
 
   const primary = items[0];
   const secondary = items[1];
   const tertiary = items[2];
 
+  const primaryTimer = useTimer(primary?.id);
+
+  const getProject = (item: ScheduledItem): Project | null => {
+    const pid = 'projectId' in item ? item.projectId : null;
+    return pid ? projects.find((p) => p.id === pid) ?? null : null;
+  };
+
   if (!primary && !secondary && !tertiary) {
-    return <EmptyCard />;
+    return null;
+  }
+
+  const primaryProject = primary ? getProject(primary) : null;
+  const primaryTitle = primary && 'title' in primary ? primary.title : '';
+  const primaryBg = primaryProject?.color ?? 'var(--accent)';
+
+  if (minimized) {
+    return (
+      <button
+        onClick={() => setMinimized(false)}
+        className="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-105 transition-transform"
+        style={{ backgroundColor: primaryBg }}
+        title="타이머 열기"
+      >
+        <Play size={20} fill="white" />
+      </button>
+    );
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {primary ? (
-        <PrimaryCard
-          item={primary}
-          project={getProject(primary)}
-          onComplete={onComplete}
-          onDefer={onDefer}
-          onRepeat={onRepeat}
-          isReadOnly={isReadOnly}
-        />
-      ) : (
-        <EmptyCard />
-      )}
+    <>
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 items-end animate-slide-in-right">
+        {/* 1순위 — 뽀모도로 타이머 카드 (맨 위) */}
+        {primary ? (
+          <div
+            className="w-[340px] rounded-[var(--radius)] shadow-2xl overflow-hidden"
+            style={{ backgroundColor: primaryBg }}
+          >
+            <div className="flex items-center justify-between px-4 pt-3 pb-0">
+              <p className="text-base font-bold text-white truncate flex-1 mr-2">{primaryTitle}</p>
+              <button
+                onClick={() => setMinimized(true)}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/15 text-white/70 hover:bg-white/25 transition-colors"
+                title="최소화"
+              >
+                <Minimize2 size={13} />
+              </button>
+            </div>
 
-      {secondary && (
-        <SecondaryCard
-          item={secondary}
-          project={getProject(secondary)}
-          priority={2}
-          onComplete={onComplete}
-          onDefer={onDefer}
-          onRepeat={onRepeat}
-          isReadOnly={isReadOnly}
-        />
-      )}
+            {primaryProject && (
+              <span className="text-[11px] text-white/50 px-4 block">{primaryProject.name}</span>
+            )}
 
-      {tertiary && (
-        <SecondaryCard
-          item={tertiary}
-          project={getProject(tertiary)}
-          priority={3}
-          onComplete={onComplete}
-          onDefer={onDefer}
-          onRepeat={onRepeat}
-          isReadOnly={isReadOnly}
+            {/* Timer area */}
+            <div className="flex items-center justify-center py-5 gap-5">
+              {/* 왼쪽: 미루기 (채워진 네모) */}
+              <button
+                onClick={() => setConfirm('defer')}
+                disabled={isReadOnly}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors disabled:opacity-40"
+                title="미루기"
+              >
+                <Square size={18} fill="white" />
+              </button>
+
+              <CircularTimer
+                elapsed={primaryTimer.elapsed}
+                cycleElapsed={primaryTimer.cycleElapsed}
+                cycleProgress={primaryTimer.cycleProgress}
+                playing={primaryTimer.playing}
+                onPause={primaryTimer.pause}
+                onPlay={primaryTimer.play}
+              />
+
+              {/* 오른쪽: 진행하기 (넥스트) */}
+              <button
+                onClick={() => setConfirm('continue')}
+                disabled={isReadOnly}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors disabled:opacity-40"
+                title="진행하기"
+              >
+                <SkipForward size={18} />
+              </button>
+            </div>
+
+            {/* 사이클 표시 */}
+            {primaryTimer.cycle > 0 && (
+              <div className="flex items-center justify-center gap-1 pb-2">
+                {Array.from({ length: Math.min(primaryTimer.cycle, 8) }).map((_, i) => (
+                  <div key={i} className="w-2 h-2 rounded-full bg-white/60" />
+                ))}
+                {primaryTimer.cycle > 8 && (
+                  <span className="text-[10px] text-white/60 ml-0.5">+{primaryTimer.cycle - 8}</span>
+                )}
+                <span className="text-[11px] text-white/50 ml-1.5">{primaryTimer.cycle}사이클</span>
+              </div>
+            )}
+
+            {/* 하단: 완료 */}
+            <div className="flex items-center justify-center px-4 pb-4">
+              <button
+                onClick={() => { const t = primaryTimer.elapsed; primaryTimer.reset(); onComplete(primary, t > 0 ? t : undefined); }}
+                disabled={isReadOnly}
+                className="flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-white/20 text-white text-sm font-semibold hover:bg-white/30 transition-colors disabled:opacity-40"
+              >
+                <Check size={15} strokeWidth={2.5} />
+                완료
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {/* 2~3순위 바 */}
+        {secondary && (
+          <div className="w-[340px]">
+            <SecondaryBar item={secondary} onComplete={onComplete} onDefer={onDefer} onRepeat={onRepeat} isReadOnly={isReadOnly} />
+          </div>
+        )}
+        {tertiary && (
+          <div className="w-[340px]">
+            <SecondaryBar item={tertiary} onComplete={onComplete} onDefer={onDefer} onRepeat={onRepeat} isReadOnly={isReadOnly} />
+          </div>
+        )}
+      </div>
+
+      {/* 1순위 확인 모달 */}
+      {confirm && primary && (
+        <ConfirmModal
+          type={confirm}
+          onConfirm={() => {
+            if (confirm === 'defer') { primaryTimer.reset(); onDefer(primary); }
+            else { primaryTimer.reset(); onRepeat(primary); }
+            setConfirm(null);
+          }}
+          onCancel={() => setConfirm(null)}
         />
       )}
-    </div>
+    </>
   );
 }

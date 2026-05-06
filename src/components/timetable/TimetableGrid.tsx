@@ -1,6 +1,6 @@
 'use client';
 
-import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project } from '@/lib/types';
+import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project, Routine } from '@/lib/types';
 import TimetableRow from './TimetableRow';
 
 type RowStatus = 'active' | 'past' | 'future';
@@ -16,9 +16,13 @@ interface TimetableGridProps {
   onDelete?: (item: ScheduledItem) => void;
   onUpdateTitle?: (item: ScheduledItem, title: string) => void;
   onCreateInSlot?: (title: string, coord: SlotCoord, projectId?: string | null) => void;
+  onUncomplete?: (item: ScheduledItem) => void;
+  onCreateRoutine?: (title: string, coord: SlotCoord) => void;
+  onEditRoutine?: (item: ScheduledItem) => void;
   projectFirstMode?: boolean;
   projects?: Project[];
   isReadOnly?: boolean;
+  onItemSelect?: (item: ScheduledItem) => void;
 }
 
 const PERIODS: { period: TimePeriod; label: string }[] = [
@@ -48,14 +52,18 @@ export default function TimetableGrid({
   onDelete,
   onUpdateTitle,
   onCreateInSlot,
+  onUncomplete,
+  onCreateRoutine,
+  onEditRoutine,
   projectFirstMode,
   projects,
   isReadOnly,
+  onItemSelect,
 }: TimetableGridProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)]">
       {/* Priority header */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 px-4 pt-4 pb-2">
         {([1, 2, 3] as Priority[]).map((p) => {
           const color =
             p === 1 ? 'text-[var(--accent)]'
@@ -74,27 +82,33 @@ export default function TimetableGrid({
         })}
       </div>
 
-      {/* Period cards */}
-      {PERIODS.map(({ period, label }) => (
-        <TimetableRow
-          key={period}
-          period={period}
-          label={label}
-          status={getStatus(period, currentPeriod)}
-          slots={slots[period]}
-          routineSlots={routineSlots?.[period]}
-          onComplete={onComplete}
-          onDefer={onDefer}
-          onRepeat={onRepeat}
-          onSlotClick={onSlotClick}
-          onDelete={onDelete}
-          onUpdateTitle={onUpdateTitle}
-          onCreateInSlot={onCreateInSlot}
-          projectFirstMode={projectFirstMode}
-          projects={projects}
-          isReadOnly={isReadOnly}
-        />
-      ))}
+      {/* Period rows — 내부 간격만, 각 row의 외곽 border 제거 */}
+      <div className="flex flex-col gap-0 px-2 pb-2">
+        {PERIODS.map(({ period, label }) => (
+          <TimetableRow
+            key={period}
+            period={period}
+            label={label}
+            status={getStatus(period, currentPeriod)}
+            slots={slots[period]}
+            routineSlots={routineSlots?.[period]}
+            onComplete={onComplete}
+            onDefer={onDefer}
+            onRepeat={onRepeat}
+            onSlotClick={onSlotClick}
+            onDelete={onDelete}
+            onUpdateTitle={onUpdateTitle}
+            onCreateInSlot={onCreateInSlot}
+            onUncomplete={onUncomplete}
+            onCreateRoutine={onCreateRoutine}
+            onEditRoutine={onEditRoutine}
+            projectFirstMode={projectFirstMode}
+            projects={projects}
+            isReadOnly={isReadOnly}
+            onItemSelect={onItemSelect}
+          />
+        ))}
+      </div>
     </div>
   );
 }

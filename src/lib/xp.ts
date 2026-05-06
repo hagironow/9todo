@@ -18,12 +18,8 @@ export function calculateTotalXP(
   }
 
   for (const ri of routineInstances) {
-    if (ri.completedAt && ri.slot) {
-      xp += ri.slot.priority === 1 ? 3 : ri.slot.priority === 2 ? 2 : 1;
-    } else if (ri.slot && !ri.completedAt) {
-      xp -= 1;
-    } else if (!ri.slot && ri.deferCount > 0) {
-      xp -= 2;
+    if (ri.completedAt) {
+      xp += 1; // 루틴은 고정 1xp
     }
   }
 
@@ -52,12 +48,8 @@ export function calculateDailyXP(
   }
 
   for (const ri of dateInstances) {
-    if (ri.completedAt && ri.slot) {
-      xp += ri.slot.priority === 1 ? 3 : ri.slot.priority === 2 ? 2 : 1;
-    } else if (ri.slot && !ri.completedAt) {
-      xp -= 1;
-    } else if (!ri.slot && ri.deferCount > 0) {
-      xp -= 2;
+    if (ri.completedAt) {
+      xp += 1; // 루틴은 고정 1xp
     }
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { LayoutGrid, CalendarClock, Repeat, MoreHorizontal, Plus, Download } from 'lucide-react';
+import { LayoutGrid, CalendarClock, Repeat, MoreHorizontal, Plus, Download, Upload } from 'lucide-react';
 import { Project } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import Avatar from '@/components/ui/Avatar';
@@ -18,6 +18,7 @@ interface SidebarProps {
   onArchiveProject?: (projectId: string) => void;
   onLoginClick?: () => void;
   onExport?: () => void;
+  onImport?: () => void;
   projectFirstMode: boolean;
   onProjectFirstModeChange: (enabled: boolean) => void;
   className?: string;
@@ -102,6 +103,7 @@ export default function Sidebar({
   onArchiveProject,
   onLoginClick,
   onExport,
+  onImport,
   projectFirstMode,
   onProjectFirstModeChange,
   className = '',
@@ -110,7 +112,7 @@ export default function Sidebar({
   return (
     <aside
       className={[
-        'w-60 flex-shrink-0 flex flex-col h-full min-h-screen',
+        'w-60 flex-shrink-0 flex flex-col h-screen sticky top-0',
         'bg-[var(--card)] border-r border-[var(--border)]',
         className,
       ].join(' ')}
@@ -213,6 +215,20 @@ export default function Sidebar({
           </div>
         ))}
 
+        {/* 미분류 */}
+        <button
+          onClick={() => onFilterChange('__unassigned__')}
+          className={[
+            'w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-[var(--fs-item)] text-left transition-colors duration-100',
+            activeFilter === '__unassigned__'
+              ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-semibold'
+              : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)]',
+          ].join(' ')}
+        >
+          <span className="w-[10px] h-[10px] rounded-full bg-[var(--muted-foreground)] inline-block flex-shrink-0" />
+          미분류
+        </button>
+
         {/* 프로젝트 추가 */}
         <button
           onClick={onCreateProject}
@@ -227,7 +243,7 @@ export default function Sidebar({
       <div className="p-3 border-t border-[var(--border)] flex flex-col gap-1">
         <button
           onClick={onLoginClick}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-[var(--radius)] text-[var(--fs-item)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors duration-100"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-[var(--radius)] text-[var(--fs-item)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors duration-100 border-b border-[var(--muted-foreground)]/30 mb-1 pb-3"
         >
           <Avatar size="md" />
           <span className="truncate text-left">로그인 하세요</span>
@@ -238,6 +254,13 @@ export default function Sidebar({
         >
           <Download size={14} strokeWidth={1.8} />
           <span>데이터 내보내기</span>
+        </button>
+        <button
+          onClick={onImport}
+          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius)] text-[var(--fs-tag)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors duration-100"
+        >
+          <Upload size={14} strokeWidth={1.8} />
+          <span>데이터 가져오기</span>
         </button>
       </div>
     </aside>

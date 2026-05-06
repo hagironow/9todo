@@ -1,6 +1,6 @@
 'use client';
 
-import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project } from '@/lib/types';
+import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project, Routine } from '@/lib/types';
 import SlotCell from './SlotCell';
 import RoutineSlotCell from './RoutineSlotCell';
 
@@ -19,9 +19,13 @@ interface TimetableRowProps {
   onDelete?: (item: ScheduledItem) => void;
   onUpdateTitle?: (item: ScheduledItem, title: string) => void;
   onCreateInSlot?: (title: string, coord: SlotCoord, projectId?: string | null) => void;
+  onUncomplete?: (item: ScheduledItem) => void;
+  onCreateRoutine?: (title: string, coord: SlotCoord) => void;
+  onEditRoutine?: (item: ScheduledItem) => void;
   projectFirstMode?: boolean;
   projects?: Project[];
   isReadOnly?: boolean;
+  onItemSelect?: (item: ScheduledItem) => void;
 }
 
 const PRIORITIES: Priority[] = [1, 2, 3];
@@ -46,13 +50,14 @@ export default function TimetableRow({
   onDelete,
   onUpdateTitle,
   onCreateInSlot,
+  onUncomplete,
+  onCreateRoutine,
+  onEditRoutine,
   projectFirstMode,
   projects,
   isReadOnly,
+  onItemSelect,
 }: TimetableRowProps) {
-  const hasAnyRoutine =
-    routineSlots &&
-    PRIORITIES.some((p) => routineSlots[p] !== null);
 
   const isActive = status === 'active';
   const lineColor = getLineColor(status, slots[1]);
@@ -60,7 +65,7 @@ export default function TimetableRow({
   return (
     <div
       className={[
-        'relative rounded-[var(--radius)] overflow-hidden',
+        'relative rounded-[var(--radius)]',
         'border border-[var(--border-subtle)]',
         'bg-[var(--card)]',
       ].join(' ')}
@@ -105,28 +110,33 @@ export default function TimetableRow({
                 onDelete={onDelete}
                 onUpdateTitle={onUpdateTitle}
                 onCreateInSlot={onCreateInSlot}
+                onUncomplete={onUncomplete}
                 projectFirstMode={projectFirstMode}
                 projects={projects}
                 isReadOnly={isReadOnly}
+                onItemSelect={onItemSelect}
               />
             ))}
           </div>
 
-          {/* Routine row */}
-          {hasAnyRoutine && (
-            <div className="border-t border-[var(--border-subtle)] mt-2 pt-2">
-              <div className="grid grid-cols-3 gap-2">
-                {PRIORITIES.map((priority) => (
-                  <RoutineSlotCell
-                    key={priority}
-                    item={routineSlots![priority]}
-                    onComplete={onComplete}
-                    onDefer={onDefer}
-                  />
-                ))}
-              </div>
+          {/* Routine row — 항상 표시 */}
+          <div className="border-t border-[var(--border-subtle)] mt-2 pt-2">
+            <div className="grid grid-cols-3 gap-2">
+              {PRIORITIES.map((priority) => (
+                <RoutineSlotCell
+                  key={priority}
+                  coord={{ period, priority }}
+                  item={routineSlots?.[priority] ?? null}
+                  onComplete={onComplete}
+                  onDefer={onDefer}
+                  onUncomplete={onUncomplete}
+                  onCreateRoutine={onCreateRoutine}
+                  onEditRoutine={onEditRoutine}
+                  isReadOnly={isReadOnly}
+                />
+              ))}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
