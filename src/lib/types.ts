@@ -29,7 +29,9 @@ export interface Task extends ItemBase {
   deferCount: number;
   completedAt: string | null;
   date: string; // "YYYY-MM-DD"
-  origin?: 'deferred' | 'repeated'; // 미루기/반복으로 백로그에 온 경우
+  origin?: 'deferred' | 'repeated'; // 미루기/진행하기로 백로그에 온 경우
+  timerSeconds?: number; // 완료 시점의 타이머 기록 (초)
+  continueCount: number; // 진행하기 횟수
 }
 
 export interface Routine extends ItemBase {
@@ -38,6 +40,7 @@ export interface Routine extends ItemBase {
   defaultSlot: SlotCoord;
   startDate: string;
   isActive: boolean;
+  scheduledTime?: string; // "HH:mm" 형식 (예: "09:00")
 }
 
 export interface RoutineInstance {

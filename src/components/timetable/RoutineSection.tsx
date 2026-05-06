@@ -90,7 +90,7 @@ export default function RoutineSection({
                         <>
                           <button
                             onClick={() => onComplete(item)}
-                            className="h-6 px-2 rounded-[var(--radius-sm)] bg-[var(--accent)] text-white text-[10px] font-semibold hover:opacity-90 transition-opacity"
+                            className="h-6 px-2 rounded-[var(--radius-sm)] bg-[var(--foreground)] text-[var(--background)] text-[10px] font-semibold hover:opacity-85 transition-opacity"
                           >
                             완료
                           </button>

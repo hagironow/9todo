@@ -20,7 +20,7 @@ export default function Button({
 
   const variants: Record<string, string> = {
     primary:
-      'bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 active:scale-[0.97]',
+      'bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 active:scale-[0.97]',
     ghost:
       'bg-transparent text-[var(--foreground)] hover:bg-[var(--muted)] active:scale-[0.97]',
     danger:

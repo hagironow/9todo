@@ -113,7 +113,7 @@ export default function ProjectSelectModal({
             </button>
             <button
               onClick={handleCreate}
-              className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
+              className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity"
             >
               만들기
             </button>

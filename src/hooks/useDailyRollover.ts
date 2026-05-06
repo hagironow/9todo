@@ -17,30 +17,33 @@ export function useDailyRollover({
   loading,
   batchUpdate,
 }: UseDailyRolloverOptions): void {
-  const ranRef = useRef(false);
+  const lastRolloverDate = useRef<string | null>(null);
 
   useEffect(() => {
-    // 아직 로딩 중이거나 이미 실행된 경우 스킵
     if (loading) return;
-    if (ranRef.current) return;
-    ranRef.current = true;
+    // 같은 날짜에 대해 중복 실행 방지
+    if (lastRolloverDate.current === today) return;
+    lastRolloverDate.current = today;
 
     batchUpdate((prev) => {
       let changed = false;
       let nextTasks = prev.tasks;
       let nextRoutineInstances = prev.routineInstances;
 
-      // 1. 어제 미완료 태스크 → slot=null (백로그 이동)
-      const yesterday = getPreviousDay(today);
-      nextTasks = nextTasks.map((t) => {
-        if (t.date === yesterday && t.completedAt === null && t.slot !== null) {
-          changed = true;
-          return { ...t, slot: null };
-        }
-        return t;
-      });
+      // 1. 어제 미완료 태스크 → slot=null (백로그 이동) — 실제 오늘일 때만
+      const realToday = new Date().toISOString().split('T')[0];
+      if (today === realToday) {
+        const yesterday = getPreviousDay(today);
+        nextTasks = nextTasks.map((t) => {
+          if (t.date === yesterday && t.completedAt === null && t.slot !== null) {
+            changed = true;
+            return { ...t, slot: null };
+          }
+          return t;
+        });
+      }
 
-      // 2. 오늘 루틴 인스턴스 자동 생성
+      // 2. 해당 날짜의 루틴 인스턴스 자동 생성
       for (const routine of prev.routines) {
         if (shouldCreateInstance(routine, nextRoutineInstances, today)) {
           const instance = createRoutineInstance(routine, today);

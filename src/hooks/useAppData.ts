@@ -11,6 +11,9 @@ import type {
   SlotCoord,
 } from '@/lib/types';
 
+const STORAGE_KEY = 'todoslot_state';
+const CONSENT_KEY = 'todoslot_storage_consent';
+
 const EMPTY_STATE: AppState = {
   projects: [],
   tasks: [],
@@ -33,39 +36,49 @@ const EMPTY_STATE: AppState = {
   projectFirstMode: true,
 };
 
+export function hasStorageConsent(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(CONSENT_KEY) === 'true';
+}
+
+export function grantStorageConsent(): void {
+  localStorage.setItem(CONSENT_KEY, 'true');
+}
+
+export function importStateFromJSON(json: string): AppState {
+  return JSON.parse(json) as AppState;
+}
+
 export function useAppData() {
   const [state, setState] = useState<AppState>(EMPTY_STATE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 초기 로드
+  // 초기 로드: localStorage에서 읽기
   useEffect(() => {
-    fetch('/api/data')
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<AppState>;
-      })
-      .then((data) => {
-        setState(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('[useAppData] fetch error', err);
-        setError(String(err));
-        setLoading(false);
-      });
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        setState(JSON.parse(raw) as AppState);
+      }
+    } catch (err) {
+      console.error('[useAppData] localStorage read error', err);
+      setError(String(err));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // debounce 300ms PUT 저장
+  // debounce 300ms localStorage 저장
   const persist = useCallback((nextState: AppState) => {
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(() => {
-      fetch('/api/data', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(nextState),
-      }).catch((err) => console.error('[useAppData] persist error', err));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+      } catch (err) {
+        console.error('[useAppData] localStorage write error', err);
+      }
     }, 300);
   }, []);
 
@@ -168,6 +181,7 @@ export function useAppData() {
         projectId: options?.projectId ?? null,
         slot: options?.slot ?? null,
         deferCount: 0,
+        continueCount: 0,
         completedAt: null,
         date,
         createdAt: new Date().toISOString(),
@@ -183,11 +197,17 @@ export function useAppData() {
   );
 
   const completeTask = useCallback(
-    (taskId: string) => {
+    (taskId: string, timerSeconds?: number) => {
       update((prev) => ({
         ...prev,
         tasks: prev.tasks.map((t) =>
-          t.id === taskId ? { ...t, completedAt: new Date().toISOString() } : t,
+          t.id === taskId
+            ? {
+                ...t,
+                completedAt: new Date().toISOString(),
+                ...(timerSeconds && timerSeconds > 0 ? { timerSeconds } : {}),
+              }
+            : t,
         ),
       }));
     },
@@ -220,24 +240,23 @@ export function useAppData() {
     [update],
   );
 
-  // 진행중: 원본 유지, 복사본을 백로그에 추가
+  // 진행하기: 원본의 슬롯을 해제하고 백로그로 (continueCount 증가)
   const continueTask = useCallback(
-    (taskId: string, today: string) => {
-      update((prev) => {
-        const original = prev.tasks.find((t) => t.id === taskId);
-        if (!original) return prev;
-        const copy: Task = {
-          ...original,
-          id: `item_${nanoid()}`,
-          slot: null,
-          deferCount: 0,
-          completedAt: null,
-          date: today,
-          createdAt: new Date().toISOString(),
-          origin: 'repeated' as const,
-        };
-        return { ...prev, tasks: [...prev.tasks, copy] };
-      });
+    (taskId: string, _today: string) => {
+      update((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                slot: null,
+                completedAt: null,
+                continueCount: (t.continueCount ?? 0) + 1,
+                origin: 'repeated' as const,
+              }
+            : t,
+        ),
+      }));
     },
     [update],
   );
@@ -287,6 +306,26 @@ export function useAppData() {
       };
       update((prev) => ({ ...prev, routines: [...prev.routines, newRoutine] }));
       return newRoutine;
+    },
+    [update],
+  );
+
+  const updateRoutine = useCallback(
+    (routineId: string, updates: Partial<Omit<Routine, 'id' | 'type' | 'createdAt'>>) => {
+      update((prev) => ({
+        ...prev,
+        routines: prev.routines.map((r) =>
+          r.id === routineId ? { ...r, ...updates } : r,
+        ),
+        // defaultSlot이 변경되면 미완료 인스턴스의 slot도 업데이트
+        routineInstances: updates.defaultSlot
+          ? prev.routineInstances.map((ri) =>
+              ri.routineId === routineId && !ri.completedAt
+                ? { ...ri, slot: updates.defaultSlot! }
+                : ri,
+            )
+          : prev.routineInstances,
+      }));
     },
     [update],
   );
@@ -440,6 +479,7 @@ export function useAppData() {
     updateTaskTitle,
     // routine
     addRoutine,
+    updateRoutine,
     toggleRoutineActive,
     removeRoutine,
     // routineInstance
