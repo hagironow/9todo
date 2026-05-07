@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { CheckCircle2 } from 'lucide-react';
 import { GoalCompass as GoalCompassType } from '@/lib/types';
+import { GOAL_COMPLETE_XP } from '@/lib/xp';
 import GoalCompassIdentity from './GoalCompassIdentity';
 import GoalCompassGoals from './GoalCompassGoals';
 import GoalCompassAffirmation from './GoalCompassAffirmation';
@@ -15,6 +17,8 @@ interface GoalCompassProps {
   onSaveAffirmation: (value: string) => void;
   totalXP?: number;
   previewKey?: GoalKey;
+  onCompleteGoal?: () => void;
+  isGoalCompleted?: boolean;
 }
 
 const PREVIEW_CONFIG: Record<GoalKey, { prefix: string; empty: string }> = {
@@ -33,6 +37,8 @@ export default function GoalCompass({
   onSaveAffirmation,
   totalXP = 0,
   previewKey = 'week',
+  onCompleteGoal,
+  isGoalCompleted,
 }: GoalCompassProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -47,41 +53,66 @@ export default function GoalCompass({
       {/* 헤더 — 프리뷰 목표 + 전체 XP */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex flex-col items-start px-5 py-5 hover:bg-[var(--muted)] transition-colors duration-100"
+        className="w-full flex flex-col items-start px-5 py-3 hover:bg-[var(--muted)] transition-colors duration-100"
         aria-expanded={expanded}
         aria-controls="goal-compass-body"
       >
         <div className="w-full flex items-center justify-between">
           <span
             className={[
-              'text-[17px] font-semibold truncate text-left',
+              'text-[14px] md:text-[16px] font-normal truncate text-left',
               goalValue ? 'text-[var(--foreground)]' : 'text-[var(--muted-foreground)]',
             ].join(' ')}
           >
-            {preview}
+            {goalValue ? (
+              <>{config.prefix} <span className="text-[var(--accent)] font-semibold">{goalValue}</span></>
+            ) : config.empty}
           </span>
 
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 14 14"
-            fill="none"
-            className={`flex-shrink-0 ml-3 text-[var(--muted-foreground)] transition-transform duration-250 ${expanded ? 'rotate-180' : ''}`}
-          >
-            <path
-              d="M2 5L7 10L12 5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+            {/* 오늘 목표 완료 버튼 */}
+            {previewKey === 'today' && goalValue && onCompleteGoal && !isGoalCompleted && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                    navigator.vibrate(40);
+                  }
+                  onCompleteGoal();
+                }}
+                className="flex items-center gap-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] active:scale-95 transition-all duration-150 cursor-pointer"
+                title={`완료 (+${GOAL_COMPLETE_XP}xp)`}
+              >
+                <span className="text-[12px] font-semibold">{GOAL_COMPLETE_XP}xp</span>
+                <CheckCircle2 size={32} strokeWidth={1.5} fill="white" />
+              </button>
+            )}
+            {previewKey === 'today' && isGoalCompleted && (
+              <span className="text-[12px] font-bold" style={{ color: 'var(--g-success)' }}>+{GOAL_COMPLETE_XP}xp</span>
+            )}
+
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              className={`text-[var(--muted-foreground)] transition-transform duration-250 ${expanded ? 'rotate-180' : ''}`}
+            >
+              <path
+                d="M2 5L7 10L12 5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
         </div>
 
-        {/* 전체 XP — Poppins 48px */}
-        <span className="font-heading text-[48px] font-bold leading-none tracking-tight text-[var(--foreground)] mt-3">
+        {/* 전체 XP */}
+        <span className="font-heading text-[24px] font-bold leading-none tracking-tight text-[var(--foreground)] mt-2">
           {totalXP}
-          <span className="text-[20px] font-semibold text-[var(--muted-foreground)] ml-0.5">xp</span>
+          <span className="text-[14px] font-semibold text-[var(--muted-foreground)] ml-0.5">xp</span>
         </span>
       </button>
 

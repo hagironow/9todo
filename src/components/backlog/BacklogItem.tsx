@@ -52,12 +52,16 @@ export default function BacklogItem({
         'hover:bg-[var(--muted)] transition-colors duration-100',
         'group',
       ].join(' ')}
+      onClick={() => {
+        // 모바일: 전체 영역 탭 시 슬롯 배치
+        if (!isReadOnly && window.innerWidth < 768) onPlaceInSlot(item);
+      }}
     >
-      {/* 드래그 핸들 */}
+      {/* 드래그 핸들 — 모바일 숨김 */}
       <button
         {...listeners}
         {...attributes}
-        className="flex-shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-grab active:cursor-grabbing"
+        className="flex-shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-grab active:cursor-grabbing hidden md:block"
         aria-label="드래그하여 이동"
       >
         <GripVertical size={14} strokeWidth={1.5} />

@@ -34,6 +34,7 @@ export const EMPTY_STATE: AppState = {
     },
     affirmation: '',
   },
+  goalCompletedDates: [],
   lastUsedProjectId: null,
   activeProjectFilter: null,
   projectFirstMode: true,
@@ -533,6 +534,17 @@ export function useAppData() {
     [update],
   );
 
+  // ── Goal ────────────────────────────────────────────────────
+  const completeGoal = useCallback(
+    (date: string) => {
+      update((prev) => {
+        if ((prev.goalCompletedDates ?? []).includes(date)) return prev;
+        return { ...prev, goalCompletedDates: [...(prev.goalCompletedDates ?? []), date] };
+      });
+    },
+    [update],
+  );
+
   // ── Filter ────────────────────────────────────────────────────
   const setActiveProjectFilter = useCallback(
     (projectId: string | null) => {
@@ -576,6 +588,8 @@ export function useAppData() {
     addNote,
     removeNote,
     updateNoteContent,
+    // goal
+    completeGoal,
     // misc
     batchUpdate,
     setActiveProjectFilter,

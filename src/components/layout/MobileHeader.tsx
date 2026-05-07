@@ -1,12 +1,13 @@
 'use client';
 
-import { Menu } from 'lucide-react';
+import { Menu, Timer } from 'lucide-react';
 
 interface MobileHeaderProps {
   onMenuOpen: () => void;
+  onTimerOpen?: () => void;
 }
 
-export default function MobileHeader({ onMenuOpen }: MobileHeaderProps) {
+export default function MobileHeader({ onMenuOpen, onTimerOpen }: MobileHeaderProps) {
   return (
     <header className="md:hidden flex items-center justify-between h-12 px-4 border-b border-[var(--border)] bg-[var(--background)] sticky top-0 z-30">
       <button
@@ -17,12 +18,20 @@ export default function MobileHeader({ onMenuOpen }: MobileHeaderProps) {
         <Menu size={18} strokeWidth={1.5} />
       </button>
 
-      <span className="font-heading font-bold text-base tracking-tight text-[var(--accent)]">
-        9todo
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/9todo.svg" alt="9todo" className="h-6" style={{ width: 'auto' }} />
 
-      {/* 오른쪽 공간 균형 맞추기 */}
-      <div className="w-8" aria-hidden="true" />
+      {onTimerOpen ? (
+        <button
+          onClick={onTimerOpen}
+          className="w-8 h-8 flex items-center justify-center rounded-[var(--radius)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+          aria-label="타이머 열기"
+        >
+          <Timer size={18} strokeWidth={1.5} />
+        </button>
+      ) : (
+        <div className="w-8" aria-hidden="true" />
+      )}
     </header>
   );
 }
