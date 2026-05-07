@@ -119,7 +119,7 @@ export default function RoutineSlotCell({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') commitInput();
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitInput();
                 if (e.key === 'Escape') cancelInput();
               }}
               placeholder="루틴 입력..."

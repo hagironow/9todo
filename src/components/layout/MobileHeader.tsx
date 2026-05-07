@@ -18,7 +18,7 @@ export default function MobileHeader({ onMenuOpen }: MobileHeaderProps) {
       </button>
 
       <span className="font-heading font-bold text-base tracking-tight text-[var(--accent)]">
-        todoslot
+        9block
       </span>
 
       {/* 오른쪽 공간 균형 맞추기 */}

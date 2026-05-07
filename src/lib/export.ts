@@ -21,7 +21,7 @@ export function exportToMarkdown(state: AppState): string {
   const today = getToday();
   const lines: string[] = [];
 
-  lines.push(`# todoslot 내보내기`);
+  lines.push(`# 9block 내보내기`);
   lines.push(`> 내보낸 날짜: ${today}`);
   lines.push('');
 

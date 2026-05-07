@@ -3,9 +3,10 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Repeat, GripVertical } from 'lucide-react';
-import { Task, RoutineInstance } from '@/lib/types';
+import { Task, RoutineInstance, Project } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import ColorDot from '@/components/ui/ColorDot';
 
 type BacklogEntry = Task | RoutineInstance;
 
@@ -14,6 +15,7 @@ interface BacklogItemProps {
   title: string;
   deferCount: number;
   isRoutine?: boolean;
+  project?: Project | null;
   onPlaceInSlot: (item: BacklogEntry) => void;
   isReadOnly?: boolean;
 }
@@ -23,6 +25,7 @@ export default function BacklogItem({
   title,
   deferCount,
   isRoutine = false,
+  project,
   onPlaceInSlot,
   isReadOnly,
 }: BacklogItemProps) {
@@ -44,7 +47,7 @@ export default function BacklogItem({
       ref={setNodeRef}
       style={style}
       className={[
-        'flex items-center gap-2 px-3 py-2',
+        'relative flex items-center gap-2 px-3 py-2',
         'border-b border-[var(--border)] last:border-b-0',
         'hover:bg-[var(--muted)] transition-colors duration-100',
         'group',
@@ -73,13 +76,21 @@ export default function BacklogItem({
         )}
       </div>
 
-      {/* 슬롯 배치 버튼 */}
+      {/* 프로젝트 레이블 — 맨 오른쪽 고정 */}
+      {project && (
+        <span className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--muted)] text-[10px] text-[var(--muted-foreground)]">
+          <ColorDot color={project.color} size="sm" />
+          <span className="max-w-[60px] truncate">{project.name}</span>
+        </span>
+      )}
+
+      {/* 슬롯 배치 버튼 — 호버 시 프로젝트 레이블 위에 겹침 */}
       {!isReadOnly && (
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onPlaceInSlot(item)}
-          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-[var(--fs-tag)]"
+          className="absolute right-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-[var(--fs-tag)] bg-[var(--muted)]"
         >
           슬롯 배치
         </Button>

@@ -44,7 +44,7 @@
   /* ── Global Design Tokens ── */
   --g-point: #FFB0B5;              /* 코랄 파스텔 */
   --g-point-vivid: #FF5C65;        /* 코랄 비비드 (CTA) */
-  --g-error: #F87060;
+  --g-error: #EF4444;              /* 에러/삭제 — 레드 */
   --g-text-muted: #8A8A8A;
 
   /* ── Semantic tokens ── */
@@ -54,7 +54,10 @@
   /* ── Surface tokens (컴포넌트 배경 계층) ── */
   --surface-primary: var(--background);
   --surface-secondary: var(--card);
+  --grid-bg: #F5F5F5;                /* 그리드 컨테이너 — background와 card 사이 */
   --surface-inset: var(--card);     /* 슬롯 내부 */
+  --surface-hover: #E8E8E8;          /* 호버 — 카드보다 1단계만 위 */
+  --surface-btn: #E6E6E6;            /* 모달 내 버튼 — card보다 딱 한 톤 위 */
   --surface-raised: #DCDCDC;        /* 버튼/인풋 — 카드 위 확실한 대비 */
   --border-subtle: var(--border);   /* 카드/구분선 */
 
@@ -81,30 +84,32 @@
 }
 
 .dark {
-  /* flowdy 다크 토큰 정확 복사 */
-  --background: #0f0f0f;              /* ui.css --bg-2 */
-  --foreground: #e0e0e0;              /* ui.css --text-1 */
-  --card: #181818;                    /* ui.css --bg-5 — 카드/그룹 배경 */
+  --background: #0a0a0a;
+  --foreground: #e0e0e0;
+  --card: #111111;                    /* background와 가까워 계층감 줄임 */
   --card-foreground: #e0e0e0;
-  --popover: #141414;                 /* ui.css --bg-4 */
+  --popover: #141414;
   --popover-foreground: #e0e0e0;
-  --primary: #FFFFFF;                 /* ui.css --primary */
+  --primary: #FFFFFF;
   --primary-foreground: #000000;
-  --secondary: #1a1a1a;              /* ui.css --bg-6 */
+  --secondary: #1a1a1a;
   --secondary-foreground: #ccc;
-  --muted: #1a1a1a;                  /* ui.css --bg-6 — hover 배경 */
-  --muted-foreground: #888;           /* flowdy --g-text-muted */
-  --accent: #FF5C65;                  /* --g-point-vivid (CTA) */
+  --muted: #1a1a1a;
+  --muted-foreground: #888;
+  --accent: #FF5C65;
   --accent-foreground: #FFFFFF;
-  --destructive: #ef4444;             /* ui.css --color-error */
-  --border: #1f1f1f;                  /* ui.css --border-1 */
-  --input: #2a2a2a;                   /* ui.css --border-2 */
-  --ring: #FFB0B5;                    /* --g-point */
+  --destructive: #ef4444;
+  --border: #191919;                  /* 더 은은하게 */
+  --input: #2a2a2a;
+  --ring: #FFB0B5;
 
   /* surface/border aliases */
-  --surface-inset: #222222;           /* 카드(#181818)보다 한 단계 밝음 — 슬롯 내부 */
-  --surface-raised: #333333;          /* 버튼/인풋 등 카드 위 요소 — 확실한 대비 */
-  --border-subtle: var(--border);     /* #1f1f1f */
+  --grid-bg: #0e0e0e;                /* background에 가깝게 */
+  --surface-inset: #161616;           /* card와 가깝게 — 대비 줄임 */
+  --surface-hover: #1a1a1a;
+  --surface-btn: #1c1c1c;
+  --surface-raised: #333333;
+  --border-subtle: #161616;           /* 점선/구분선 더 은은하게 */
 }
 
 /* ── Small Font variant ── */

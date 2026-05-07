@@ -148,6 +148,7 @@ export default function SlotCell({
           ? 'ring-2 ring-[var(--accent)] bg-[var(--accent)]/8 scale-[1.02]'
           : 'bg-[var(--surface-inset)]',
       ].join(' ')}
+      style={!isOver && coord.priority === 1 ? { backgroundColor: 'color-mix(in srgb, var(--accent) 6%, var(--surface-inset))' } : undefined}
     >
       {item ? (
         <ItemCard
@@ -252,7 +253,7 @@ export default function SlotCell({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') commitInput();
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitInput();
               if (e.key === 'Escape') cancelInput();
             }}
             placeholder="할 일 입력..."

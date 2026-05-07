@@ -9,6 +9,7 @@ type RowStatus = 'active' | 'past' | 'future';
 interface TimetableRowProps {
   period: TimePeriod;
   label: string;
+  timeLabel?: string;
   status: RowStatus;
   slots: Record<Priority, ScheduledItem | null>;
   routineSlots?: Record<Priority, ScheduledItem | null>;
@@ -41,6 +42,7 @@ function getLineColor(status: RowStatus, firstSlot: ScheduledItem | null): strin
 export default function TimetableRow({
   period,
   label,
+  timeLabel,
   status,
   slots,
   routineSlots,
@@ -66,7 +68,6 @@ export default function TimetableRow({
     <div
       className={[
         'relative rounded-[var(--radius)]',
-        'border border-[var(--border-subtle)]',
         'bg-[var(--card)]',
       ].join(' ')}
     >
@@ -86,6 +87,11 @@ export default function TimetableRow({
           >
             {label}
           </span>
+          {timeLabel && (
+            <span className="text-[11px] text-[var(--muted-foreground)]">
+              {timeLabel}
+            </span>
+          )}
         </div>
       </div>
 
@@ -120,7 +126,7 @@ export default function TimetableRow({
           </div>
 
           {/* Routine row — 항상 표시 */}
-          <div className="border-t border-[var(--border-subtle)] mt-2 pt-2">
+          <div className="mt-2">
             <div className="grid grid-cols-3 gap-2">
               {PRIORITIES.map((priority) => (
                 <RoutineSlotCell

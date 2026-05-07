@@ -142,7 +142,7 @@ export default function ItemCard({
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={commitEdit}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') commitEdit();
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit();
                   if (e.key === 'Escape') cancelEdit();
                 }}
                 className="w-full text-[var(--fs-item)] font-medium text-[var(--card-foreground)] leading-snug bg-transparent border-b border-[var(--accent)] outline-none pointer-events-auto"

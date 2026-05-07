@@ -11,10 +11,10 @@ import type {
   SlotCoord,
 } from '@/lib/types';
 
-const STORAGE_KEY = 'todoslot_state';
-const CONSENT_KEY = 'todoslot_storage_consent';
+const STORAGE_KEY = '9block_state';
+const CONSENT_KEY = '9block_storage_consent';
 
-const EMPTY_STATE: AppState = {
+export const EMPTY_STATE: AppState = {
   projects: [],
   tasks: [],
   routines: [],

@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronDown, Clock, Repeat, Inbox } from 'lucide-react';
+import { useState, useRef, KeyboardEvent } from 'react';
+import { ChevronDown, Clock, Repeat, Inbox, Plus } from 'lucide-react';
 import { Task, RoutineInstance, Project } from '@/lib/types';
 import BacklogItem from './BacklogItem';
+import ColorDot from '@/components/ui/ColorDot';
+import ProjectPicker from '@/components/quick-input/ProjectPicker';
 
 type BacklogEntry = Task | RoutineInstance;
 
@@ -13,6 +15,8 @@ interface BacklogPanelProps {
   getTitleForItem: (item: BacklogEntry) => string;
   isRoutineInstance: (item: BacklogEntry) => boolean;
   onPlaceInSlot: (item: BacklogEntry) => void;
+  onAdd?: (title: string, projectId: string | null) => void;
+  lastUsedProjectId?: string | null;
   isReadOnly?: boolean;
 }
 
@@ -42,9 +46,29 @@ export default function BacklogPanel({
   getTitleForItem,
   isRoutineInstance,
   onPlaceInSlot,
+  onAdd,
+  lastUsedProjectId,
   isReadOnly,
 }: BacklogPanelProps) {
   const [expanded, setExpanded] = useState(true);
+  const [inputValue, setInputValue] = useState('');
+  const [selectedProject, setSelectedProject] = useState<Project | null>(
+    projects.find((p) => p.id === lastUsedProjectId) ?? null
+  );
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleAdd = () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed || !onAdd) return;
+    onAdd(trimmed, selectedProject?.id ?? null);
+    setInputValue('');
+    inputRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAdd();
+  };
 
   const totalCount = items.length;
 
@@ -116,20 +140,62 @@ export default function BacklogPanel({
                       </span>
                     </div>
                     {/* Items */}
-                    {groupItems.map((item) => (
-                      <BacklogItem
-                        key={item.id}
-                        item={item}
-                        title={getTitleForItem(item)}
-                        deferCount={'deferCount' in item ? item.deferCount : 0}
-                        isRoutine={isRoutineInstance(item)}
-                        onPlaceInSlot={onPlaceInSlot}
-                        isReadOnly={isReadOnly}
-                      />
-                    ))}
+                    {groupItems.map((item) => {
+                      const pid = 'projectId' in item ? item.projectId : null;
+                      const project = pid ? projects.find((p) => p.id === pid) ?? null : null;
+                      return (
+                        <BacklogItem
+                          key={item.id}
+                          item={item}
+                          title={getTitleForItem(item)}
+                          deferCount={'deferCount' in item ? item.deferCount : 0}
+                          isRoutine={isRoutineInstance(item)}
+                          project={project}
+                          onPlaceInSlot={onPlaceInSlot}
+                          isReadOnly={isReadOnly}
+                        />
+                      );
+                    })}
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* 백로그 인라인 추가 */}
+          {!isReadOnly && onAdd && (
+            <div className="relative flex items-center gap-2 px-3 py-2 border-t border-[var(--border)]">
+              <button
+                onClick={() => setPickerOpen((v) => !v)}
+                className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-[var(--radius)] hover:bg-[var(--muted)] transition-colors"
+                aria-label="프로젝트 선택"
+              >
+                <ColorDot color={selectedProject?.color ?? '#8A8A8A'} size="sm" />
+              </button>
+              <input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="백로그에 추가..."
+                className="flex-1 bg-transparent text-[var(--foreground)] text-[var(--fs-item)] placeholder:text-[var(--muted-foreground)] outline-none"
+              />
+              <button
+                onClick={handleAdd}
+                disabled={!inputValue.trim()}
+                className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-[var(--radius)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors disabled:opacity-30"
+                aria-label="추가"
+              >
+                <Plus size={14} />
+              </button>
+              {pickerOpen && (
+                <ProjectPicker
+                  projects={projects}
+                  selectedId={selectedProject?.id ?? null}
+                  onSelect={(project) => setSelectedProject(project)}
+                  onClose={() => setPickerOpen(false)}
+                />
+              )}
             </div>
           )}
         </div>

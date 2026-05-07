@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "todoslot",
-  description: "오늘의 시간 배분 — 9칸 시간표",
+  title: "9block",
+  description: "타임박스 플래너 — 9칸 블록에 오늘을 채우다",
 };
 
 export default function RootLayout({
