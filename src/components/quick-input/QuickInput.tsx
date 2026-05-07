@@ -38,7 +38,7 @@ export default function QuickInput({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') handleAdd();
+    if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAdd();
   };
 
   const dotColor = selectedProject?.color ?? '#8A8A8A';

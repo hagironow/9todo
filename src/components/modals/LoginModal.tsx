@@ -55,11 +55,11 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
-const STORAGE_KEY = 'todoslot_survey';
-const SESSION_KEY = 'todoslot_survey_session';
+const STORAGE_KEY = '9block_survey';
+const SESSION_KEY = '9block_survey_session';
 
 function getDaysSinceFirstUse() {
-  const first = localStorage.getItem('todoslot_first_use');
+  const first = localStorage.getItem('9block_first_use');
   if (!first) return 0;
   return Math.floor((Date.now() - new Date(first).getTime()) / 86400000);
 }
@@ -107,7 +107,7 @@ function saveSurvey(data: Partial<SurveyData> & { interest: string }, completed:
 const LIST_BTN = [
   'w-full flex items-center justify-center h-12 px-5 text-center',
   'rounded-[var(--radius)]',
-  'bg-[var(--surface-raised)] border border-transparent',
+  'bg-[var(--surface-btn)] border border-transparent',
   'hover:bg-[var(--background)] hover:border-[var(--accent)] hover:shadow-md',
   'transition-all duration-150 cursor-pointer',
 ].join(' ');
@@ -116,7 +116,7 @@ const LIST_BTN = [
 const LIST_BTN_MULTI = [
   'w-full flex flex-col items-center justify-center gap-1 px-5 py-3.5 text-center',
   'rounded-[var(--radius)]',
-  'bg-[var(--surface-raised)] border border-transparent',
+  'bg-[var(--surface-btn)] border border-transparent',
   'hover:bg-[var(--background)] hover:border-[var(--accent)] hover:shadow-md',
   'transition-all duration-150 cursor-pointer',
 ].join(' ');
@@ -139,7 +139,7 @@ const CHIP_ACTIVE = [
 
 const INPUT_CLASS = [
   'w-full px-4 py-3 rounded-[var(--radius)]',
-  'bg-[var(--surface-raised)] border border-transparent',
+  'bg-[var(--surface-btn)] border border-transparent',
   'text-[var(--foreground)] text-[var(--fs-item)]',
   'focus:outline-none focus:bg-[var(--background)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]',
   'transition-all',

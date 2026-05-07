@@ -1,0 +1,21 @@
+{
+  "projects": [],
+  "tasks": [],
+  "routines": [],
+  "routineInstances": [],
+  "goalCompass": {
+    "identity": "",
+    "goals": {
+      "today": "",
+      "week": "",
+      "month": "",
+      "quarter": "",
+      "oneYear": "",
+      "fiveYear": ""
+    },
+    "affirmation": ""
+  },
+  "lastUsedProjectId": null,
+  "activeProjectFilter": null,
+  "projectFirstMode": false
+}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, Pause, Check, SkipForward, Minimize2, Square } from 'lucide-react';
 import { ScheduledItem, Project } from '@/lib/types';
+import Dialog from '@/components/ui/Dialog';
 
 interface NowFocusProps {
   items: (ScheduledItem | null)[];
@@ -67,37 +68,32 @@ function ConfirmModal({
   const isDefer = type === 'defer';
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius)] p-5 shadow-xl w-80 flex flex-col gap-3 animate-slide-in-right">
-        <p className="text-base font-semibold text-[var(--foreground)]">
-          {isDefer ? '이 태스크를 미루시겠어요?' : '아직 완료되지 않았나요?'}
-        </p>
-        <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
-          {isDefer
-            ? '백로그에 미룬 일과 미룬 횟수가 저장돼요.'
-            : '백로그에 진행할 일과 진행 횟수가 저장돼요.'}
-        </p>
-        <div className="flex items-center gap-2 pt-1">
-          <button
-            onClick={onCancel}
-            className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
-          >
-            취소
-          </button>
-          <button
-            onClick={onConfirm}
-            className={[
-              'flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold transition-opacity hover:opacity-85',
-              isDefer
-                ? 'bg-red-500 text-white'
-                : 'bg-blue-500 text-white',
-            ].join(' ')}
-          >
-            {isDefer ? '미루기' : '진행하기'}
-          </button>
-        </div>
+    <Dialog open={true} onClose={onCancel} title={isDefer ? '이 태스크를 미루시겠어요?' : '아직 완료되지 않았나요?'} width="sm">
+      <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
+        {isDefer
+          ? '백로그에 미룬 일과 미룬 횟수가 저장돼요.'
+          : '백로그에 진행할 일과 진행 횟수가 저장돼요.'}
+      </p>
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={onCancel}
+          className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
+        >
+          취소
+        </button>
+        <button
+          onClick={onConfirm}
+          className={[
+            'flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold transition-opacity hover:opacity-85',
+            isDefer
+              ? 'bg-[var(--g-error)] text-white'
+              : 'bg-blue-500 text-white',
+          ].join(' ')}
+        >
+          {isDefer ? '미루기' : '진행하기'}
+        </button>
       </div>
-    </div>
+    </Dialog>
   );
 }
 
@@ -251,9 +247,7 @@ export default function NowFocus({
     return pid ? projects.find((p) => p.id === pid) ?? null : null;
   };
 
-  if (!primary && !secondary && !tertiary) {
-    return null;
-  }
+  const hasItems = !!(primary || secondary || tertiary);
 
   const primaryProject = primary ? getProject(primary) : null;
   const primaryTitle = primary && 'title' in primary ? primary.title : '';
@@ -264,7 +258,7 @@ export default function NowFocus({
       <button
         onClick={() => setMinimized(false)}
         className="fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-105 transition-transform"
-        style={{ backgroundColor: primaryBg }}
+        style={{ backgroundColor: hasItems ? primaryBg : 'var(--accent)' }}
         title="타이머 열기"
       >
         <Play size={20} fill="white" />
@@ -353,7 +347,44 @@ export default function NowFocus({
               </button>
             </div>
           </div>
-        ) : null}
+        ) : (
+          /* 빈 상태 — 타이머 대기 UI */
+          <div
+            className="w-[340px] rounded-[var(--radius)] shadow-2xl overflow-hidden"
+            style={{ backgroundColor: 'var(--accent)' }}
+          >
+            <div className="flex items-center justify-between px-4 pt-3 pb-0">
+              <p className="text-base font-medium text-white/40 truncate flex-1 mr-2">1순위 슬롯에 배치하세요</p>
+              <button
+                onClick={() => setMinimized(true)}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/15 text-white/70 hover:bg-white/25 transition-colors"
+                title="최소화"
+              >
+                <Minimize2 size={13} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-center py-5">
+              <div className="relative flex items-center justify-center">
+                <svg width={140} height={140} className="-rotate-90">
+                  <circle cx={70} cy={70} r={67} fill="none" stroke="white" strokeOpacity={0.1} strokeWidth={6} />
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="font-heading text-xl font-bold text-white/25 tabular-nums">
+                    25:00
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-center px-4 pb-4">
+              <span className="flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-white/10 text-white/30 text-sm font-semibold">
+                <Play size={13} fill="currentColor" />
+                대기 중
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* 2~3순위 바 */}
         {secondary && (

@@ -18,6 +18,7 @@ interface AppShellProps {
   onLoginClick?: () => void;
   onExport?: () => void;
   onImport?: () => void;
+  onResetData?: () => void;
   projectFirstMode: boolean;
   onProjectFirstModeChange: (enabled: boolean) => void;
   children: ReactNode;
@@ -36,6 +37,7 @@ export default function AppShell({
   onLoginClick,
   onExport,
   onImport,
+  onResetData,
   projectFirstMode,
   onProjectFirstModeChange,
   children,
@@ -58,6 +60,7 @@ export default function AppShell({
         onLoginClick={onLoginClick}
         onExport={onExport}
         onImport={onImport}
+        onResetData={onResetData}
         projectFirstMode={projectFirstMode}
         onProjectFirstModeChange={onProjectFirstModeChange}
         className="hidden md:flex"
@@ -99,6 +102,10 @@ export default function AppShell({
               }}
               onImport={() => {
                 onImport?.();
+                setSidebarOpen(false);
+              }}
+              onResetData={() => {
+                onResetData?.();
                 setSidebarOpen(false);
               }}
               projectFirstMode={projectFirstMode}

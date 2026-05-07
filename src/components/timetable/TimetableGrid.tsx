@@ -25,10 +25,10 @@ interface TimetableGridProps {
   onItemSelect?: (item: ScheduledItem) => void;
 }
 
-const PERIODS: { period: TimePeriod; label: string }[] = [
-  { period: 'morning',   label: '오전' },
-  { period: 'afternoon', label: '오후' },
-  { period: 'evening',   label: '저녁' },
+const PERIODS: { period: TimePeriod; label: string; time: string }[] = [
+  { period: 'morning',   label: '오전', time: '9:00 ~ 12:00' },
+  { period: 'afternoon', label: '오후', time: '12:00 ~ 18:00' },
+  { period: 'evening',   label: '저녁', time: '18:00 ~ 새벽 5:00' },
 ];
 
 const PERIOD_ORDER: TimePeriod[] = ['morning', 'afternoon', 'evening'];
@@ -61,7 +61,7 @@ export default function TimetableGrid({
   onItemSelect,
 }: TimetableGridProps) {
   return (
-    <div className="rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)]">
+    <div className="rounded-[var(--radius)] bg-[var(--grid-bg)]">
       {/* Priority header */}
       <div className="grid grid-cols-3 gap-2 px-4 pt-4 pb-2">
         {([1, 2, 3] as Priority[]).map((p) => {
@@ -82,13 +82,14 @@ export default function TimetableGrid({
         })}
       </div>
 
-      {/* Period rows — 내부 간격만, 각 row의 외곽 border 제거 */}
-      <div className="flex flex-col gap-0 px-2 pb-2">
-        {PERIODS.map(({ period, label }) => (
+      {/* Period rows */}
+      <div className="flex flex-col px-2 pb-2" style={{ gap: 12 }}>
+        {PERIODS.map(({ period, label, time }) => (
           <TimetableRow
             key={period}
             period={period}
             label={label}
+            timeLabel={time}
             status={getStatus(period, currentPeriod)}
             slots={slots[period]}
             routineSlots={routineSlots?.[period]}

@@ -38,13 +38,14 @@ import ProjectSelectModal from '@/components/modals/ProjectSelectModal';
 import LoginModal from '@/components/modals/LoginModal';
 import CalendarModal from '@/components/modals/CalendarModal';
 import RoutineSetupModal from '@/components/modals/RoutineSetupModal';
+import CalendarView from '@/components/calendar/CalendarView';
 import ReadOnlyBanner from '@/components/date-nav/ReadOnlyBanner';
 import { triggerConfetti } from '@/components/effects/ParticleBurst';
 import { createRoutineInstance } from '@/lib/routine';
 import { exportToMarkdown, exportToJSON, downloadFile } from '@/lib/export';
 import { calculateDailyXP, calculateTotalXP } from '@/lib/xp';
 import StorageConsentBanner from '@/components/modals/StorageConsentBanner';
-import { importStateFromJSON } from '@/hooks/useAppData';
+import { importStateFromJSON, EMPTY_STATE } from '@/hooks/useAppData';
 
 /**
  * 투두슬롯 타임: 하루의 경계는 새벽 5시.
@@ -745,7 +746,7 @@ export default function Home() {
         onExport={() => {
           const json = exportToJSON(state);
           const todayStr = new Date().toISOString().split('T')[0];
-          downloadFile(json, `todoslot_${todayStr}.json`, 'application/json');
+          downloadFile(json, `9block_${todayStr}.json`, 'application/json');
         }}
         onImport={() => {
           const input = document.createElement('input');
@@ -767,6 +768,12 @@ export default function Home() {
           };
           input.click();
         }}
+        onResetData={() => {
+          if (window.confirm('모든 데이터를 삭제하시겠어요?\n이 작업은 되돌릴 수 없습니다.')) {
+            localStorage.removeItem('9block_state');
+            batchUpdate(() => EMPTY_STATE);
+          }
+        }}
         projectFirstMode={state.projectFirstMode}
         onProjectFirstModeChange={(enabled) => {
           setProjectFirstMode(enabled);
@@ -774,7 +781,7 @@ export default function Home() {
           if (!enabled) setActiveProjectFilter(null);
         }}
       >
-        <div className="max-w-3xl mx-auto px-4 py-6 flex flex-col gap-5">
+        <div className="w-full lg:w-[80%] max-w-5xl px-4 md:px-8 py-6 flex flex-col gap-5">
           {/* Goal Compass */}
           <GoalCompass
             data={state.goalCompass}
@@ -784,52 +791,72 @@ export default function Home() {
             totalXP={totalXP}
           />
 
-          {/* 날짜 네비게이션 */}
-          <DateNav
-            date={today}
-            isToday={isToday}
-            onPrev={handlePrevDay}
-            onNext={handleNextDay}
-            onToday={handleGoToday}
-            onOpenCalendar={() => setCalendarOpen(true)}
-            xp={dailyXP}
-          />
+          {state.activeProjectFilter === '__calendar__' ? (
+            /* 캘린더 뷰 */
+            <CalendarView
+              tasks={state.tasks}
+              routines={state.routines}
+              routineInstances={state.routineInstances}
+              projects={state.projects}
+              onEditRoutine={(routine) => {
+                setEditingRoutine(routine);
+                setRoutineModalTitle('');
+                setRoutineModalCoord(null);
+                setRoutineModalOpen(true);
+              }}
+            />
+          ) : (
+            <>
+              {/* 날짜 네비게이션 */}
+              <DateNav
+                date={today}
+                isToday={isToday}
+                onPrev={handlePrevDay}
+                onNext={handleNextDay}
+                onToday={handleGoToday}
+                onOpenCalendar={() => setCalendarOpen(true)}
+                xp={dailyXP}
+              />
 
-          {/* 읽기 전용 배너 (과거 날짜) */}
-          {isReadOnly && (
-            <ReadOnlyBanner date={today} onGoToday={handleGoToday} />
+              {/* 읽기 전용 배너 (과거 날짜) */}
+              {isReadOnly && (
+                <ReadOnlyBanner date={today} onGoToday={handleGoToday} />
+              )}
+
+              {/* Timetable Grid */}
+              <TimetableGrid
+                currentPeriod={currentPeriod}
+                slots={filteredSlots}
+                routineSlots={filteredRoutineSlots}
+                onComplete={handleComplete}
+                onDefer={handleDefer}
+                onRepeat={handleRepeat}
+                onSlotClick={handleSlotClick}
+                onDelete={handleDelete}
+                onUpdateTitle={handleUpdateTitle}
+                onCreateInSlot={handleCreateInSlot}
+                onUncomplete={handleUncomplete}
+                onCreateRoutine={handleCreateRoutine}
+                onEditRoutine={handleEditRoutine}
+                projectFirstMode={state.projectFirstMode}
+                projects={state.projects}
+                isReadOnly={isReadOnly}
+                onItemSelect={() => {}}
+              />
+
+              {/* Backlog */}
+              <BacklogPanel
+                items={filteredBacklog}
+                projects={state.projects}
+                getTitleForItem={getTitleForItem}
+                isRoutineInstance={isRoutineInstanceFn}
+                onPlaceInSlot={handlePlaceInSlot}
+                onAdd={(title, projectId) => addTask(title, today, { projectId })}
+                lastUsedProjectId={state.lastUsedProjectId}
+                isReadOnly={isReadOnly}
+              />
+            </>
           )}
-
-          {/* Timetable Grid */}
-          <TimetableGrid
-            currentPeriod={currentPeriod}
-            slots={filteredSlots}
-            routineSlots={filteredRoutineSlots}
-            onComplete={handleComplete}
-            onDefer={handleDefer}
-            onRepeat={handleRepeat}
-            onSlotClick={handleSlotClick}
-            onDelete={handleDelete}
-            onUpdateTitle={handleUpdateTitle}
-            onCreateInSlot={handleCreateInSlot}
-            onUncomplete={handleUncomplete}
-            onCreateRoutine={handleCreateRoutine}
-            onEditRoutine={handleEditRoutine}
-            projectFirstMode={state.projectFirstMode}
-            projects={state.projects}
-            isReadOnly={isReadOnly}
-            onItemSelect={() => {}}
-          />
-
-          {/* Backlog */}
-          <BacklogPanel
-            items={filteredBacklog}
-            projects={state.projects}
-            getTitleForItem={getTitleForItem}
-            isRoutineInstance={isRoutineInstanceFn}
-            onPlaceInSlot={handlePlaceInSlot}
-            isReadOnly={isReadOnly}
-          />
         </div>
       </AppShell>
 

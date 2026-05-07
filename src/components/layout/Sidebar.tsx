@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { LayoutGrid, CalendarClock, Repeat, MoreHorizontal, Plus, Download, Upload } from 'lucide-react';
+import { MoreHorizontal, Plus, Download, Upload, Trash2, Settings, X, ShieldCheck } from 'lucide-react';
 import { Project } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import Avatar from '@/components/ui/Avatar';
@@ -19,15 +19,15 @@ interface SidebarProps {
   onLoginClick?: () => void;
   onExport?: () => void;
   onImport?: () => void;
+  onResetData?: () => void;
   projectFirstMode: boolean;
   onProjectFirstModeChange: (enabled: boolean) => void;
   className?: string;
 }
 
 const FILTERS = [
-  { id: null, label: '전체', Icon: LayoutGrid },
-  { id: '__today__', label: '오늘 마감', Icon: CalendarClock },
-  { id: '__routine__', label: '루틴', Icon: Repeat },
+  { id: null, label: '오늘' },
+  { id: '__calendar__', label: '캘린더' },
 ] as const;
 
 function ProjectMenu({
@@ -104,11 +104,13 @@ export default function Sidebar({
   onLoginClick,
   onExport,
   onImport,
+  onResetData,
   projectFirstMode,
   onProjectFirstModeChange,
   className = '',
 }: SidebarProps) {
   const activeProjects = projects.filter((p) => !p.archived);
+  const [dataMenuOpen, setDataMenuOpen] = useState(false);
   return (
     <aside
       className={[
@@ -120,35 +122,37 @@ export default function Sidebar({
       {/* 로고 */}
       <div className="h-14 flex items-center px-5 border-b border-[var(--border)]">
         <span className="font-heading font-bold text-lg tracking-tight text-[var(--accent)]">
-          todoslot
+          9block
         </span>
       </div>
 
       {/* 내용 */}
-      <nav className="flex-1 overflow-y-auto py-3 flex flex-col gap-1 px-2">
+      <nav className="flex-1 overflow-y-auto py-3 flex flex-col px-2">
         {/* 기본 필터 */}
-        <p className="px-3 pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+        <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]" style={{ opacity: 0.5 }}>
           뷰
         </p>
-        {FILTERS.map((f) => (
-          <button
-            key={String(f.id)}
-            onClick={() => onFilterChange(f.id as string | null)}
-            className={[
-              'w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-[var(--fs-item)] text-left transition-colors duration-100',
-              activeFilter === f.id
-                ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-semibold'
-                : 'text-[var(--foreground)] hover:bg-[var(--muted)]',
-            ].join(' ')}
-          >
-            <f.Icon size={16} strokeWidth={1.8} />
-            {f.label}
-          </button>
-        ))}
+        <div className="flex flex-col gap-0.5">
+          {FILTERS.map((f) => (
+            <button
+              key={String(f.id)}
+              onClick={() => onFilterChange(f.id as string | null)}
+              className={[
+                'w-full flex items-center px-3 rounded-[var(--radius-sm)] text-[13px] text-left transition-colors duration-100',
+                activeFilter === f.id
+                  ? 'bg-[var(--surface-hover)] text-[var(--foreground)] font-semibold'
+                  : 'text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]',
+              ].join(' ')}
+              style={{ paddingTop: 8, paddingBottom: 8 }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
 
         {/* 프로젝트 목록 */}
-        <div className="px-3 pt-4 pb-1 flex items-center justify-between">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+        <div className="px-3 pb-2 flex items-center justify-between" style={{ paddingTop: 40 }}>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]" style={{ opacity: 0.5 }}>
             프로젝트
           </p>
           <button
@@ -190,10 +194,10 @@ export default function Sidebar({
           <div
             key={project.id}
             className={[
-              'group w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-[var(--fs-item)] transition-colors duration-100',
+              'group w-full flex items-center gap-2.5 px-3 py-1.5 rounded-[var(--radius-sm)] text-[13px] transition-colors duration-100',
               activeFilter === project.id
-                ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-semibold'
-                : 'text-[var(--foreground)] hover:bg-[var(--muted)]',
+                ? 'bg-[var(--surface-hover)] text-[var(--foreground)] font-semibold'
+                : 'text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]',
             ].join(' ')}
           >
             <button
@@ -219,49 +223,83 @@ export default function Sidebar({
         <button
           onClick={() => onFilterChange('__unassigned__')}
           className={[
-            'w-full flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius)] text-[var(--fs-item)] text-left transition-colors duration-100',
+            'w-full flex items-center gap-2.5 px-3 py-1.5 rounded-[var(--radius-sm)] text-[13px] text-left transition-colors duration-100',
             activeFilter === '__unassigned__'
-              ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-semibold'
-              : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)]',
+              ? 'bg-[var(--surface-hover)] text-[var(--foreground)] font-semibold'
+              : 'text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]',
           ].join(' ')}
         >
-          <span className="w-[10px] h-[10px] rounded-full bg-[var(--muted-foreground)] inline-block flex-shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--muted-foreground)] inline-block flex-shrink-0" />
           미분류
         </button>
 
         {/* 프로젝트 추가 */}
         <button
           onClick={onCreateProject}
-          className="w-full flex items-center gap-2 px-3 py-2 mt-1 rounded-[var(--radius)] text-[var(--fs-tag)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors duration-100"
+          className="w-full flex items-center gap-2 px-3 py-1.5 mt-1 rounded-[var(--radius-sm)] text-[13px] text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition-colors duration-100"
         >
           <Plus size={14} strokeWidth={1.8} />
           프로젝트 이름
         </button>
       </nav>
 
-      {/* 하단: 로그인 + 내보내기 */}
-      <div className="p-3 border-t border-[var(--border)] flex flex-col gap-1">
+      {/* 하단 */}
+      <div className="p-3 border-t border-[var(--border)] flex flex-col gap-0">
         <button
           onClick={onLoginClick}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-[var(--radius)] text-[var(--fs-item)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors duration-100 border-b border-[var(--muted-foreground)]/30 mb-1 pb-3"
+          className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition-colors duration-100"
         >
           <Avatar size="md" />
           <span className="truncate text-left">로그인 하세요</span>
         </button>
+
+        {/* 구분선 — 반듯한 직선 */}
+        <div className="mx-3 my-1 border-t border-[var(--border)]" />
+
+        {/* 데이터 관리 */}
         <button
-          onClick={onExport}
-          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius)] text-[var(--fs-tag)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors duration-100"
+          onClick={() => setDataMenuOpen(!dataMenuOpen)}
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition-colors duration-100"
         >
-          <Download size={14} strokeWidth={1.8} />
-          <span>데이터 내보내기</span>
+          <Settings size={14} strokeWidth={1.8} />
+          <span>데이터 관리</span>
         </button>
-        <button
-          onClick={onImport}
-          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-[var(--radius)] text-[var(--fs-tag)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors duration-100"
-        >
-          <Upload size={14} strokeWidth={1.8} />
-          <span>데이터 가져오기</span>
-        </button>
+
+        {/* 데이터 관리 패널 */}
+        {dataMenuOpen && (
+          <div className="mt-1 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--background)] overflow-hidden">
+            {/* 안내 문구 */}
+            <div className="px-3 py-3 border-b border-[var(--border)] flex items-start gap-2">
+              <ShieldCheck size={14} className="text-[var(--g-success)] flex-shrink-0 mt-0.5" />
+              <p className="text-[14px] leading-snug text-[var(--muted-foreground)]">
+                투두슬롯은 데이터를 서버에 저장하지 않아요. 모든 데이터는 이 브라우저에만 보관됩니다. 소중한 기록은 직접 백업해 주세요.
+              </p>
+            </div>
+
+            {/* 액션 버튼들 */}
+            <button
+              onClick={() => { onExport?.(); setDataMenuOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-[var(--fs-tag)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors duration-100"
+            >
+              <Download size={13} strokeWidth={1.8} />
+              <span>내보내기</span>
+            </button>
+            <button
+              onClick={() => { onImport?.(); setDataMenuOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-[var(--fs-tag)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors duration-100"
+            >
+              <Upload size={13} strokeWidth={1.8} />
+              <span>가져오기</span>
+            </button>
+            <button
+              onClick={() => { onResetData?.(); setDataMenuOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-[var(--fs-tag)] text-[var(--g-error)] hover:bg-[var(--g-error)]/10 transition-colors duration-100"
+            >
+              <Trash2 size={13} strokeWidth={1.8} />
+              <span>삭제하기</span>
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

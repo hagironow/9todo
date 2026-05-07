@@ -57,7 +57,7 @@ export default function SlotPickerModal({
                 disabled={occupied}
                 onClick={() => { onSelect({ period, priority }); onClose(); }}
                 className={[
-                  'h-14 rounded-[var(--radius)] border-2 transition-all duration-150',
+                  'h-14 rounded-[var(--radius)] border transition-all duration-150',
                   'text-[var(--fs-tag)] font-medium',
                   occupied
                     ? 'border-[var(--border)] bg-[var(--muted)] text-[var(--muted-foreground)] cursor-not-allowed opacity-50'

@@ -50,7 +50,7 @@ const CHIP_BASE = [
 
 const CHIP_DEFAULT = [
   CHIP_BASE,
-  'bg-[var(--surface-raised)] border-transparent text-[var(--foreground)]',
+  'bg-[var(--surface-btn)] border-transparent text-[var(--foreground)]',
   'hover:bg-[var(--background)] hover:border-[var(--accent)] hover:shadow-md',
 ].join(' ');
 
@@ -61,7 +61,7 @@ const CHIP_ACTIVE = [
 
 const INPUT_CLASS = [
   'w-full px-4 py-3 rounded-[var(--radius)]',
-  'bg-[var(--surface-raised)] border border-transparent',
+  'bg-[var(--surface-btn)] border border-transparent',
   'text-[var(--foreground)] text-[var(--fs-item)]',
   'focus:outline-none focus:bg-[var(--background)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]',
   'transition-all',
