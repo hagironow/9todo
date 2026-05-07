@@ -530,8 +530,8 @@ export default function Home() {
   );
 
   const handleProjectCreateAndSelect = useCallback(
-    (name: string, color: string) => {
-      const project = addProject(name, color);
+    (name: string, colorIndex: number) => {
+      const project = addProject(name, colorIndex);
       handleProjectSelectDone(project.id);
     },
     [addProject, handleProjectSelectDone]
@@ -864,7 +864,9 @@ export default function Home() {
       <ProjectCreateModal
         open={projectModalOpen}
         onClose={() => setProjectModalOpen(false)}
-        onSave={({ name, color }) => addProject(name, color)}
+        onSave={({ name, colorIndex }: { name: string; colorIndex: number }) => addProject(name, colorIndex)}
+        colorTheme={state.colorTheme ?? 'vivid'}
+        onThemeChange={() => {}}
       />
 
       <ProjectSelectModal
@@ -874,6 +876,7 @@ export default function Home() {
         onSelect={handleProjectSelectDone}
         onCreateAndSelect={handleProjectCreateAndSelect}
         onSkip={() => { setProjectSelectOpen(false); setProjectSelectTargetId(null); }}
+        colorTheme={state.colorTheme ?? 'vivid'}
       />
 
       {renamingProject && (

@@ -11,7 +11,8 @@ export type RecurrenceType = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 export interface Project {
   id: string;
   name: string;
-  color: string;
+  colorIndex: number;  // 0~7, 테마별 색상 인덱스
+  color: string;       // resolved hex (런타임 전용, 저장 시 제외 가능)
   createdAt: string;
   archived?: boolean;
 }
@@ -37,6 +38,7 @@ export interface Task extends ItemBase {
 export interface Routine extends ItemBase {
   type: 'routine';
   recurrence: RecurrenceType;
+  daysOfWeek?: number[]; // 0=일 1=월 2=화 3=수 4=목 5=금 6=토 (JS Date.getDay())
   defaultSlot: SlotCoord;
   startDate: string;
   isActive: boolean;
@@ -50,6 +52,13 @@ export interface RoutineInstance {
   slot: SlotCoord | null; // null = 백로그
   deferCount: number;
   completedAt: string | null;
+}
+
+export interface Note {
+  id: string;
+  projectId: string;
+  content: string;
+  createdAt: string;
 }
 
 export interface GoalCompass {
@@ -70,10 +79,12 @@ export interface AppState {
   tasks: Task[];
   routines: Routine[];
   routineInstances: RoutineInstance[];
+  notes: Note[];
   goalCompass: GoalCompass;
   lastUsedProjectId: string | null;
   activeProjectFilter: string | null;
   projectFirstMode: boolean;
+  colorTheme: string; // 'vivid' | 'pastel' | ...
 }
 
 // 화면에서 사용하는 통합 타입

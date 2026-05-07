@@ -101,7 +101,7 @@ function PriorityRow({
         className={`w-5 h-5 flex items-center justify-center rounded-full border-2 flex-shrink-0 transition-colors ${
           isCompleted
             ? 'bg-green-500 border-green-500 text-white'
-            : 'border-[var(--border)] hover:border-[var(--accent)] text-transparent hover:text-[var(--accent)]'
+            : 'border-[var(--border)] hover:border-[var(--foreground)] text-transparent hover:text-[var(--foreground)]'
         } disabled:cursor-not-allowed`}
       >
         <Check size={11} strokeWidth={3} />

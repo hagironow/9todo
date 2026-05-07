@@ -1,6 +1,7 @@
 'use client';
 
-import { Square, Play } from 'lucide-react';
+import { Square } from 'lucide-react';
+import RepeatCountIcon from './RepeatCountIcon';
 
 interface BadgeProps {
   count: number;
@@ -18,7 +19,7 @@ export default function Badge({ count, continueCount = 0, variant = 'default', o
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      {/* 미룬 횟수: 빨간색 + 네모(정지) 아이콘 */}
+      {/* 미룬 횟수: 네모(정지) 아이콘 */}
       {showDefer && (
         <span
           className="inline-flex items-center gap-0.5 h-[18px] px-1.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
@@ -29,14 +30,13 @@ export default function Badge({ count, continueCount = 0, variant = 'default', o
         </span>
       )}
 
-      {/* 진행중 횟수: 파란색 + 진행 아이콘 */}
+      {/* 또하기 횟수: 통일 아이콘 */}
       {showContinue && (
         <span
-          className="inline-flex items-center gap-0.5 h-[18px] px-1.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-          title={`${continueCount}번 진행`}
+          className="inline-flex items-center h-[18px] px-1 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+          title={`${continueCount}번 또하기`}
         >
-          <Play size={9} fill="currentColor" />
-          {continueCount > 0 && <span>{continueCount > 99 ? '99+' : continueCount}</span>}
+          <RepeatCountIcon count={Math.min(continueCount, 9)} size={14} />
         </span>
       )}
     </div>

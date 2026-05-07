@@ -1,32 +1,19 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Check, SkipForward, Repeat, Plus, Undo2 } from 'lucide-react';
-import { ScheduledItem, SlotCoord, Routine, RecurrenceType, TimePeriod } from '@/lib/types';
+import { Check, Plus, Pencil, Trash2 } from 'lucide-react';
+import { ScheduledItem, SlotCoord, Routine } from '@/lib/types';
 
 interface RoutineSlotCellProps {
   coord: SlotCoord;
   item: ScheduledItem | null;
   onComplete: (item: ScheduledItem) => void;
-  onDefer: (item: ScheduledItem) => void;
+  onDelete?: (item: ScheduledItem) => void;
   onUncomplete?: (item: ScheduledItem) => void;
   onCreateRoutine?: (title: string, coord: SlotCoord) => void;
   onEditRoutine?: (item: ScheduledItem) => void;
   isReadOnly?: boolean;
 }
-
-const RECURRENCE_LABELS: Record<RecurrenceType, string> = {
-  daily: '매일',
-  weekly: '매주',
-  biweekly: '격주',
-  monthly: '매월',
-};
-
-const PERIOD_LABELS: Record<TimePeriod, string> = {
-  morning: '오전',
-  afternoon: '오후',
-  evening: '저녁',
-};
 
 function getTitleForItem(item: ScheduledItem): string {
   if ('title' in item) return item.title;
@@ -41,23 +28,11 @@ function formatTime(time: string): string {
   return `${ampm} ${h12}:${String(m).padStart(2, '0')}`;
 }
 
-function getRecurrenceLabel(item: ScheduledItem): string | null {
-  const routine: Routine | undefined =
-    'routineDetails' in item ? (item.routineDetails as Routine | undefined) : undefined;
-  if (!routine) return null;
-  const recLabel = RECURRENCE_LABELS[routine.recurrence] ?? '';
-  if (routine.scheduledTime) {
-    return `${recLabel} ${formatTime(routine.scheduledTime)}`;
-  }
-  const periodLabel = PERIOD_LABELS[routine.defaultSlot.period] ?? '';
-  return `${recLabel} · ${periodLabel}`;
-}
-
 export default function RoutineSlotCell({
   coord,
   item,
   onComplete,
-  onDefer,
+  onDelete,
   onUncomplete,
   onCreateRoutine,
   onEditRoutine,
@@ -107,13 +82,12 @@ export default function RoutineSlotCell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputting, inputValue]);
 
-  // 빈 슬롯 — 입력 모드 또는 + 버튼
+  // 빈 슬롯
   if (!item) {
     return (
       <div ref={containerRef} className="min-h-[40px] rounded-lg" style={{ border: '1px dashed var(--border-subtle)' }}>
         {inputting ? (
           <div className="flex items-center gap-1.5 px-2 min-h-[40px]">
-            <Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)] flex-shrink-0" />
             <input
               ref={inputRef}
               value={inputValue}
@@ -143,72 +117,91 @@ export default function RoutineSlotCell({
 
   const title = getTitleForItem(item);
   const isCompleted = item.completedAt !== null;
-  const recurrenceLabel = getRecurrenceLabel(item);
   const routine: Routine | undefined =
     'routineDetails' in item ? (item.routineDetails as Routine | undefined) : undefined;
 
-  const handleCellClick = () => {
-    if (onEditRoutine && !isReadOnly) {
-      onEditRoutine(item);
-    }
-  };
-
   return (
     <div
-      onClick={handleCellClick}
       className={[
         'group relative flex items-center gap-1.5 px-2 min-h-[40px]',
         'rounded-lg bg-[var(--surface-inset)]',
         'transition-colors duration-100',
         isCompleted ? 'opacity-50' : '',
-        onEditRoutine && !isReadOnly ? 'cursor-pointer hover:bg-[var(--muted)]' : '',
       ].join(' ')}
       style={{ border: '1px dashed var(--border-subtle)' }}
     >
-      <Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)] flex-shrink-0 select-none" />
-
-      <div className="flex-1 min-w-0 flex flex-col gap-0.5 py-1">
+      {/* 콘텐츠 */}
+      <div className="flex-1 min-w-0 flex items-center gap-2 py-1">
         <span
           className={[
-            'text-[var(--fs-item)] text-[var(--foreground)] truncate leading-tight',
+            'flex-1 text-[var(--fs-item)] text-[var(--foreground)] truncate leading-tight',
             isCompleted ? 'line-through text-[var(--muted-foreground)]' : '',
           ].join(' ')}
         >
           {title}
         </span>
-        {recurrenceLabel && (
-          <span className="text-[10px] text-[var(--muted-foreground)] leading-tight truncate">
-            {recurrenceLabel}
+        {routine?.scheduledTime && (
+          <span className="text-[10px] text-[var(--muted-foreground)] leading-tight flex-shrink-0">
+            {formatTime(routine.scheduledTime)}
           </span>
         )}
       </div>
 
-      {isCompleted ? (
-        onUncomplete && !isReadOnly && (
+      {/* 완료 상태: 호버 시 완료 취소 */}
+      {!isReadOnly && isCompleted && onUncomplete && (
+        <div
+          className={[
+            'absolute inset-0 rounded-lg',
+            'flex items-center justify-center',
+            'bg-[var(--surface-inset)]/80 backdrop-blur-sm',
+            'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
+          ].join(' ')}
+        >
           <button
             onClick={(e) => { e.stopPropagation(); onUncomplete(item); }}
-            className="w-5 h-5 flex items-center justify-center rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-            title="완료 취소"
+            className="text-[11px] font-medium text-[var(--muted-foreground)] pointer-events-auto cursor-pointer"
           >
-            <Undo2 size={10} />
+            완료 취소
           </button>
-        )
-      ) : (
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        </div>
+      )}
+
+      {/* 미완료: 호버 시 수정/완료/삭제 오버레이 */}
+      {!isReadOnly && !isCompleted && (
+        <div
+          className={[
+            'absolute inset-0 rounded-lg',
+            'flex items-center justify-center gap-1.5',
+            'bg-[var(--surface-inset)]/95 backdrop-blur-sm',
+            'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
+            'pointer-events-none',
+          ].join(' ')}
+        >
+          {onEditRoutine && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEditRoutine(item); }}
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
+              title="수정"
+            >
+              <Pencil size={11} />
+            </button>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onComplete(item); }}
-            className="w-5 h-5 flex items-center justify-center rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity pointer-events-auto"
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity pointer-events-auto"
             title="완료"
           >
-            <Check size={10} strokeWidth={3} />
+            <Check size={12} strokeWidth={2.5} />
           </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDefer(item); }}
-            className="w-5 h-5 flex items-center justify-center rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
-            title="미루기"
-          >
-            <SkipForward size={10} />
-          </button>
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(item); }}
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-red-100 hover:text-red-500 transition-colors pointer-events-auto"
+              title="삭제"
+            >
+              <Trash2 size={11} />
+            </button>
+          )}
         </div>
       )}
     </div>

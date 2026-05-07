@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, SkipForward, Repeat, Trash2, Clock } from 'lucide-react';
+import { Check, SkipForward, Repeat, RefreshCw, Trash2, Clock, Pencil, GripVertical } from 'lucide-react';
 import { ScheduledItem, Project } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import Badge from '@/components/ui/Badge';
@@ -11,12 +12,14 @@ import Badge from '@/components/ui/Badge';
 interface ItemCardProps {
   item: ScheduledItem;
   project?: Project | null;
+  projects?: Project[];
   projectColor?: string;
   onComplete: (item: ScheduledItem) => void;
   onDefer: (item: ScheduledItem) => void;
   onRepeat: (item: ScheduledItem) => void;
   onDelete?: (item: ScheduledItem) => void;
   onUpdateTitle?: (item: ScheduledItem, title: string) => void;
+  onUpdateProject?: (item: ScheduledItem, projectId: string | null) => void;
   onUncomplete?: (item: ScheduledItem) => void;
   isReadOnly?: boolean;
   onItemSelect?: (item: ScheduledItem) => void;
@@ -29,19 +32,20 @@ function getXpForPriority(priority: number): number {
 export default function ItemCard({
   item,
   project,
+  projects,
   projectColor,
   onComplete,
   onDefer,
   onRepeat,
   onDelete,
   onUpdateTitle,
+  onUpdateProject,
   onUncomplete,
   isReadOnly,
   onItemSelect,
 }: ItemCardProps) {
   const isRoutineInstance = 'routineDetails' in item && item.routineDetails !== undefined;
   const isCompleted = !!item.completedAt;
-  const resolvedColor = project?.color ?? projectColor;
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
@@ -63,13 +67,20 @@ export default function ItemCard({
   const continueCount = 'continueCount' in item ? (item as { continueCount?: number }).continueCount ?? 0 : 0;
   const timerSeconds = 'timerSeconds' in item ? (item as { timerSeconds?: number }).timerSeconds : undefined;
 
-  // Inline title edit
+  const activeProjects = (projects ?? []).filter((p) => !p.archived);
+
+  // 편집 모드 (제목 + 프로젝트)
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // 프로젝트 드롭다운
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const tagRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const startEdit = () => {
-    if (!onUpdateTitle) return;
     setEditValue(title);
     setEditing(true);
     setTimeout(() => inputRef.current?.focus(), 0);
@@ -77,6 +88,7 @@ export default function ItemCard({
 
   const commitEdit = () => {
     setEditing(false);
+    setProjectDropdownOpen(false);
     const trimmed = editValue.trim();
     if (trimmed && trimmed !== title && onUpdateTitle) {
       onUpdateTitle(item, trimmed);
@@ -86,7 +98,36 @@ export default function ItemCard({
   const cancelEdit = () => {
     setEditing(false);
     setEditValue(title);
+    setProjectDropdownOpen(false);
   };
+
+  const openProjectDropdown = useCallback(() => {
+    if (!tagRef.current) return;
+    const rect = tagRef.current.getBoundingClientRect();
+    setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    setProjectDropdownOpen(true);
+  }, []);
+
+  const selectProject = (projectId: string | null) => {
+    if (onUpdateProject) {
+      onUpdateProject(item, projectId);
+    }
+    setProjectDropdownOpen(false);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  // 드롭다운 외부 클릭 닫기
+  useEffect(() => {
+    if (!projectDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+          tagRef.current && !tagRef.current.contains(e.target as Node)) {
+        setProjectDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [projectDropdownOpen]);
 
   return (
     <div
@@ -97,20 +138,28 @@ export default function ItemCard({
         isCompleted ? 'bg-[var(--surface-inset)]/60' : 'bg-[var(--surface-inset)]',
       ].join(' ')}
     >
-      {/* Drag handle */}
-      {!editing && !isCompleted && (
-        <div
-          {...listeners}
-          {...attributes}
-          className="absolute inset-0 rounded-lg cursor-grab active:cursor-grabbing"
-        />
-      )}
 
       {/* Content */}
       <div className="relative flex flex-col gap-1.5">
-        {/* 상단: 프로젝트 태그 (항상 표시 — 미분류 포함) */}
-        <div className="flex items-center gap-1.5 pointer-events-none">
-          {project ? (
+        {/* 상단: 프로젝트 태그 */}
+        <div className="flex items-center gap-1.5" style={{ pointerEvents: editing ? 'auto' : 'none' }}>
+          {editing ? (
+            /* 편집 모드 — 프로젝트 변경 가능 */
+            <button
+              ref={tagRef}
+              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onClick={(e) => { e.stopPropagation(); projectDropdownOpen ? setProjectDropdownOpen(false) : openProjectDropdown(); }}
+              className={[
+                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium',
+                'border border-[var(--border)] hover:border-[var(--accent)] cursor-pointer transition-colors',
+                project ? 'text-[var(--foreground)]' : 'text-[var(--muted-foreground)]',
+              ].join(' ')}
+              style={project ? { backgroundColor: `${project.color}18`, color: project.color } : { backgroundColor: 'var(--muted)' }}
+            >
+              <ColorDot color={project?.color ?? '#8A8A8A'} size="sm" />
+              <span className="truncate max-w-[60px]">{project?.name ?? '미분류'}</span>
+            </button>
+          ) : project ? (
             <span
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium"
               style={{
@@ -130,22 +179,78 @@ export default function ItemCard({
               <span>미분류</span>
             </span>
           )}
+
+          {/* 프로젝트 드롭다운 — Portal */}
+          {editing && projectDropdownOpen && dropdownPos && createPortal(
+            <div
+              ref={dropdownRef}
+              className={[
+                'fixed z-[9999]',
+                'w-44 rounded-[calc(var(--radius)*1.4)] border border-[var(--border)]',
+                'bg-[var(--popover)] shadow-xl overflow-hidden',
+                'animate-[status-appear_0.12s_ease_forwards]',
+              ].join(' ')}
+              style={{ top: dropdownPos.top, left: dropdownPos.left }}
+              role="listbox"
+              aria-label="프로젝트 변경"
+            >
+              {activeProjects.map((p) => (
+                <button
+                  key={p.id}
+                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onClick={(e) => { e.stopPropagation(); selectProject(p.id); }}
+                  className={[
+                    'w-full flex items-center gap-2 px-3 py-1.5',
+                    'text-[var(--fs-tag)] text-left transition-colors duration-100',
+                    project?.id === p.id
+                      ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-semibold'
+                      : 'text-[var(--foreground)] hover:bg-[var(--muted)]',
+                  ].join(' ')}
+                  role="option"
+                  aria-selected={project?.id === p.id}
+                >
+                  <ColorDot color={p.color} size="sm" />
+                  <span className="truncate">{p.name}</span>
+                </button>
+              ))}
+              {activeProjects.length > 0 && (
+                <div className="border-t border-[var(--border)]" />
+              )}
+              <button
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onClick={(e) => { e.stopPropagation(); selectProject(null); }}
+                className={[
+                  'w-full flex items-center gap-2 px-3 py-1.5',
+                  'text-[var(--fs-tag)] text-left transition-colors duration-100',
+                  !project
+                    ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-semibold'
+                    : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)]',
+                ].join(' ')}
+                role="option"
+                aria-selected={!project}
+              >
+                <span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] inline-block" />
+                <span>미분류</span>
+              </button>
+            </div>,
+            document.body,
+          )}
         </div>
 
         {/* 제목 */}
-        <div className="flex items-start gap-2 pointer-events-none">
+        <div className="flex items-start gap-2" style={{ pointerEvents: editing ? 'auto' : 'none' }}>
           <div className="flex-1 min-w-0">
             {editing ? (
               <input
                 ref={inputRef}
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
-                onBlur={commitEdit}
+                onBlur={() => { if (!projectDropdownOpen) commitEdit(); }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit();
                   if (e.key === 'Escape') cancelEdit();
                 }}
-                className="w-full text-[var(--fs-item)] font-medium text-[var(--card-foreground)] leading-snug bg-transparent border-b border-[var(--accent)] outline-none pointer-events-auto"
+                className="w-full text-[var(--fs-item)] font-medium text-[var(--card-foreground)] leading-snug bg-transparent border-b border-[var(--accent)] outline-none"
               />
             ) : (
               <p
@@ -175,7 +280,6 @@ export default function ItemCard({
               <span title="루틴"><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
             )}
           </div>
-          {/* 타이머 기록 + XP 표시 */}
           <div className="flex items-center gap-1.5">
             {isCompleted && timerSeconds && timerSeconds > 0 && (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-[var(--muted-foreground)]">
@@ -184,19 +288,9 @@ export default function ItemCard({
               </span>
             )}
             {isCompleted ? (
-              <span
-                className="text-[11px] font-bold"
-                style={{ color: 'var(--g-success)' }}
-              >
-                +{xp}xp
-              </span>
+              <span className="text-[11px] font-bold" style={{ color: 'var(--g-success)' }}>+{xp}xp</span>
             ) : (
-              <span
-                className="text-[11px] font-medium opacity-50"
-                style={{ color: 'var(--primary)' }}
-              >
-                {xp}xp
-              </span>
+              <span className="text-[11px] font-medium opacity-50" style={{ color: 'var(--primary)' }}>{xp}xp</span>
             )}
           </div>
         </div>
@@ -214,13 +308,11 @@ export default function ItemCard({
           ].join(' ')}
           title="완료 취소"
         >
-          <span className="text-[12px] font-medium text-[var(--muted-foreground)]">
-            완료 취소
-          </span>
+          <span className="text-[12px] font-medium text-[var(--muted-foreground)]">완료 취소</span>
         </button>
       )}
 
-      {/* Hover action overlay — only for non-completed items */}
+      {/* Hover action overlay */}
       {!editing && !isReadOnly && !isCompleted && (
         <div
           className={[
@@ -231,13 +323,15 @@ export default function ItemCard({
             'pointer-events-none',
           ].join(' ')}
         >
-          <button
-            onClick={(e) => { e.stopPropagation(); onComplete(item); }}
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity pointer-events-auto"
-            title="완료"
-          >
-            <Check size={14} strokeWidth={2.5} />
-          </button>
+          {(onUpdateTitle || onUpdateProject) && (
+            <button
+              onClick={(e) => { e.stopPropagation(); startEdit(); }}
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
+              title="수정"
+            >
+              <Pencil size={13} />
+            </button>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onDefer(item); }}
             className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
@@ -246,11 +340,18 @@ export default function ItemCard({
             <SkipForward size={14} />
           </button>
           <button
+            onClick={(e) => { e.stopPropagation(); onComplete(item); }}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity pointer-events-auto"
+            title="완료"
+          >
+            <Check size={14} strokeWidth={2.5} />
+          </button>
+          <button
             onClick={(e) => { e.stopPropagation(); onRepeat(item); }}
             className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
-            title="반복"
+            title="또하기"
           >
-            <Repeat size={14} />
+            <RefreshCw size={13} />
           </button>
           {onDelete && (
             <button
@@ -261,6 +362,14 @@ export default function ItemCard({
               <Trash2 size={13} />
             </button>
           )}
+          <div
+            {...listeners}
+            {...attributes}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)] hover:text-[var(--foreground)] transition-colors pointer-events-auto cursor-grab active:cursor-grabbing"
+            title="드래그하여 이동"
+          >
+            <GripVertical size={14} />
+          </div>
         </div>
       )}
     </div>

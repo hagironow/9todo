@@ -4,37 +4,34 @@ import { useState } from 'react';
 import Dialog from '@/components/ui/Dialog';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { COLOR_THEMES, resolveColor } from '@/lib/colors';
 
 interface ProjectCreateData {
   name: string;
-  color: string;
+  colorIndex: number;
 }
 
 interface ProjectCreateModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (data: ProjectCreateData) => void;
+  colorTheme: string;
+  onThemeChange: (themeId: string) => void;
 }
-
-const COLOR_PRESETS = [
-  '#3B82F6', // Blue
-  '#8B5CF6', // Violet
-  '#10B981', // Emerald
-  '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#EC4899', // Pink
-  '#FF5C65', // Coral
-  '#6B7280', // Gray
-];
 
 export default function ProjectCreateModal({
   open,
   onClose,
   onSave,
+  colorTheme,
+  onThemeChange,
 }: ProjectCreateModalProps) {
   const [name, setName] = useState('');
-  const [color, setColor] = useState(COLOR_PRESETS[0]);
+  const [colorIndex, setColorIndex] = useState(0);
   const [nameError, setNameError] = useState('');
+
+  const theme = COLOR_THEMES.find((t) => t.id === colorTheme) ?? COLOR_THEMES[0];
+  const previewColor = resolveColor(colorIndex, colorTheme);
 
   const handleSave = () => {
     const trimmed = name.trim();
@@ -42,16 +39,16 @@ export default function ProjectCreateModal({
       setNameError('프로젝트 이름을 입력하세요');
       return;
     }
-    onSave({ name: trimmed, color });
+    onSave({ name: trimmed, colorIndex });
     setName('');
-    setColor(COLOR_PRESETS[0]);
+    setColorIndex(0);
     setNameError('');
     onClose();
   };
 
   const handleClose = () => {
     setName('');
-    setColor(COLOR_PRESETS[0]);
+    setColorIndex(0);
     setNameError('');
     onClose();
   };
@@ -72,26 +69,47 @@ export default function ProjectCreateModal({
         autoFocus
       />
 
-      {/* 컬러 팔레트 */}
-      <div className="flex flex-col gap-1.5">
+      {/* 컬러 테마 */}
+      <div className="flex flex-col gap-3">
         <p className="text-[var(--fs-tag)] font-semibold text-[var(--foreground)]">
           컬러
         </p>
-        <div className="flex gap-2 flex-wrap">
-          {COLOR_PRESETS.map((preset) => (
+
+        {/* 테마 탭 */}
+        <div className="flex gap-1.5">
+          {COLOR_THEMES.map((t) => (
             <button
-              key={preset}
-              onClick={() => setColor(preset)}
+              key={t.id}
+              onClick={() => onThemeChange(t.id)}
+              className={[
+                'px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium',
+                'transition-all duration-150 cursor-pointer',
+                colorTheme === t.id
+                  ? 'bg-[var(--foreground)] text-[var(--background)]'
+                  : 'bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]',
+              ].join(' ')}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 팔레트 */}
+        <div className="flex gap-2.5 flex-wrap">
+          {theme.colors.map((hex, idx) => (
+            <button
+              key={idx}
+              onClick={() => setColorIndex(idx)}
               className={[
                 'w-8 h-8 rounded-full transition-all duration-150',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]',
-                color === preset
-                  ? 'ring-2 ring-offset-2 ring-offset-[var(--card)] scale-110'
+                'focus-visible:outline-none',
+                colorIndex === idx
+                  ? 'ring-2 ring-offset-2 ring-offset-[var(--card)] ring-[var(--foreground)] scale-110'
                   : 'hover:scale-105',
               ].join(' ')}
-              style={{ backgroundColor: preset }}
-              aria-label={`컬러 ${preset}`}
-              aria-pressed={color === preset}
+              style={{ backgroundColor: hex }}
+              aria-label={`컬러 ${idx + 1}`}
+              aria-pressed={colorIndex === idx}
             />
           ))}
         </div>
@@ -101,7 +119,7 @@ export default function ProjectCreateModal({
       <div className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius)] bg-[var(--muted)]">
         <span
           className="w-3 h-3 rounded-full flex-shrink-0"
-          style={{ backgroundColor: color }}
+          style={{ backgroundColor: previewColor }}
         />
         <span className="text-[var(--fs-item)] text-[var(--foreground)] truncate">
           {name.trim() || '프로젝트 이름'}

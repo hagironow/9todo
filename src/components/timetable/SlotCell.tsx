@@ -16,6 +16,7 @@ interface SlotCellProps {
   onRepeat: (item: ScheduledItem) => void;
   onDelete?: (item: ScheduledItem) => void;
   onUpdateTitle?: (item: ScheduledItem, title: string) => void;
+  onUpdateProject?: (item: ScheduledItem, projectId: string | null) => void;
   onCreateInSlot?: (title: string, coord: SlotCoord, projectId?: string | null) => void;
   onUncomplete?: (item: ScheduledItem) => void;
   projectFirstMode?: boolean;
@@ -32,6 +33,7 @@ export default function SlotCell({
   onRepeat,
   onDelete,
   onUpdateTitle,
+  onUpdateProject,
   onCreateInSlot,
   onUncomplete,
   projectFirstMode,
@@ -143,29 +145,30 @@ export default function SlotCell({
         (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
       }}
       className={[
-        'relative min-h-[80px] rounded-lg transition-all duration-150',
+        'relative min-h-[64px] rounded-lg transition-all duration-150',
         isOver
-          ? 'ring-2 ring-[var(--accent)] bg-[var(--accent)]/8 scale-[1.02]'
+          ? 'ring-2 ring-[var(--foreground)] bg-[var(--foreground)]/8 scale-[1.02]'
           : 'bg-[var(--surface-inset)]',
       ].join(' ')}
-      style={!isOver && coord.priority === 1 ? { backgroundColor: 'color-mix(in srgb, var(--accent) 6%, var(--surface-inset))' } : undefined}
     >
       {item ? (
         <ItemCard
           item={item}
           project={itemProject}
+          projects={projects}
           onComplete={onComplete}
           onDefer={onDefer}
           onRepeat={onRepeat}
           onDelete={onDelete}
           onUpdateTitle={onUpdateTitle}
+          onUpdateProject={onUpdateProject}
           onUncomplete={onUncomplete}
           isReadOnly={isReadOnly}
           onItemSelect={onItemSelect}
         />
       ) : inputting ? (
         /* 통합 입력 모드: 상단 프로젝트 태그 + 하단 텍스트 입력 */
-        <div className="w-full h-full min-h-[80px] flex flex-col justify-between p-2 gap-1">
+        <div className="w-full h-full min-h-[64px] flex flex-col justify-between p-2 gap-1">
           {/* 상단: 프로젝트 선택 태그 */}
           <div className="relative">
             <button
@@ -175,7 +178,7 @@ export default function SlotCell({
               className={[
                 'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full',
                 'text-[11px] font-medium transition-colors duration-100',
-                'border border-[var(--border)] hover:border-[var(--accent)]',
+                'border border-[var(--border)] hover:border-[var(--foreground)]',
                 'hover:bg-[var(--muted)] cursor-pointer',
                 selectedProject
                   ? 'text-[var(--foreground)]'
@@ -261,12 +264,12 @@ export default function SlotCell({
           />
         </div>
       ) : isReadOnly ? (
-        <div className="w-full h-full min-h-[80px]" />
+        <div className="w-full h-full min-h-[64px]" />
       ) : (
         <button
           onClick={openInput}
           className={[
-            'w-full h-full min-h-[80px] flex items-center justify-center',
+            'w-full h-full min-h-[64px] flex items-center justify-center',
             'rounded-lg',
             'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]',
             'transition-colors duration-150 cursor-pointer',

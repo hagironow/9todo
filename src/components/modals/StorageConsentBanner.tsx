@@ -27,7 +27,8 @@ export default function StorageConsentBanner() {
         </p>
         <button
           onClick={handleAccept}
-          className="flex-shrink-0 px-4 py-1.5 rounded-[var(--radius)] bg-[var(--foreground)] text-[var(--background)] text-[var(--fs-item)] font-semibold hover:opacity-85 transition-opacity"
+          className="flex-shrink-0 px-4 py-1.5 rounded-[var(--radius)] bg-[var(--foreground)] font-semibold hover:opacity-85 transition-opacity"
+          style={{ color: 'var(--background)', fontSize: 'var(--fs-item)' }}
         >
           확인
         </button>

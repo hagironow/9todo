@@ -56,12 +56,13 @@ export default function GoalCompassIdentity({
           onKeyDown={handleKeyDown}
           className={[
             'flex-1 px-2 py-0.5 rounded-[var(--radius)]',
-            'bg-[var(--muted)] text-[var(--foreground)]',
+            'bg-transparent text-[var(--foreground)]',
             'text-[var(--fs-item)] font-semibold',
-            'outline-none focus:ring-2 focus:ring-[var(--ring)]',
-            'border border-[var(--accent)]',
+            'outline-none',
+            'border border-[var(--border)] focus:border-[var(--foreground)]',
           ].join(' ')}
-          placeholder="당신은 누구입니까?"
+          placeholder="어떤 사람이 되고 싶나요?"
+
         />
       ) : (
         <span

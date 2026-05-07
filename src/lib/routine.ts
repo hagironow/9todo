@@ -75,6 +75,12 @@ export function shouldCreateInstance(
   );
   if (alreadyExists) return false;
 
+  // 요일 필터: daysOfWeek가 설정되어 있으면 해당 요일만 허용
+  const hasDaysFilter = routine.daysOfWeek && routine.daysOfWeek.length > 0;
+  if (hasDaysFilter && !routine.daysOfWeek!.includes(target.getUTCDay())) {
+    return false;
+  }
+
   // 발생 주기 확인: startDate부터 date까지 간격이 recurrence 배수인지 확인
   const startMs = start.getTime();
   const targetMs = target.getTime();
@@ -82,11 +88,22 @@ export function shouldCreateInstance(
 
   switch (routine.recurrence) {
     case 'daily':
-      return diffDays % 1 === 0;
-    case 'weekly':
+      return true;
+    case 'weekly': {
+      if (hasDaysFilter) {
+        // 요일 필터가 있으면 매주 해당 요일에 발생
+        return true;
+      }
       return diffDays % 7 === 0;
-    case 'biweekly':
+    }
+    case 'biweekly': {
+      if (hasDaysFilter) {
+        // 2주 간격: startDate 기준 짝수 주에만 발생
+        const weekNum = Math.floor(diffDays / 7);
+        return weekNum % 2 === 0;
+      }
       return diffDays % 14 === 0;
+    }
     case 'monthly': {
       // 같은 날짜(일) 이면서 월이 startDate 기준 정수 배수
       const startDay = start.getUTCDate();

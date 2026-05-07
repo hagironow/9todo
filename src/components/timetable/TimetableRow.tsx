@@ -19,6 +19,7 @@ interface TimetableRowProps {
   onSlotClick: (period: TimePeriod, priority: Priority) => void;
   onDelete?: (item: ScheduledItem) => void;
   onUpdateTitle?: (item: ScheduledItem, title: string) => void;
+  onUpdateProject?: (item: ScheduledItem, projectId: string | null) => void;
   onCreateInSlot?: (title: string, coord: SlotCoord, projectId?: string | null) => void;
   onUncomplete?: (item: ScheduledItem) => void;
   onCreateRoutine?: (title: string, coord: SlotCoord) => void;
@@ -51,6 +52,7 @@ export default function TimetableRow({
   onRepeat,
   onDelete,
   onUpdateTitle,
+  onUpdateProject,
   onCreateInSlot,
   onUncomplete,
   onCreateRoutine,
@@ -66,10 +68,7 @@ export default function TimetableRow({
 
   return (
     <div
-      className={[
-        'relative rounded-[var(--radius)]',
-        'bg-[var(--card)]',
-      ].join(' ')}
+      className="relative rounded-[var(--radius)] bg-[var(--card)]"
     >
       {/* Header — no border-b stroke, just label */}
       <div className="flex items-center">
@@ -115,6 +114,7 @@ export default function TimetableRow({
                 onRepeat={onRepeat}
                 onDelete={onDelete}
                 onUpdateTitle={onUpdateTitle}
+                onUpdateProject={onUpdateProject}
                 onCreateInSlot={onCreateInSlot}
                 onUncomplete={onUncomplete}
                 projectFirstMode={projectFirstMode}
@@ -134,7 +134,7 @@ export default function TimetableRow({
                   coord={{ period, priority }}
                   item={routineSlots?.[priority] ?? null}
                   onComplete={onComplete}
-                  onDefer={onDefer}
+                  onDelete={onDelete}
                   onUncomplete={onUncomplete}
                   onCreateRoutine={onCreateRoutine}
                   onEditRoutine={onEditRoutine}

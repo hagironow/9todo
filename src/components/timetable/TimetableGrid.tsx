@@ -15,6 +15,7 @@ interface TimetableGridProps {
   onSlotClick: (period: TimePeriod, priority: Priority) => void;
   onDelete?: (item: ScheduledItem) => void;
   onUpdateTitle?: (item: ScheduledItem, title: string) => void;
+  onUpdateProject?: (item: ScheduledItem, projectId: string | null) => void;
   onCreateInSlot?: (title: string, coord: SlotCoord, projectId?: string | null) => void;
   onUncomplete?: (item: ScheduledItem) => void;
   onCreateRoutine?: (title: string, coord: SlotCoord) => void;
@@ -51,6 +52,7 @@ export default function TimetableGrid({
   onSlotClick,
   onDelete,
   onUpdateTitle,
+  onUpdateProject,
   onCreateInSlot,
   onUncomplete,
   onCreateRoutine,
@@ -99,6 +101,7 @@ export default function TimetableGrid({
             onSlotClick={onSlotClick}
             onDelete={onDelete}
             onUpdateTitle={onUpdateTitle}
+            onUpdateProject={onUpdateProject}
             onCreateInSlot={onCreateInSlot}
             onUncomplete={onUncomplete}
             onCreateRoutine={onCreateRoutine}

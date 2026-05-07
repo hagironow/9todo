@@ -21,6 +21,7 @@ interface AppShellProps {
   onResetData?: () => void;
   projectFirstMode: boolean;
   onProjectFirstModeChange: (enabled: boolean) => void;
+  rightPanel?: ReactNode;
   children: ReactNode;
 }
 
@@ -40,6 +41,7 @@ export default function AppShell({
   onResetData,
   projectFirstMode,
   onProjectFirstModeChange,
+  rightPanel,
   children,
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -125,6 +127,13 @@ export default function AppShell({
           {children}
         </main>
       </div>
+
+      {/* 플로팅 타이머 */}
+      {rightPanel && (
+        <div className="hidden lg:block fixed bottom-5 right-5 z-50 w-[360px] max-h-[calc(100vh-40px)] rounded-[40px] shadow-2xl overflow-hidden">
+          {rightPanel}
+        </div>
+      )}
     </div>
   );
 }

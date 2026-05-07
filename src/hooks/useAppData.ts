@@ -8,8 +8,10 @@ import type {
   Routine,
   RoutineInstance,
   Project,
+  Note,
   SlotCoord,
 } from '@/lib/types';
+import { resolveColor, hexToColorIndex, DEFAULT_THEME } from '@/lib/colors';
 
 const STORAGE_KEY = '9block_state';
 const CONSENT_KEY = '9block_storage_consent';
@@ -19,6 +21,7 @@ export const EMPTY_STATE: AppState = {
   tasks: [],
   routines: [],
   routineInstances: [],
+  notes: [],
   goalCompass: {
     identity: '',
     goals: {
@@ -34,6 +37,7 @@ export const EMPTY_STATE: AppState = {
   lastUsedProjectId: null,
   activeProjectFilter: null,
   projectFirstMode: true,
+  colorTheme: DEFAULT_THEME,
 };
 
 export function hasStorageConsent(): boolean {
@@ -45,8 +49,22 @@ export function grantStorageConsent(): void {
   localStorage.setItem(CONSENT_KEY, 'true');
 }
 
+/** 프로젝트 색상을 현재 테마 기반으로 resolve */
+function resolveProjectColors(state: AppState): AppState {
+  const themeId = state.colorTheme ?? DEFAULT_THEME;
+  return {
+    ...state,
+    colorTheme: themeId,
+    projects: state.projects.map((p) => {
+      // 마이그레이션: colorIndex가 없으면 기존 hex에서 추론
+      const colorIndex = p.colorIndex ?? hexToColorIndex(p.color ?? '#6B7280', themeId);
+      return { ...p, colorIndex, color: resolveColor(colorIndex, themeId) };
+    }),
+  };
+}
+
 export function importStateFromJSON(json: string): AppState {
-  return JSON.parse(json) as AppState;
+  return resolveProjectColors(JSON.parse(json) as AppState);
 }
 
 export function useAppData() {
@@ -60,7 +78,7 @@ export function useAppData() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        setState(JSON.parse(raw) as AppState);
+        setState(resolveProjectColors(JSON.parse(raw) as AppState));
       }
     } catch (err) {
       console.error('[useAppData] localStorage read error', err);
@@ -96,19 +114,25 @@ export function useAppData() {
 
   // ── Project CRUD ──────────────────────────────────────────────
   const addProject = useCallback(
-    (name: string, color: string) => {
+    (name: string, colorIndex: number) => {
       const project: Project = {
         id: `proj_${nanoid()}`,
         name,
-        color,
+        colorIndex,
+        color: '', // resolve below
         createdAt: new Date().toISOString(),
       };
-      update((prev) => ({
-        ...prev,
-        projects: [...prev.projects, project],
-        lastUsedProjectId: project.id,
-      }));
-      return project;
+      let resolved = project;
+      update((prev) => {
+        const themeId = prev.colorTheme ?? DEFAULT_THEME;
+        resolved = { ...project, color: resolveColor(colorIndex, themeId) };
+        return {
+          ...prev,
+          projects: [...prev.projects, resolved],
+          lastUsedProjectId: project.id,
+        };
+      });
+      return resolved;
     },
     [update],
   );
@@ -135,13 +159,21 @@ export function useAppData() {
   );
 
   const updateProject = useCallback(
-    (projectId: string, updates: Partial<Pick<Project, 'name' | 'color' | 'archived'>>) => {
-      update((prev) => ({
-        ...prev,
-        projects: prev.projects.map((p) =>
-          p.id === projectId ? { ...p, ...updates } : p,
-        ),
-      }));
+    (projectId: string, updates: Partial<Pick<Project, 'name' | 'colorIndex' | 'archived'>>) => {
+      update((prev) => {
+        const themeId = prev.colorTheme ?? DEFAULT_THEME;
+        return {
+          ...prev,
+          projects: prev.projects.map((p) => {
+            if (p.id !== projectId) return p;
+            const merged = { ...p, ...updates };
+            if (updates.colorIndex !== undefined) {
+              merged.color = resolveColor(updates.colorIndex, themeId);
+            }
+            return merged;
+          }),
+        };
+      });
     },
     [update],
   );
@@ -251,7 +283,7 @@ export function useAppData() {
                 ...t,
                 slot: null,
                 completedAt: null,
-                continueCount: (t.continueCount ?? 0) + 1,
+                continueCount: Math.min((t.continueCount ?? 0) + 1, 9),
                 origin: 'repeated' as const,
               }
             : t,
@@ -442,10 +474,61 @@ export function useAppData() {
     [update],
   );
 
+  // ── Note CRUD ─────────────────────────────────────────────────
+  const addNote = useCallback(
+    (projectId: string, content: string) => {
+      const note: Note = {
+        id: `note_${nanoid()}`,
+        projectId,
+        content,
+        createdAt: new Date().toISOString(),
+      };
+      update((prev) => ({
+        ...prev,
+        notes: [...(prev.notes ?? []), note],
+      }));
+      return note;
+    },
+    [update],
+  );
+
+  const removeNote = useCallback(
+    (noteId: string) => {
+      update((prev) => ({
+        ...prev,
+        notes: (prev.notes ?? []).filter((n) => n.id !== noteId),
+      }));
+    },
+    [update],
+  );
+
+  const updateNoteContent = useCallback(
+    (noteId: string, content: string) => {
+      update((prev) => ({
+        ...prev,
+        notes: (prev.notes ?? []).map((n) =>
+          n.id === noteId ? { ...n, content } : n,
+        ),
+      }));
+    },
+    [update],
+  );
+
   // ── Batch update (rollover 등) ──────────────────────────────
   const batchUpdate = useCallback(
     (updater: (prev: AppState) => AppState) => {
       update(updater);
+    },
+    [update],
+  );
+
+  // ── Color Theme ───────────────────────────────────────────────
+  const setColorTheme = useCallback(
+    (themeId: string) => {
+      update((prev) => {
+        const next = { ...prev, colorTheme: themeId };
+        return resolveProjectColors(next);
+      });
     },
     [update],
   );
@@ -489,8 +572,13 @@ export function useAppData() {
     continueRoutineInstance,
     assignRoutineInstanceSlot,
     removeRoutineInstance,
+    // note
+    addNote,
+    removeNote,
+    updateNoteContent,
     // misc
     batchUpdate,
     setActiveProjectFilter,
+    setColorTheme,
   };
 }

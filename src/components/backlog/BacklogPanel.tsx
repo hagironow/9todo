@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, KeyboardEvent } from 'react';
-import { ChevronDown, Clock, Repeat, Inbox, Plus } from 'lucide-react';
+import { ChevronDown, Clock, Inbox, Plus } from 'lucide-react';
+import RepeatCountIcon from '@/components/ui/RepeatCountIcon';
 import { Task, RoutineInstance, Project } from '@/lib/types';
 import BacklogItem from './BacklogItem';
 import ColorDot from '@/components/ui/ColorDot';
@@ -34,7 +35,7 @@ function getOriginGroup(item: BacklogEntry): 'deferred' | 'repeated' | 'normal' 
 
 const GROUP_CONFIG = {
   deferred: { label: '미룬 일', icon: Clock, order: 0 },
-  repeated: { label: '진행할 일', icon: Repeat, order: 1 },
+  repeated: { label: '또하기', icon: null, order: 1 },
   normal:   { label: '할 일', icon: Inbox, order: 2 },
 } as const;
 
@@ -84,7 +85,7 @@ export default function BacklogPanel({
   );
 
   return (
-    <section className="border border-[var(--border)] rounded-[calc(var(--radius)*1.4)] overflow-hidden bg-[var(--card)]">
+    <section className="rounded-[calc(var(--radius)*1.4)] overflow-hidden bg-[var(--card)]">
       {/* Header */}
       <button
         onClick={() => setExpanded((v) => !v)}
@@ -124,14 +125,17 @@ export default function BacklogPanel({
             <div className="flex flex-col">
               {orderedGroups.map((key) => {
                 const config = GROUP_CONFIG[key];
-                const Icon = config.icon;
+                const Icon = config.icon as React.ComponentType<{ size: number; className: string }> | null;
                 const groupItems = grouped[key];
 
                 return (
                   <div key={key}>
                     {/* Group label */}
                     <div className="flex items-center gap-2 px-4 py-2 bg-[var(--muted)] border-b border-[var(--border)]">
-                      <Icon size={12} className="text-[var(--muted-foreground)]" />
+                      {key === 'repeated'
+                        ? <RepeatCountIcon count={0} size={12} className="text-[var(--muted-foreground)]" />
+                        : Icon ? <Icon size={12} className="text-[var(--muted-foreground)]" /> : null
+                      }
                       <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                         {config.label}
                       </span>

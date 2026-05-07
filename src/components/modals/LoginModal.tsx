@@ -108,7 +108,7 @@ const LIST_BTN = [
   'w-full flex items-center justify-center h-12 px-5 text-center',
   'rounded-[var(--radius)]',
   'bg-[var(--surface-btn)] border border-transparent',
-  'hover:bg-[var(--background)] hover:border-[var(--accent)] hover:shadow-md',
+  'hover:border-[var(--foreground)]',
   'transition-all duration-150 cursor-pointer',
 ].join(' ');
 
@@ -117,31 +117,32 @@ const LIST_BTN_MULTI = [
   'w-full flex flex-col items-center justify-center gap-1 px-5 py-3.5 text-center',
   'rounded-[var(--radius)]',
   'bg-[var(--surface-btn)] border border-transparent',
-  'hover:bg-[var(--background)] hover:border-[var(--accent)] hover:shadow-md',
+  'hover:border-[var(--foreground)]',
   'transition-all duration-150 cursor-pointer',
 ].join(' ');
 
 const CHIP_BASE = [
   'px-4 py-2.5 rounded-[var(--radius)] text-[var(--fs-item)] font-medium',
-  'border transition-all duration-150 cursor-pointer',
+  'transition-all duration-150 cursor-pointer',
 ].join(' ');
 
 const CHIP_DEFAULT = [
   CHIP_BASE,
-  'bg-[var(--surface-raised)] border-transparent text-[var(--foreground)]',
-  'hover:bg-[var(--background)] hover:border-[var(--accent)] hover:shadow-md',
+  'bg-[var(--surface-raised)] text-[var(--foreground)]',
+  'hover:shadow-[inset_0_0_0_1.5px_var(--foreground)]',
 ].join(' ');
 
 const CHIP_ACTIVE = [
   CHIP_BASE,
-  'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]',
+  'bg-[var(--surface-raised)] text-[var(--foreground)]',
+  'shadow-[inset_0_0_0_1.5px_var(--foreground)]',
 ].join(' ');
 
 const INPUT_CLASS = [
   'w-full px-4 py-3 rounded-[var(--radius)]',
-  'bg-[var(--surface-btn)] border border-transparent',
+  'bg-[var(--surface-btn)] border-none',
   'text-[var(--foreground)] text-[var(--fs-item)]',
-  'focus:outline-none focus:bg-[var(--background)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]',
+  'focus:outline-none focus:shadow-[inset_0_0_0_1.5px_var(--foreground)]',
   'transition-all',
 ].join(' ');
 
@@ -459,8 +460,8 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
                 'w-full flex items-start gap-3 p-4 rounded-[var(--radius)] text-left',
                 'border transition-all duration-150 cursor-pointer',
                 survey.interview
-                  ? 'bg-[var(--accent)]/10 border-[var(--accent)]'
-                  : 'bg-[var(--surface-raised)] border-transparent hover:bg-[var(--background)] hover:border-[var(--accent)] hover:shadow-md',
+                  ? 'bg-[var(--surface-raised)] border-[var(--foreground)]'
+                  : 'bg-[var(--surface-raised)] border-transparent hover:border-[var(--foreground)]',
               ].join(' ')}
             >
               <div className={[

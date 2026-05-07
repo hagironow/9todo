@@ -237,7 +237,7 @@ export default function CalendarView({
 
         {/* 구분선 — 투두와 루틴 모두 있을 때만 */}
         {visibleTodos.length > 0 && visibleRoutines.length > 0 && (
-          <div className="my-1 border-t border-[var(--border)]" />
+          <div className="my-1 border-t border-[var(--muted-foreground)]/25" />
         )}
 
         {/* 루틴 섹션 */}

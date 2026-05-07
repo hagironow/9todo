@@ -121,7 +121,7 @@ export default function Sidebar({
     >
       {/* 로고 */}
       <div className="h-14 flex items-center px-5 border-b border-[var(--border)]">
-        <span className="font-heading font-bold text-lg tracking-tight text-[var(--accent)]">
+        <span className="font-heading font-bold text-lg tracking-tight text-[var(--foreground)]">
           9block
         </span>
       </div>
@@ -155,35 +155,6 @@ export default function Sidebar({
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]" style={{ opacity: 0.5 }}>
             프로젝트
           </p>
-          <button
-            onClick={() => onProjectFirstModeChange(!projectFirstMode)}
-            className="flex-shrink-0"
-            style={{
-              position: 'relative',
-              width: 28,
-              height: 16,
-              borderRadius: 8,
-              backgroundColor: projectFirstMode ? 'var(--accent)' : 'var(--border)',
-              transition: 'background-color 0.2s',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-            aria-label="프로젝트 우선 지정 모드"
-          >
-            <span
-              style={{
-                position: 'absolute',
-                top: 2,
-                left: projectFirstMode ? 14 : 2,
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                backgroundColor: '#fff',
-                transition: 'left 0.2s',
-              }}
-            />
-          </button>
         </div>
         {activeProjects.length === 0 && (
           <p className="px-3 py-2 text-[var(--fs-tag)] text-[var(--muted-foreground)]">

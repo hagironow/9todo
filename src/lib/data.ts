@@ -9,6 +9,7 @@ const DEFAULT_STATE: AppState = {
   tasks: [],
   routines: [],
   routineInstances: [],
+  notes: [],
   goalCompass: {
     identity: '',
     goals: {
@@ -24,6 +25,7 @@ const DEFAULT_STATE: AppState = {
   lastUsedProjectId: null,
   activeProjectFilter: null,
   projectFirstMode: true,
+  colorTheme: 'vivid',
 };
 
 export function readData(): AppState {

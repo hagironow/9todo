@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 
 export interface RoutineSetupData {
   recurrence: RecurrenceType;
+  daysOfWeek?: number[];
   defaultSlot: SlotCoord;
   startDate: string;
   scheduledTime?: string;
@@ -17,6 +18,7 @@ interface RoutineSetupModalProps {
   open: boolean;
   onClose: () => void;
   initialTitle?: string;
+  initialCoord?: SlotCoord | null;
   editingRoutine?: Routine | null;
   onSave: (data: RoutineSetupData) => void;
   onDelete?: () => void;
@@ -41,29 +43,40 @@ const PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
   { value: 3, label: '3순위' },
 ];
 
+const DAY_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: '월' },
+  { value: 2, label: '화' },
+  { value: 3, label: '수' },
+  { value: 4, label: '목' },
+  { value: 5, label: '금' },
+  { value: 6, label: '토' },
+  { value: 0, label: '일' },
+];
+
 /* ── 공통 스타일 ── */
 
 const CHIP_BASE = [
-  'px-4 py-2.5 rounded-[var(--radius)] text-[var(--fs-item)] font-medium',
-  'border transition-all duration-150 cursor-pointer',
+  'py-2.5 rounded-[var(--radius)] text-[var(--fs-item)] font-medium',
+  'transition-all duration-150 cursor-pointer',
 ].join(' ');
 
 const CHIP_DEFAULT = [
   CHIP_BASE,
-  'bg-[var(--surface-btn)] border-transparent text-[var(--foreground)]',
-  'hover:bg-[var(--background)] hover:border-[var(--accent)] hover:shadow-md',
+  'px-4 bg-[var(--surface-btn)] text-[var(--foreground)]',
+  'hover:shadow-[inset_0_0_0_1.5px_var(--foreground)]',
 ].join(' ');
 
 const CHIP_ACTIVE = [
   CHIP_BASE,
-  'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)]',
+  'px-4 bg-[var(--surface-btn)] text-[var(--foreground)]',
+  'shadow-[inset_0_0_0_1.5px_var(--foreground)]',
 ].join(' ');
 
 const INPUT_CLASS = [
   'w-full px-4 py-3 rounded-[var(--radius)]',
-  'bg-[var(--surface-btn)] border border-transparent',
+  'bg-[var(--surface-btn)] border-none',
   'text-[var(--foreground)] text-[var(--fs-item)]',
-  'focus:outline-none focus:bg-[var(--background)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]',
+  'focus:outline-none focus:shadow-[inset_0_0_0_1.5px_var(--foreground)]',
   'transition-all',
 ].join(' ');
 
@@ -74,11 +87,13 @@ export default function RoutineSetupModal({
   open,
   onClose,
   initialTitle = '',
+  initialCoord,
   editingRoutine,
   onSave,
   onDelete,
 }: RoutineSetupModalProps) {
   const [recurrence, setRecurrence] = useState<RecurrenceType>('daily');
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>([]);
   const [period, setPeriod] = useState<TimePeriod>('morning');
   const [priority, setPriority] = useState<Priority>(1);
   const [scheduledTime, setScheduledTime] = useState('09:00');
@@ -90,25 +105,36 @@ export default function RoutineSetupModal({
     if (!open) return;
     if (editingRoutine) {
       setRecurrence(editingRoutine.recurrence);
+      setDaysOfWeek(editingRoutine.daysOfWeek ?? []);
       setPeriod(editingRoutine.defaultSlot.period);
       setPriority(editingRoutine.defaultSlot.priority);
       setScheduledTime(editingRoutine.scheduledTime ?? '09:00');
       setStartDate(editingRoutine.startDate);
     } else {
       setRecurrence('daily');
-      setPeriod('morning');
-      setPriority(1);
-      setScheduledTime('09:00');
+      setDaysOfWeek([]);
+      setPeriod(initialCoord?.period ?? 'morning');
+      setPriority(initialCoord?.priority ?? 1);
+      setScheduledTime('');
       setStartDate(new Date().toISOString().split('T')[0]);
     }
-  }, [open, editingRoutine]);
+  }, [open, editingRoutine, initialCoord]);
 
   const isEditing = !!editingRoutine;
   const displayTitle = isEditing ? editingRoutine.title : initialTitle;
 
+  const toggleDay = (day: number) => {
+    setDaysOfWeek((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
+  const showDaysOfWeek = recurrence !== 'monthly';
+
   const handleSave = () => {
     onSave({
       recurrence,
+      daysOfWeek: showDaysOfWeek && daysOfWeek.length > 0 ? daysOfWeek : undefined,
       defaultSlot: { period, priority },
       startDate,
       scheduledTime,
@@ -150,6 +176,37 @@ export default function RoutineSetupModal({
           ))}
         </div>
       </div>
+
+      {/* 요일 */}
+      {showDaysOfWeek && (
+        <div className="flex flex-col gap-2.5 mt-4">
+          <span className={SECTION_LABEL}>요일</span>
+          <div className="flex gap-1.5">
+            {DAY_OPTIONS.map((opt) => {
+              const base = [
+                'flex-1 py-2.5 rounded-[var(--radius)] text-[var(--fs-item)] font-medium',
+                'text-center transition-all duration-150 cursor-pointer',
+                'bg-[var(--surface-btn)] text-[var(--foreground)]',
+              ].join(' ');
+              const active = daysOfWeek.includes(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => toggleDay(opt.value)}
+                  className={`${base} ${active ? 'shadow-[inset_0_0_0_1.5px_var(--foreground)]' : 'hover:shadow-[inset_0_0_0_1.5px_var(--foreground)]'}`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          {daysOfWeek.length === 0 && (
+            <span className="text-[11px] text-[var(--muted-foreground)]">
+              선택 안 하면 매일 반복
+            </span>
+          )}
+        </div>
+      )}
 
       {/* 기본 슬롯 */}
       <div className="flex flex-col gap-2.5 mt-4">

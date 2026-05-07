@@ -61,7 +61,7 @@ export default function SlotPickerModal({
                   'text-[var(--fs-tag)] font-medium',
                   occupied
                     ? 'border-[var(--border)] bg-[var(--muted)] text-[var(--muted-foreground)] cursor-not-allowed opacity-50'
-                    : 'border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--accent)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/5 cursor-pointer',
+                    : 'border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--foreground)] hover:text-[var(--foreground)] cursor-pointer',
                 ].join(' ')}
                 aria-label={`${label} ${priority}순위 ${occupied ? '(사용 중)' : '(비어 있음)'}`}
               >

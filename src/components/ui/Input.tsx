@@ -25,10 +25,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           className={[
             'w-full h-9 px-3 rounded-[var(--radius)]',
             'bg-[var(--background)] text-[var(--foreground)]',
-            'border border-[var(--input)]',
+            'border-none',
             'text-[var(--fs-item)] placeholder:text-[var(--muted-foreground)]',
             'outline-none transition-all duration-150',
-            'focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]',
+            'shadow-[inset_0_0_0_1px_var(--input)] focus:shadow-[inset_0_0_0_1.5px_var(--foreground)]',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             error ? 'border-[var(--destructive)]' : '',
             className,

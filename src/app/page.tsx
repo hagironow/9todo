@@ -45,6 +45,7 @@ import { createRoutineInstance } from '@/lib/routine';
 import { exportToMarkdown, exportToJSON, downloadFile } from '@/lib/export';
 import { calculateDailyXP, calculateTotalXP } from '@/lib/xp';
 import StorageConsentBanner from '@/components/modals/StorageConsentBanner';
+import ProjectDetailView from '@/components/project-detail/ProjectDetailView';
 import { importStateFromJSON, EMPTY_STATE } from '@/hooks/useAppData';
 
 /**
@@ -131,9 +132,13 @@ export default function Home() {
     assignRoutineInstanceSlot,
     removeRoutineInstance,
     setActiveProjectFilter,
+    setColorTheme,
     batchUpdate,
     archiveProject,
     setProjectFirstMode,
+    addNote,
+    removeNote,
+    updateNoteContent,
   } = useAppData();
 
   const currentPeriod = useCurrentPeriod();
@@ -414,6 +419,20 @@ export default function Home() {
     [updateTaskTitle]
   );
 
+  const handleUpdateProject = useCallback(
+    (item: ScheduledItem, projectId: string | null) => {
+      if ('type' in item && item.type === 'task') {
+        batchUpdate((prev) => ({
+          ...prev,
+          tasks: prev.tasks.map((t) =>
+            t.id === item.id ? { ...t, projectId } : t
+          ),
+        }));
+      }
+    },
+    [batchUpdate]
+  );
+
   const handleCreateInSlot = useCallback(
     (title: string, coord: SlotCoord, projectId?: string | null) => {
       // 슬롯에 이미 태스크가 있으면 생성 불가 (필터로 숨겨진 태스크 포함)
@@ -464,10 +483,11 @@ export default function Home() {
 
   // RoutineSetupModal 저장 핸들러 (생성 + 편집 겸용)
   const handleRoutineSetupSave = useCallback(
-    (data: { recurrence: import('@/lib/types').RecurrenceType; defaultSlot: SlotCoord; startDate: string; scheduledTime?: string }) => {
+    (data: { recurrence: import('@/lib/types').RecurrenceType; daysOfWeek?: number[]; defaultSlot: SlotCoord; startDate: string; scheduledTime?: string }) => {
       if (editingRoutine) {
         updateRoutine(editingRoutine.id, {
           recurrence: data.recurrence,
+          daysOfWeek: data.daysOfWeek,
           defaultSlot: data.defaultSlot,
           startDate: data.startDate,
           scheduledTime: data.scheduledTime,
@@ -478,6 +498,7 @@ export default function Home() {
           title: routineModalTitle.trim(),
           projectId: null,
           recurrence: data.recurrence,
+          daysOfWeek: data.daysOfWeek,
           defaultSlot: routineModalCoord ?? data.defaultSlot,
           startDate: data.startDate,
           isActive: true,
@@ -526,8 +547,8 @@ export default function Home() {
   );
 
   const handleProjectCreateAndSelect = useCallback(
-    (name: string, color: string) => {
-      const project = addProject(name, color);
+    (name: string, colorIndex: number) => {
+      const project = addProject(name, colorIndex);
       handleProjectSelectDone(project.id);
     },
     [addProject, handleProjectSelectDone]
@@ -780,16 +801,38 @@ export default function Home() {
           // 토글 OFF 시 프로젝트 필터 해제
           if (!enabled) setActiveProjectFilter(null);
         }}
-      >
-        <div className="w-full lg:w-[80%] max-w-5xl px-4 md:px-8 py-6 flex flex-col gap-5">
-          {/* Goal Compass */}
-          <GoalCompass
-            data={state.goalCompass}
-            onSaveIdentity={handleSaveIdentity}
-            onSaveGoal={handleSaveGoal}
-            onSaveAffirmation={handleSaveAffirmation}
-            totalXP={totalXP}
+        rightPanel={
+          <NowFocus
+            items={playItems}
+            projects={state.projects}
+            onComplete={handleComplete}
+            onDefer={handleDefer}
+            onRepeat={handleRepeat}
+            isReadOnly={isReadOnly}
+            notes={state.notes ?? []}
+            onAddNote={addNote}
+            onRemoveNote={removeNote}
+            onUpdateNote={updateNoteContent}
+            lastUsedProjectId={state.lastUsedProjectId}
           />
+        }
+      >
+        <div className="w-full max-w-5xl px-4 md:px-8 py-6 flex flex-col gap-5">
+          {/* Goal Compass — 프로젝트 상세 뷰에서는 숨김 */}
+          {!(state.activeProjectFilter
+            && state.activeProjectFilter !== '__calendar__'
+            && state.activeProjectFilter !== '__unassigned__'
+            && state.projects.some((p) => p.id === state.activeProjectFilter)
+          ) && (
+            <GoalCompass
+              data={state.goalCompass}
+              onSaveIdentity={handleSaveIdentity}
+              onSaveGoal={handleSaveGoal}
+              onSaveAffirmation={handleSaveAffirmation}
+              totalXP={totalXP}
+              previewKey={state.activeProjectFilter === '__calendar__' ? 'month' : 'week'}
+            />
+          )}
 
           {state.activeProjectFilter === '__calendar__' ? (
             /* 캘린더 뷰 */
@@ -805,70 +848,90 @@ export default function Home() {
                 setRoutineModalOpen(true);
               }}
             />
-          ) : (
-            <>
-              {/* 날짜 네비게이션 */}
-              <DateNav
-                date={today}
-                isToday={isToday}
-                onPrev={handlePrevDay}
-                onNext={handleNextDay}
-                onToday={handleGoToday}
-                onOpenCalendar={() => setCalendarOpen(true)}
-                xp={dailyXP}
-              />
+          ) : (() => {
+            // 실제 프로젝트 ID인지 확인 (null, __unassigned__ 제외)
+            const selectedProject = state.activeProjectFilter
+              && state.activeProjectFilter !== '__unassigned__'
+              ? state.projects.find((p) => p.id === state.activeProjectFilter)
+              : null;
 
-              {/* 읽기 전용 배너 (과거 날짜) */}
-              {isReadOnly && (
-                <ReadOnlyBanner date={today} onGoToday={handleGoToday} />
-              )}
+            if (selectedProject) {
+              return (
+                <ProjectDetailView
+                  project={selectedProject}
+                  tasks={state.tasks}
+                  routines={state.routines}
+                  routineInstances={state.routineInstances}
+                  notes={state.notes ?? []}
+                  onAddNote={addNote}
+                  onRemoveNote={removeNote}
+                  colorTheme={state.colorTheme}
+                  onUpdateColor={(pid, idx) => updateProject(pid, { colorIndex: idx })}
+                  onComplete={handleComplete}
+                  onDefer={handleDefer}
+                  onRepeat={handleRepeat}
+                  onDelete={handleDelete}
+                  onUncomplete={handleUncomplete}
+                />
+              );
+            }
 
-              {/* Timetable Grid */}
-              <TimetableGrid
-                currentPeriod={currentPeriod}
-                slots={filteredSlots}
-                routineSlots={filteredRoutineSlots}
-                onComplete={handleComplete}
-                onDefer={handleDefer}
-                onRepeat={handleRepeat}
-                onSlotClick={handleSlotClick}
-                onDelete={handleDelete}
-                onUpdateTitle={handleUpdateTitle}
-                onCreateInSlot={handleCreateInSlot}
-                onUncomplete={handleUncomplete}
-                onCreateRoutine={handleCreateRoutine}
-                onEditRoutine={handleEditRoutine}
-                projectFirstMode={state.projectFirstMode}
-                projects={state.projects}
-                isReadOnly={isReadOnly}
-                onItemSelect={() => {}}
-              />
+            return (
+              <>
+                {/* 날짜 네비게이션 */}
+                <DateNav
+                  date={today}
+                  isToday={isToday}
+                  onPrev={handlePrevDay}
+                  onNext={handleNextDay}
+                  onToday={handleGoToday}
+                  onOpenCalendar={() => setCalendarOpen(true)}
+                  xp={dailyXP}
+                />
 
-              {/* Backlog */}
-              <BacklogPanel
-                items={filteredBacklog}
-                projects={state.projects}
-                getTitleForItem={getTitleForItem}
-                isRoutineInstance={isRoutineInstanceFn}
-                onPlaceInSlot={handlePlaceInSlot}
-                onAdd={(title, projectId) => addTask(title, today, { projectId })}
-                lastUsedProjectId={state.lastUsedProjectId}
-                isReadOnly={isReadOnly}
-              />
-            </>
-          )}
+                {/* 읽기 전용 배너 (과거 날짜) */}
+                {isReadOnly && (
+                  <ReadOnlyBanner date={today} onGoToday={handleGoToday} />
+                )}
+
+                {/* Timetable Grid */}
+                <TimetableGrid
+                  currentPeriod={currentPeriod}
+                  slots={filteredSlots}
+                  routineSlots={filteredRoutineSlots}
+                  onComplete={handleComplete}
+                  onDefer={handleDefer}
+                  onRepeat={handleRepeat}
+                  onSlotClick={handleSlotClick}
+                  onDelete={handleDelete}
+                  onUpdateTitle={handleUpdateTitle}
+                  onUpdateProject={handleUpdateProject}
+                  onCreateInSlot={handleCreateInSlot}
+                  onUncomplete={handleUncomplete}
+                  onCreateRoutine={handleCreateRoutine}
+                  onEditRoutine={handleEditRoutine}
+                  projectFirstMode={state.projectFirstMode}
+                  projects={state.projects}
+                  isReadOnly={isReadOnly}
+                  onItemSelect={() => {}}
+                />
+
+                {/* Backlog */}
+                <BacklogPanel
+                  items={filteredBacklog}
+                  projects={state.projects}
+                  getTitleForItem={getTitleForItem}
+                  isRoutineInstance={isRoutineInstanceFn}
+                  onPlaceInSlot={handlePlaceInSlot}
+                  onAdd={(title, projectId) => addTask(title, today, { projectId })}
+                  lastUsedProjectId={state.lastUsedProjectId}
+                  isReadOnly={isReadOnly}
+                />
+              </>
+            );
+          })()}
         </div>
       </AppShell>
-
-      {/* NowFocus — 우측 하단 플로팅 뽀모도로 타이머 */}
-      <NowFocus
-        items={playItems}
-        projects={state.projects}
-        onComplete={handleComplete}
-        onDefer={handleDefer}
-        onRepeat={handleRepeat}
-        isReadOnly={isReadOnly}
-      />
 
       {/* Drag Overlay */}
       <DragOverlay>
@@ -890,7 +953,9 @@ export default function Home() {
       <ProjectCreateModal
         open={projectModalOpen}
         onClose={() => setProjectModalOpen(false)}
-        onSave={({ name, color }) => addProject(name, color)}
+        onSave={({ name, colorIndex }) => addProject(name, colorIndex)}
+        colorTheme={state.colorTheme}
+        onThemeChange={setColorTheme}
       />
 
       <ProjectSelectModal
@@ -900,6 +965,7 @@ export default function Home() {
         onSelect={handleProjectSelectDone}
         onCreateAndSelect={handleProjectCreateAndSelect}
         onSkip={() => { setProjectSelectOpen(false); setProjectSelectTargetId(null); }}
+        colorTheme={state.colorTheme}
       />
 
       {renamingProject && (
@@ -919,6 +985,7 @@ export default function Home() {
         open={routineModalOpen}
         onClose={() => { setRoutineModalOpen(false); setRoutineModalTitle(''); setRoutineModalCoord(null); setEditingRoutine(null); }}
         initialTitle={routineModalTitle}
+        initialCoord={routineModalCoord}
         editingRoutine={editingRoutine}
         onSave={handleRoutineSetupSave}
         onDelete={handleDeleteRoutine}

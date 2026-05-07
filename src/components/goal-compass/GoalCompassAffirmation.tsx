@@ -53,12 +53,12 @@ export default function GoalCompassAffirmation({
             rows={3}
             className={[
               'flex-1 px-2 py-0.5 rounded-[var(--radius)]',
-              'bg-[var(--muted)] text-[var(--foreground)]',
+              'bg-transparent text-[var(--foreground)]',
               'text-[var(--fs-item)] resize-none',
-              'outline-none focus:ring-2 focus:ring-[var(--ring)]',
-              'border border-[var(--accent)]',
+              'outline-none',
+              'border border-[var(--border)] focus:border-[var(--foreground)]',
             ].join(' ')}
-            placeholder="나만의 확언을 써보세요"
+            placeholder="나에게 해주고 싶은 말"
           />
         ) : (
           <p
@@ -70,7 +70,7 @@ export default function GoalCompassAffirmation({
               affirmation ? 'text-[var(--foreground)]' : 'text-[var(--muted-foreground)]',
             ].join(' ')}
           >
-            {affirmation || '나만의 확언을 써보세요'}
+            {affirmation || '나에게 해주고 싶은 말'}
           </p>
         )}
       </div>

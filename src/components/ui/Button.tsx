@@ -20,22 +20,35 @@ export default function Button({
 
   const variants: Record<string, string> = {
     primary:
-      'bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 active:scale-[0.97]',
+      'bg-[var(--foreground)] hover:opacity-85 active:scale-[0.97]',
     ghost:
-      'bg-transparent text-[var(--foreground)] hover:bg-[var(--muted)] active:scale-[0.97]',
+      'bg-transparent hover:bg-[var(--muted)] active:scale-[0.97]',
     danger:
       'bg-[var(--destructive)] text-white hover:opacity-90 active:scale-[0.97]',
   };
 
+  const variantColors: Record<string, string> = {
+    primary: 'var(--background)',
+    ghost: 'var(--foreground)',
+    danger: '#fff',
+  };
+
   const sizes: Record<string, string> = {
-    sm: 'h-7 px-3 text-[var(--fs-tag)]',
-    md: 'h-9 px-4 text-[var(--fs-item)]',
-    lg: 'h-11 px-6 text-base',
+    sm: 'h-7 px-3',
+    md: 'h-9 px-4',
+    lg: 'h-11 px-6',
+  };
+
+  const fontSizes: Record<string, string> = {
+    sm: 'var(--fs-tag)',
+    md: 'var(--fs-item)',
+    lg: '16px',
   };
 
   return (
     <button
       className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
+      style={{ color: variantColors[variant], fontSize: fontSizes[size] }}
       {...props}
     >
       {children}

@@ -12,12 +12,12 @@ interface GoalRow {
 }
 
 const GOAL_ROWS: GoalRow[] = [
-  { key: 'today',    label: '오늘',   placeholder: '오늘의 핵심 목표는?' },
+  { key: 'today',    label: '오늘',   placeholder: '오늘 끝내야 할 일은?' },
   { key: 'week',     label: '이번주', placeholder: '이번 주에 꼭 끝낼 것은?' },
-  { key: 'month',    label: '이번달', placeholder: '이번 달 목표는?' },
-  { key: 'quarter',  label: '분기',   placeholder: '이번 분기 집중할 것은?' },
-  { key: 'oneYear',  label: '1년',    placeholder: '올해 반드시 이루어야 할 것은?' },
-  { key: 'fiveYear', label: '5년',    placeholder: '5년 안에 달성할 것은?' },
+  { key: 'month',    label: '이번달', placeholder: '이번 달 집중하는 방향은?' },
+  { key: 'quarter',  label: '분기',   placeholder: '이번 분기 성장하고 싶은 방향은?' },
+  { key: 'oneYear',  label: '1년',    placeholder: '1년 뒤 나는 어떤 모습일까?' },
+  { key: 'fiveYear', label: '5년',    placeholder: '내가 향하는 북극성은?' },
 ];
 
 interface GoalCompassGoalsProps {
@@ -59,13 +59,14 @@ function GoalRowItem({
   };
 
   const isToday = row.key === 'today';
+  const isNorthStar = row.key === 'fiveYear';
 
   return (
     <div className="flex items-center gap-3 py-1.5">
       <span
         className={[
           'w-8 text-right text-[11px] font-semibold shrink-0',
-          isToday ? 'text-[var(--accent)]' : 'text-[var(--muted-foreground)]',
+          isToday ? 'text-[var(--primary)]' : 'text-[var(--muted-foreground)]',
         ].join(' ')}
       >
         {row.label}
@@ -80,10 +81,10 @@ function GoalRowItem({
           onKeyDown={handleKeyDown}
           className={[
             'flex-1 px-2 py-0.5 rounded-[var(--radius)]',
-            'bg-[var(--muted)] text-[var(--foreground)]',
+            'bg-transparent text-[var(--foreground)]',
             'text-[var(--fs-item)]',
-            'outline-none focus:ring-2 focus:ring-[var(--ring)]',
-            'border border-[var(--accent)]',
+            'outline-none',
+            'border border-[var(--border)] focus:border-[var(--foreground)]',
           ].join(' ')}
           placeholder={row.placeholder}
         />
@@ -95,7 +96,7 @@ function GoalRowItem({
             'text-[var(--fs-item)] cursor-text',
             'hover:bg-[var(--muted)] transition-colors duration-100',
             value
-              ? isToday
+              ? isNorthStar
                 ? 'text-[var(--foreground)] font-semibold'
                 : 'text-[var(--foreground)]'
               : 'text-[var(--muted-foreground)]',

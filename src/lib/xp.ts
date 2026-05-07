@@ -1,26 +1,56 @@
-import type { Task, RoutineInstance } from './types';
+import type { Task, RoutineInstance, TimePeriod } from './types';
+
+/**
+ * 해당 시간대가 이미 지났는지 판단.
+ * - 과거 날짜: 모든 시간대 지남
+ * - 오늘: 현재 시각 기준 (morning < 12시, afternoon < 18시, evening < 새벽 5시)
+ * - 미래 날짜: 아직 안 지남
+ */
+function isPeriodPassed(taskDate: string, period: TimePeriod, referenceDate: string): boolean {
+  if (taskDate < referenceDate) return true;
+  if (taskDate > referenceDate) return false;
+
+  // 오늘인 경우 — 현재 시각으로 판단
+  const hour = new Date().getHours();
+  if (period === 'morning') return hour >= 12;
+  if (period === 'afternoon') return hour >= 18;
+  // evening: 다음날 새벽 5시까지이므로, 당일에는 아직 안 지남
+  return false;
+}
+
+function getToday(): string {
+  const now = new Date();
+  if (now.getHours() < 5) now.setDate(now.getDate() - 1);
+  return now.toISOString().split('T')[0];
+}
+
+function scoreTask(task: Task, today: string): number {
+  if (task.completedAt && task.slot) {
+    return task.slot.priority === 1 ? 3 : task.slot.priority === 2 ? 2 : 1;
+  }
+  if (task.slot && !task.completedAt) {
+    // 시간대가 지난 경우에만 페널티
+    if (isPeriodPassed(task.date, task.slot.period, today)) return -1;
+    return 0;
+  }
+  if (!task.slot && task.deferCount > 0) return -2;
+  return 0;
+}
 
 /** 전체 누적 XP (모든 날짜 합산) */
 export function calculateTotalXP(
   tasks: Task[],
   routineInstances: RoutineInstance[],
 ): number {
+  const today = getToday();
   let xp = 0;
 
   for (const task of tasks) {
-    if (task.completedAt && task.slot) {
-      xp += task.slot.priority === 1 ? 3 : task.slot.priority === 2 ? 2 : 1;
-    } else if (task.slot && !task.completedAt) {
-      xp -= 1;
-    } else if (!task.slot && task.deferCount > 0) {
-      xp -= 2;
-    }
+    xp += scoreTask(task, today);
   }
 
   for (const ri of routineInstances) {
-    if (ri.completedAt) {
-      xp += 1; // 루틴은 고정 1xp
-    }
+    if (ri.completedAt) xp += 1;
   }
 
   return xp;
@@ -32,25 +62,18 @@ export function calculateDailyXP(
   routineInstances: RoutineInstance[],
   date: string
 ): number {
+  const today = getToday();
   let xp = 0;
 
   const dateTasks = tasks.filter((t) => t.date === date);
   const dateInstances = routineInstances.filter((ri) => ri.date === date);
 
   for (const task of dateTasks) {
-    if (task.completedAt && task.slot) {
-      xp += task.slot.priority === 1 ? 3 : task.slot.priority === 2 ? 2 : 1;
-    } else if (task.slot && !task.completedAt) {
-      xp -= 1;
-    } else if (!task.slot && task.deferCount > 0) {
-      xp -= 2;
-    }
+    xp += scoreTask(task, today);
   }
 
   for (const ri of dateInstances) {
-    if (ri.completedAt) {
-      xp += 1; // 루틴은 고정 1xp
-    }
+    if (ri.completedAt) xp += 1;
   }
 
   return xp;
