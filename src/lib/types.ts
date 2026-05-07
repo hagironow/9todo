@@ -29,7 +29,7 @@ export interface Task extends ItemBase {
   slot: SlotCoord | null; // null = 백로그
   deferCount: number;
   completedAt: string | null;
-  date: string; // "YYYY-MM-DD"
+  date: string | null; // "YYYY-MM-DD" — 슬롯 배치 시 날짜 지정, 백로그는 null
   origin?: 'deferred' | 'repeated'; // 미루기/진행하기로 백로그에 온 경우
   timerSeconds?: number; // 완료 시점의 타이머 기록 (초)
   continueCount: number; // 진행하기 횟수

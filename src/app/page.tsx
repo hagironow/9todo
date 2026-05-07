@@ -45,24 +45,12 @@ import { triggerConfetti } from '@/components/effects/ParticleBurst';
 import { createRoutineInstance } from '@/lib/routine';
 import { exportToMarkdown, exportToJSON, downloadFile } from '@/lib/export';
 import { calculateDailyXP, calculateTotalXP } from '@/lib/xp';
+import { getToday, formatLocalDate } from '@/lib/date';
 import StorageConsentBanner from '@/components/modals/StorageConsentBanner';
 import ProjectDetailView from '@/components/project-detail/ProjectDetailView';
 import SearchView from '@/components/search/SearchView';
 import Dialog from '@/components/ui/Dialog';
 import { importStateFromJSON, EMPTY_STATE } from '@/hooks/useAppData';
-
-/**
- * 투두슬롯 타임: 하루의 경계는 새벽 5시.
- * 5시 이전이면 전날로 취급 (해당일의 다음날 새벽 5시가 지나야 XP 최종 반영).
- */
-function getToday(): string {
-  const now = new Date();
-  if (now.getHours() < 5) {
-    // 새벽 5시 이전 → 전날 날짜
-    now.setDate(now.getDate() - 1);
-  }
-  return now.toISOString().split('T')[0];
-}
 
 // PERIOD_LABELS removed — Play Section에서 시간대 레이블 불필요
 
@@ -153,17 +141,17 @@ export default function Home() {
 
   const handlePrevDay = useCallback(() => {
     setToday((prev) => {
-      const d = new Date(prev + 'T00:00:00');
-      d.setDate(d.getDate() - 1);
-      return d.toISOString().split('T')[0];
+      const [y, m, d] = prev.split('-').map(Number);
+      const date = new Date(y, m - 1, d - 1);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     });
   }, []);
 
   const handleNextDay = useCallback(() => {
     setToday((prev) => {
-      const d = new Date(prev + 'T00:00:00');
-      d.setDate(d.getDate() + 1);
-      return d.toISOString().split('T')[0];
+      const [y, m, d] = prev.split('-').map(Number);
+      const date = new Date(y, m - 1, d + 1);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     });
   }, []);
 
@@ -305,10 +293,10 @@ export default function Home() {
     return map;
   }, [routineSlots]);
 
-  // Backlog items (태스크만 — 슬롯 없거나 null, 미완료)
+  // Backlog items (태스크만 — 슬롯 없거나 null, 미완료, 날짜 무관)
   const backlogItems = useMemo(() => {
     const tasks = state.tasks.filter(
-      (t) => t.slot === null && t.completedAt === null && t.date === today
+      (t) => t.slot === null && t.completedAt === null
     );
     const instances = state.routineInstances.filter(
       (ri) => ri.slot === null && ri.completedAt === null && ri.date === today
@@ -330,8 +318,8 @@ export default function Home() {
   // 캘린더 dot indicator — 데이터 있는 날짜들
   const datesWithData = useMemo(() => {
     const set = new Set<string>();
-    for (const t of state.tasks) set.add(t.date);
-    for (const ri of state.routineInstances) set.add(ri.date);
+    for (const t of state.tasks) if (t.date) set.add(t.date);
+    for (const ri of state.routineInstances) if (ri.date) set.add(ri.date);
     return set;
   }, [state.tasks, state.routineInstances]);
 
@@ -408,6 +396,27 @@ export default function Home() {
       }
     },
     [deferTask, deferRoutineInstance]
+  );
+
+  const handleSendToBacklog = useCallback(
+    (item: ScheduledItem) => {
+      if ('type' in item && item.type === 'task') {
+        batchUpdate((prev) => ({
+          ...prev,
+          tasks: prev.tasks.map((t) =>
+            t.id === item.id ? { ...t, slot: null, date: null } : t,
+          ),
+        }));
+      } else {
+        batchUpdate((prev) => ({
+          ...prev,
+          routineInstances: prev.routineInstances.map((ri) =>
+            ri.id === item.id ? { ...ri, slot: null } : ri,
+          ),
+        }));
+      }
+    },
+    [batchUpdate]
   );
 
   const handleRepeat = useCallback(
@@ -591,6 +600,13 @@ export default function Home() {
       const { active, over } = event;
       if (!over) return;
 
+      // 백로그 드롭 — 슬롯에서 백로그로 이동 (미루기 아님, 단순 계획 수정)
+      if (over.id === 'backlog-drop') {
+        const draggedItem = active.data.current?.item as ScheduledItem | undefined;
+        if (draggedItem) handleSendToBacklog(draggedItem);
+        return;
+      }
+
       const coord = over.data.current?.coord as SlotCoord | undefined;
       if (!coord) return;
 
@@ -610,7 +626,7 @@ export default function Home() {
         if (isRoutineInstance) {
           assignRoutineInstanceSlot(itemId, coord);
         } else {
-          assignTaskSlot(itemId, coord);
+          assignTaskSlot(itemId, coord, today);
         }
       } else if (targetItem.id !== itemId) {
         // 채워진 슬롯 — 두 아이템 슬롯 교환 (스왑)
@@ -631,7 +647,7 @@ export default function Home() {
           }
         } else {
           if (draggedCurrentSlot) {
-            assignTaskSlot(targetItem.id, draggedCurrentSlot);
+            assignTaskSlot(targetItem.id, draggedCurrentSlot, today);
           } else {
             // 백로그에서 왔으면 타겟 태스크를 백로그로
             deferTask(targetItem.id);
@@ -642,11 +658,11 @@ export default function Home() {
         if (isRoutineInstance) {
           assignRoutineInstanceSlot(itemId, coord);
         } else {
-          assignTaskSlot(itemId, coord);
+          assignTaskSlot(itemId, coord, today);
         }
       }
     },
-    [slots, assignTaskSlot, assignRoutineInstanceSlot, deferTask, deferRoutineInstance]
+    [slots, assignTaskSlot, assignRoutineInstanceSlot, deferTask, deferRoutineInstance, today, handleSendToBacklog]
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -669,12 +685,12 @@ export default function Home() {
       if (slotPickerIsRoutine) {
         assignRoutineInstanceSlot(slotPickerTarget, coord);
       } else {
-        assignTaskSlot(slotPickerTarget, coord);
+        assignTaskSlot(slotPickerTarget, coord, today);
       }
       setSlotPickerOpen(false);
       setSlotPickerTarget(null);
     },
-    [slotPickerTarget, slotPickerIsRoutine, assignTaskSlot, assignRoutineInstanceSlot]
+    [slotPickerTarget, slotPickerIsRoutine, assignTaskSlot, assignRoutineInstanceSlot, today]
   );
 
   // 프로젝트 편집/삭제/아카이브
@@ -791,7 +807,7 @@ export default function Home() {
         onLoginClick={() => setLoginModalOpen(true)}
         onExport={() => {
           const json = exportToJSON(state);
-          const todayStr = new Date().toISOString().split('T')[0];
+          const todayStr = formatLocalDate(new Date());
           downloadFile(json, `9todo_${todayStr}.json`, 'application/json');
         }}
         onImport={() => {
@@ -970,6 +986,7 @@ export default function Home() {
                   projects={state.projects}
                   isReadOnly={isReadOnly}
                   onItemSelect={() => {}}
+                  onSendToBacklog={handleSendToBacklog}
                 />
 
                 {/* Backlog */}

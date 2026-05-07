@@ -1,4 +1,5 @@
 import type { Task, RoutineInstance, TimePeriod } from './types';
+import { getToday } from './date';
 
 /**
  * 해당 시간대가 이미 지났는지 판단.
@@ -18,19 +19,13 @@ function isPeriodPassed(taskDate: string, period: TimePeriod, referenceDate: str
   return false;
 }
 
-function getToday(): string {
-  const now = new Date();
-  if (now.getHours() < 5) now.setDate(now.getDate() - 1);
-  return now.toISOString().split('T')[0];
-}
-
 function scoreTask(task: Task, today: string): number {
   if (task.completedAt && task.slot) {
     return task.slot.priority === 1 ? 3 : task.slot.priority === 2 ? 2 : 1;
   }
   if (task.slot && !task.completedAt) {
     // 시간대가 지난 경우에만 페널티
-    if (isPeriodPassed(task.date, task.slot.period, today)) return -1;
+    if (task.date && isPeriodPassed(task.date, task.slot.period, today)) return -1;
     return 0;
   }
   if (!task.slot && task.deferCount > 0) return -2;

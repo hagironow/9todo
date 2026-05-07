@@ -1,7 +1,6 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
-import { X } from 'lucide-react';
+import { ReactNode, ReactElement, useState, cloneElement, isValidElement } from 'react';
 import { Project } from '@/lib/types';
 import Sidebar from './Sidebar';
 import MobileHeader from './MobileHeader';
@@ -148,26 +147,18 @@ export default function AppShell({
         </div>
       )}
 
-      {/* 모바일 NowFocus — 풀스크린 레이어 (사이드바 드로어와 동일 패턴) */}
+      {/* 모바일 NowFocus — 풀스크린 레이어 */}
       {rightPanel && (
         <div
           className={[
-            'lg:hidden fixed inset-0 z-50 flex flex-col bg-[var(--background)] transition-transform duration-300',
+            'lg:hidden fixed inset-0 z-50 flex flex-col transition-transform duration-300',
             mobileNowFocusOpen ? 'translate-y-0' : 'translate-y-full pointer-events-none',
           ].join(' ')}
         >
-          {/* 닫기 버튼 — 우상단 */}
-          <div className="flex items-center justify-end px-4 py-2 flex-shrink-0">
-            <button
-              onClick={() => setMobileNowFocusOpen(false)}
-              className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
-              aria-label="닫기"
-            >
-              <X size={18} />
-            </button>
-          </div>
           <div className="flex-1 overflow-y-auto">
-            {rightPanel}
+            {isValidElement(rightPanel)
+              ? cloneElement(rightPanel as ReactElement<{ onClose?: () => void }>, { onClose: () => setMobileNowFocusOpen(false) })
+              : rightPanel}
           </div>
         </div>
       )}

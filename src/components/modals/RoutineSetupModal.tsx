@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { RecurrenceType, TimePeriod, Priority, SlotCoord, Routine } from '@/lib/types';
+import { formatLocalDate } from '@/lib/date';
 import Dialog from '@/components/ui/Dialog';
 import Button from '@/components/ui/Button';
 
@@ -100,7 +101,7 @@ export default function RoutineSetupModal({
   const [priority, setPriority] = useState<Priority>(1);
   const [scheduledTime, setScheduledTime] = useState('09:00');
   const [startDate, setStartDate] = useState(
-    new Date().toISOString().split('T')[0]
+    formatLocalDate(new Date())
   );
 
   useEffect(() => {
@@ -118,7 +119,7 @@ export default function RoutineSetupModal({
       setPeriod(initialCoord?.period ?? 'morning');
       setPriority(initialCoord?.priority ?? 1);
       setScheduledTime('');
-      setStartDate(new Date().toISOString().split('T')[0]);
+      setStartDate(formatLocalDate(new Date()));
     }
   }, [open, editingRoutine, initialCoord]);
 

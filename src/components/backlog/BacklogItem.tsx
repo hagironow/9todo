@@ -67,10 +67,18 @@ export default function BacklogItem({
         <GripVertical size={14} strokeWidth={1.5} />
       </button>
 
-      {/* 제목 + 배지 */}
+      {/* 프로젝트 태그 + 제목 + 배지 */}
       <div className="flex-1 min-w-0 flex items-center gap-1.5">
-        {isRoutine && (
-          <span title="루틴"><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
+        {isRoutine ? (
+          <span title="루틴" className="flex-shrink-0"><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
+        ) : (
+          <span
+            className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+            style={project ? { backgroundColor: 'var(--surface-hover)', color: project.color } : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+          >
+            <ColorDot color={project?.color ?? '#8A8A8A'} size="sm" />
+            <span className="max-w-[60px] truncate">{project?.name ?? '미분류'}</span>
+          </span>
         )}
         <span className="text-[var(--fs-item)] text-[var(--foreground)] truncate">
           {title}
@@ -79,14 +87,6 @@ export default function BacklogItem({
           <Badge count={deferCount} origin={origin} />
         )}
       </div>
-
-      {/* 프로젝트 레이블 — 맨 오른쪽 고정 */}
-      {project && (
-        <span className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-[var(--muted)] text-[10px] text-[var(--muted-foreground)]">
-          <ColorDot color={project.color} size="sm" />
-          <span className="max-w-[60px] truncate">{project.name}</span>
-        </span>
-      )}
 
       {/* 슬롯 배치 버튼 — 호버 시 프로젝트 레이블 위에 겹침 */}
       {!isReadOnly && (

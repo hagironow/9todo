@@ -71,13 +71,13 @@ export function isSlotOccupied(
   });
 }
 
-// 백로그 항목 추출 (특정 날짜)
-export function getBacklogItems(state: AppState, date: string): (Task | RoutineInstance)[] {
+// 백로그 항목 추출 (날짜 무관 — 슬롯 미배치 + 미완료)
+export function getBacklogItems(state: AppState, _date?: string): (Task | RoutineInstance)[] {
   const tasks = state.tasks.filter(
-    (t) => t.slot === null && t.date === date && t.completedAt === null,
+    (t) => t.slot === null && t.completedAt === null,
   );
   const routineInstances = state.routineInstances.filter(
-    (ri) => ri.slot === null && ri.date === date && ri.completedAt === null,
+    (ri) => ri.slot === null && ri.date === _date && ri.completedAt === null,
   );
   return [...tasks, ...routineInstances];
 }

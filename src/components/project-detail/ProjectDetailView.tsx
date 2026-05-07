@@ -139,7 +139,7 @@ export default function ProjectDetailView({
     return [...projectTasks].sort((a, b) => {
       if (!a.completedAt && b.completedAt) return -1;
       if (a.completedAt && !b.completedAt) return 1;
-      return b.date.localeCompare(a.date);
+      return (b.date ?? '').localeCompare(a.date ?? '');
     });
   }, [projectTasks]);
 
@@ -279,19 +279,17 @@ export default function ProjectDetailView({
 
         {/* 노트 입력 */}
         <div className="flex gap-2">
-          <input
+          <textarea
             value={noteInput}
             onChange={(e) => setNoteInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAddNote();
-            }}
             placeholder="노트를 입력하세요..."
-            className="flex-1 px-3 py-2 text-sm rounded-[var(--radius-sm)] border border-[var(--border)] bg-transparent text-[var(--foreground)] outline-none focus:border-[var(--foreground)] placeholder:text-[var(--muted-foreground)]"
+            rows={2}
+            className="flex-1 px-3 py-2 text-sm rounded-[var(--radius-sm)] border border-[var(--border)] bg-transparent text-[var(--foreground)] outline-none focus:border-[var(--foreground)] placeholder:text-[var(--muted-foreground)] resize-none"
           />
           <button
             onClick={handleAddNote}
             disabled={!noteInput.trim()}
-            className="px-3 py-2 text-sm font-medium rounded-[var(--radius-sm)] border border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)] disabled:opacity-40 hover:opacity-90 transition-opacity"
+            className="px-3 py-2 text-sm font-medium rounded-[var(--radius-sm)] border border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)] disabled:opacity-40 hover:opacity-90 transition-opacity self-end"
           >
             저장
           </button>
@@ -381,7 +379,7 @@ function TaskRow({
         {task.title}
       </span>
       <span className="text-xs text-[var(--muted-foreground)] shrink-0">
-        {task.date}
+        {task.date ?? '백로그'}
       </span>
       <span className="text-xs text-[var(--muted-foreground)] shrink-0 w-16 text-right">
         {timeLabel}

@@ -189,6 +189,12 @@
   }
 }
 
+/* ── iOS 줌 방지 ── */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
 /* ── 네이티브 date/time 인풋 아이콘 가시성 ── */
 .dark input[type="date"]::-webkit-calendar-picker-indicator,
 .dark input[type="time"]::-webkit-calendar-picker-indicator {
