@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, CirclePause, Pause, Check, SkipForward, Settings, Sun, Moon, StickyNote, Timer, ArrowUp } from 'lucide-react';
+import { Play, CirclePause, Pause, Check, SkipForward, Settings, Sun, Moon, StickyNote, Timer, ArrowUp, X } from 'lucide-react';
 import { ScheduledItem, Project, Note } from '@/lib/types';
 import Dialog from '@/components/ui/Dialog';
 import RepeatCountIcon from '@/components/ui/RepeatCountIcon';
@@ -18,6 +18,7 @@ interface NowFocusProps {
   onRemoveNote?: (noteId: string) => void;
   onUpdateNote?: (noteId: string, content: string) => void;
   lastUsedProjectId?: string | null;
+  onClose?: () => void;
 }
 
 type PanelMode = 'timer' | 'note';
@@ -348,7 +349,7 @@ function QuickNotePanel({
                       </span>
                       <button
                         onClick={() => setDeleteTargetId(note.id)}
-                        className="text-xs ml-1 opacity-0 group-hover/note:opacity-100 transition-opacity"
+                        className="text-xs ml-1 lg:opacity-0 lg:group-hover/note:opacity-100 transition-opacity"
                         style={{ color: 'var(--timer-muted)' }}
                       >
                         ×
@@ -366,22 +367,16 @@ function QuickNotePanel({
                           setEditingId(null);
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                            e.preventDefault();
-                            const trimmed = editContent.trim();
-                            if (trimmed && trimmed !== note.content) onUpdate(note.id, trimmed);
-                            setEditingId(null);
-                          }
                           if (e.key === 'Escape') setEditingId(null);
                         }}
-                        className="text-sm leading-relaxed w-full bg-transparent outline-none resize-none"
+                        className="text-[14px] leading-relaxed w-full bg-transparent outline-none resize-none"
                         style={{ color: 'var(--timer-fg)', minHeight: '2.5em' }}
                         rows={3}
                       />
                     ) : (
                       <p
                         onClick={() => { setEditingId(note.id); setEditContent(note.content); }}
-                        className="text-sm leading-relaxed whitespace-pre-wrap break-words cursor-text"
+                        className="text-[14px] leading-relaxed whitespace-pre-wrap break-words cursor-text"
                         style={{
                           color: 'var(--timer-fg)',
                           display: '-webkit-box',
@@ -401,53 +396,59 @@ function QuickNotePanel({
         )}
       </div>
 
-      {/* 하단 인풋 — 메시지 전송 스타일 */}
-      <div className="px-5 pt-2 pb-4">
+      {/* 하단 인풋 — 바텀 고정 */}
+      <div className="px-5 pt-2 pb-4 flex-shrink-0 sticky bottom-0" style={{ backgroundColor: 'var(--timer-bg)' }}>
         <div
-          className="flex items-center gap-2 rounded-full px-3 py-2 transition-colors"
+          className="flex flex-col gap-2 rounded-2xl px-3 py-2.5 transition-colors"
           style={{
             backgroundColor: timerDark ? '#1a1a1a' : '#f5f5f5',
             border: `1px solid ${timerDark ? '#2a2a2a' : '#e8e8e8'}`,
           }}
         >
-          <div className="relative shrink-0">
-            <span
-              className="block w-3 h-3 rounded-full absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ backgroundColor: selectedProject?.color ?? (timerDark ? '#444' : '#ccc') }}
-            />
-            <select
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="appearance-none bg-transparent text-xs pl-6 pr-1 py-1 outline-none cursor-pointer"
-              style={{ color: 'var(--timer-muted)', width: '24px' }}
-            >
-              <option value=""></option>
-              {activeProjects.map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-          <input
+          <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleSubmit();
-            }}
             placeholder="메모를 남겨보세요..."
-            className="flex-1 bg-transparent text-sm outline-none min-w-0"
-            style={{ color: 'var(--timer-fg)' }}
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className="w-7 h-7 flex items-center justify-center rounded-full shrink-0 transition-opacity disabled:opacity-20"
-            style={{
-              backgroundColor: timerDark ? '#fff' : '#1a1a1a',
-              color: timerDark ? '#1a1a1a' : '#fff',
+            rows={1}
+            className="flex-1 bg-transparent text-[14px] outline-none min-w-0 resize-none"
+            style={{ color: 'var(--timer-fg)', maxHeight: '160px', overflow: content.includes('\n') || content.length > 40 ? 'auto' : 'hidden' }}
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = 'auto';
+              el.style.height = Math.min(el.scrollHeight, 160) + 'px';
             }}
-          >
-            <ArrowUp size={14} strokeWidth={2.5} />
-          </button>
+          />
+          <div className="flex items-center gap-2">
+            <div className="relative shrink-0">
+              <span
+                className="block w-3 h-3 rounded-full absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ backgroundColor: selectedProject?.color ?? (timerDark ? '#444' : '#ccc') }}
+              />
+              <select
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                className="appearance-none bg-transparent text-xs pl-6 pr-1 py-1 outline-none cursor-pointer"
+                style={{ color: 'var(--timer-muted)', width: '24px', fontSize: '16px' }}
+              >
+                <option value=""></option>
+                {activeProjects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <span className="flex-1" />
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="w-7 h-7 flex items-center justify-center rounded-full shrink-0 transition-opacity disabled:opacity-20"
+              style={{
+                backgroundColor: timerDark ? '#fff' : '#1a1a1a',
+                color: timerDark ? '#1a1a1a' : '#fff',
+              }}
+            >
+              <ArrowUp size={14} strokeWidth={2.5} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -468,7 +469,7 @@ function QuickNotePanel({
 }
 
 // ── Main ──
-export default function NowFocus({ items, projects, onComplete, onDefer, onRepeat, isReadOnly, notes, onAddNote, onRemoveNote, onUpdateNote, lastUsedProjectId }: NowFocusProps) {
+export default function NowFocus({ items, projects, onComplete, onDefer, onRepeat, isReadOnly, notes, onAddNote, onRemoveNote, onUpdateNote, lastUsedProjectId, onClose }: NowFocusProps) {
   const [mode, setMode] = useState<PanelMode>('timer');
   const [confirm, setConfirm] = useState<ConfirmType | null>(null);
   const [durationMin, setDurationMin] = useState(25);
@@ -503,7 +504,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
   return (
     <>
       <div
-        className="flex flex-col group rounded-[40px] lg:rounded-[40px] max-lg:rounded-none overflow-hidden transition-colors duration-200 max-lg:min-h-full"
+        className="flex flex-col group rounded-none lg:rounded-[40px] overflow-hidden transition-colors duration-200 min-h-full lg:min-h-0"
         style={{
           ...(timerDark
             ? { '--timer-bg': '#111111', '--timer-fg': '#e0e0e0', '--timer-muted': '#888', '--timer-muted-bg': '#1a1a1a', '--timer-hover': '#1f1f1f', '--timer-btn': '#2a2a2a', '--timer-btn-fg': '#aaa' }
@@ -513,7 +514,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
         }}
       >
         {/* 상단 탭 바 */}
-        <div className="flex items-center px-5 pt-4 pb-1 gap-1">
+        <div className="flex items-center px-5 pt-2 pb-1 gap-1 flex-shrink-0" style={{ backgroundColor: 'var(--timer-bg)' }}>
           <div className="flex-1 flex items-center gap-1 rounded-full p-0.5" style={{ backgroundColor: 'var(--timer-muted-bg)' }}>
             <button
               onClick={() => setMode('timer')}
@@ -546,12 +547,25 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
           >
             {timerDark ? <Sun size={14} /> : <Moon size={14} />}
           </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="lg:hidden text-[13px] font-medium shrink-0 ml-1"
+              style={{ color: 'var(--timer-fg)' }}
+            >
+              닫기
+            </button>
+          )}
         </div>
 
         {/* 컨텐츠: 타이머가 높이를 결정하고, 노트는 같은 높이를 공유 */}
         <div className="relative flex-1 min-h-0">
-          {/* 타이머 — 항상 렌더링하여 높이 결정 (노트 모드일 때는 숨김) */}
-          <div className={mode === 'timer' ? '' : 'hidden'} aria-hidden={mode !== 'timer'}>
+          {/* 타이머 — PC: visibility로 높이 유지 / 모바일: hidden으로 완전 숨김 */}
+          <div
+            className={mode === 'timer' ? '' : 'max-lg:hidden'}
+            style={mode !== 'timer' ? { visibility: 'hidden' } : undefined}
+            aria-hidden={mode !== 'timer'}
+          >
             {/* 타이머 영역 */}
             <div className="flex flex-col items-center justify-center px-6 py-5 gap-2">
               {/* 타이틀 — 중앙 정렬 */}
@@ -632,9 +646,9 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
             {tertiary && <SecondaryBar item={tertiary} project={getProject(tertiary)} durationMin={durationMin} onComplete={onComplete} onDefer={onDefer} onRepeat={onRepeat} isReadOnly={isReadOnly} />}
           </div>
 
-          {/* 노트 — 데스크탑: 오버레이 / 모바일: 자연 플로우 */}
+          {/* 노트 — 데스크탑: 오버레이 / 모바일: 뷰포트 채움 */}
           {mode === 'note' && onAddNote && onRemoveNote && (
-            <div className="lg:absolute lg:inset-0 flex flex-col min-h-[400px]" style={{ backgroundColor: timerDark ? '#111111' : '#ffffff' }}>
+            <div className="lg:absolute lg:inset-0 flex flex-col lg:min-h-[400px] min-h-[calc(100dvh-44px)] lg:min-h-[400px]" style={{ backgroundColor: 'var(--timer-bg)' }}>
               <QuickNotePanel
                 projects={projects}
                 notes={notes ?? []}

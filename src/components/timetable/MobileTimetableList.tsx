@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Check, SkipForward, RefreshCw, Trash2, Plus, Repeat } from 'lucide-react';
+import { Check, SkipForward, RefreshCw, Trash2, Plus, Repeat, Inbox } from 'lucide-react';
 import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
 import ColorDot from '@/components/ui/ColorDot';
@@ -25,6 +25,7 @@ interface MobileTimetableListProps {
   projects?: Project[];
   isReadOnly?: boolean;
   onItemSelect?: (item: ScheduledItem) => void;
+  onSendToBacklog?: (item: ScheduledItem) => void;
 }
 
 type RowStatus = 'active' | 'past' | 'future';
@@ -87,6 +88,7 @@ function MobileCard({
   onRepeat,
   onDelete,
   onUncomplete,
+  onSendToBacklog,
 }: {
   card: CardItem;
   currentPeriod: TimePeriod;
@@ -99,6 +101,7 @@ function MobileCard({
   onRepeat: (item: ScheduledItem) => void;
   onDelete?: (item: ScheduledItem) => void;
   onUncomplete?: (item: ScheduledItem) => void;
+  onSendToBacklog?: (item: ScheduledItem) => void;
 }) {
   const { item, period, priority, isRoutine } = card;
   const isCompleted = !!item.completedAt;
@@ -248,6 +251,14 @@ function MobileCard({
               <Trash2 size={15} />
             </button>
           )}
+          {onSendToBacklog && !isRoutine && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onSendToBacklog(item); onTap(null); }}
+              className="w-10 h-10 flex flex-col items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]"
+            >
+              <Inbox size={15} />
+            </button>
+          )}
         </div>
       )}
 
@@ -296,17 +307,9 @@ function AddSlotPicker({
 
   if (!open) return null;
 
-  const emptySlots: { coord: SlotCoord; label: string }[] = [];
-  for (const { period, label } of PERIODS) {
-    for (const priority of PRIORITIES) {
-      if (!slots[period][priority]) {
-        emptySlots.push({
-          coord: { period, priority },
-          label: `${label} ${getPriorityLabel(priority)}`,
-        });
-      }
-    }
-  }
+  const allFilled = PERIODS.every(({ period }) =>
+    PRIORITIES.every((p) => !!slots[period][p])
+  );
 
   const commitInput = () => {
     const trimmed = inputValue.trim();
@@ -362,20 +365,58 @@ function AddSlotPicker({
           /* Slot picker */
           <div>
             <p className="text-[15px] font-semibold text-[var(--foreground)] mb-3">어디에 추가할까요?</p>
-            {emptySlots.length === 0 ? (
+            {allFilled ? (
               <p className="text-[13px] text-[var(--muted-foreground)] text-center py-6">빈 슬롯이 없어요</p>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {emptySlots.map(({ coord, label }) => (
-                  <button
-                    key={`${coord.period}-${coord.priority}`}
-                    onClick={() => setSelectedCoord(coord)}
-                    className="py-3 px-2 rounded-[var(--radius)] bg-[var(--background)] border border-[var(--border)] text-[13px] text-[var(--foreground)] font-medium text-center active:bg-[var(--muted)] transition-colors"
-                  >
-                    {label}
-                  </button>
+              <>
+                {/* Header: priority labels */}
+                <div className="grid grid-cols-[40px_1fr_1fr_1fr] gap-2 mb-2">
+                  <div />
+                  {PRIORITIES.map((p) => (
+                    <span
+                      key={p}
+                      className={[
+                        'text-center text-[12px] font-bold',
+                        p === 1 ? 'text-[var(--accent)]' : p === 2 ? 'text-[var(--foreground)]' : 'text-[var(--muted-foreground)]',
+                      ].join(' ')}
+                    >
+                      {getPriorityLabel(p)}
+                    </span>
+                  ))}
+                </div>
+                {/* 3x3 grid: all 9 slots */}
+                {PERIODS.map(({ period, label }) => (
+                  <div key={period} className="grid grid-cols-[40px_1fr_1fr_1fr] gap-2 mb-2">
+                    <span className="text-[12px] text-[var(--muted-foreground)] font-medium flex items-center">
+                      {label}
+                    </span>
+                    {PRIORITIES.map((priority) => {
+                      const occupied = !!slots[period][priority];
+                      const occupiedItem = slots[period][priority];
+                      const title = occupied ? getItemTitle(occupiedItem!) : '';
+                      return (
+                        <button
+                          key={priority}
+                          onClick={() => !occupied && setSelectedCoord({ period, priority })}
+                          disabled={occupied}
+                          className={[
+                            'py-3 px-2 rounded-[var(--radius)] text-[12px] text-center transition-colors',
+                            occupied
+                              ? 'bg-[var(--muted)] text-[var(--muted-foreground)] opacity-40 cursor-not-allowed'
+                              : 'bg-[var(--background)] border border-[var(--border)] text-[var(--foreground)] font-medium active:bg-[var(--muted)]',
+                          ].join(' ')}
+                        >
+                          {occupied ? (
+                            <span className="truncate block">{title}</span>
+                          ) : (
+                            <Plus size={14} className="mx-auto" strokeWidth={1.5} />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 ))}
-              </div>
+              </>
             )}
           </div>
         )}
@@ -398,6 +439,7 @@ export default function MobileTimetableList({
   onUncomplete,
   projects,
   isReadOnly,
+  onSendToBacklog,
 }: MobileTimetableListProps) {
   const [tappedId, setTappedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -455,6 +497,7 @@ export default function MobileTimetableList({
             onRepeat={onRepeat}
             onDelete={onDelete}
             onUncomplete={onUncomplete}
+            onSendToBacklog={onSendToBacklog}
           />
         ))
       )}

@@ -1,8 +1,5 @@
 import type { AppState, Task, RoutineInstance, Project } from './types';
-
-function getToday(): string {
-  return new Date().toISOString().split('T')[0];
-}
+import { getToday } from './date';
 
 function findProject(projects: Project[], id: string | null): Project | undefined {
   return projects.find((p) => p.id === id);

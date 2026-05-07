@@ -50,6 +50,18 @@ export function grantStorageConsent(): void {
   localStorage.setItem(CONSENT_KEY, 'true');
 }
 
+/** 마이그레이션: 백로그 태스크(slot=null)의 date를 null로 변환 */
+function migrateBacklogDates(state: AppState): AppState {
+  const needsMigration = state.tasks.some((t) => t.slot === null && t.date !== null);
+  if (!needsMigration) return state;
+  return {
+    ...state,
+    tasks: state.tasks.map((t) =>
+      t.slot === null && t.completedAt === null ? { ...t, date: null } : t,
+    ),
+  };
+}
+
 /** 프로젝트 색상을 현재 테마 기반으로 resolve */
 function resolveProjectColors(state: AppState): AppState {
   const themeId = state.colorTheme ?? DEFAULT_THEME;
@@ -65,7 +77,7 @@ function resolveProjectColors(state: AppState): AppState {
 }
 
 export function importStateFromJSON(json: string): AppState {
-  return resolveProjectColors(JSON.parse(json) as AppState);
+  return migrateBacklogDates(resolveProjectColors(JSON.parse(json) as AppState));
 }
 
 export function useAppData() {
@@ -79,7 +91,8 @@ export function useAppData() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        setState(resolveProjectColors(JSON.parse(raw) as AppState));
+        const parsed = resolveProjectColors(JSON.parse(raw) as AppState);
+        setState(migrateBacklogDates(parsed));
       }
     } catch (err) {
       console.error('[useAppData] localStorage read error', err);
@@ -204,7 +217,7 @@ export function useAppData() {
   const addTask = useCallback(
     (
       title: string,
-      date: string,
+      date: string | null,
       options?: { slot?: SlotCoord; projectId?: string | null },
     ) => {
       const task: Task = {
@@ -216,7 +229,7 @@ export function useAppData() {
         deferCount: 0,
         continueCount: 0,
         completedAt: null,
-        date,
+        date: options?.slot ? date : null, // 슬롯 있으면 날짜 지정, 백로그는 null
         createdAt: new Date().toISOString(),
       };
       update((prev) => ({
@@ -265,7 +278,7 @@ export function useAppData() {
         ...prev,
         tasks: prev.tasks.map((t) =>
           t.id === taskId
-            ? { ...t, slot: null, deferCount: t.deferCount + 1, origin: 'deferred' as const }
+            ? { ...t, slot: null, date: null, deferCount: t.deferCount + 1, origin: 'deferred' as const }
             : t,
         ),
       }));
@@ -283,6 +296,7 @@ export function useAppData() {
             ? {
                 ...t,
                 slot: null,
+                date: null,
                 completedAt: null,
                 continueCount: Math.min((t.continueCount ?? 0) + 1, 9),
                 origin: 'repeated' as const,
@@ -295,11 +309,11 @@ export function useAppData() {
   );
 
   const assignTaskSlot = useCallback(
-    (taskId: string, coord: SlotCoord) => {
+    (taskId: string, coord: SlotCoord, date?: string) => {
       update((prev) => ({
         ...prev,
         tasks: prev.tasks.map((t) =>
-          t.id === taskId ? { ...t, slot: coord } : t,
+          t.id === taskId ? { ...t, slot: coord, ...(date ? { date } : {}) } : t,
         ),
       }));
     },

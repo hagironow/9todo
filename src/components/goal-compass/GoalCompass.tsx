@@ -70,26 +70,28 @@ export default function GoalCompass({
           </span>
 
           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-            {/* 오늘 목표 완료 버튼 */}
-            {previewKey === 'today' && goalValue && onCompleteGoal && !isGoalCompleted && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (typeof navigator !== 'undefined' && navigator.vibrate) {
-                    navigator.vibrate(40);
-                  }
-                  onCompleteGoal();
-                }}
-                className="flex items-center gap-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] active:scale-95 transition-all duration-150 cursor-pointer"
-                title={`완료 (+${GOAL_COMPLETE_XP}xp)`}
-              >
-                <span className="text-[12px] font-semibold">{GOAL_COMPLETE_XP}xp</span>
-                <CheckCircle2 size={32} strokeWidth={1.5} fill="white" />
-              </button>
-            )}
-            {previewKey === 'today' && isGoalCompleted && (
-              <span className="text-[12px] font-bold" style={{ color: 'var(--g-success)' }}>+{GOAL_COMPLETE_XP}xp</span>
-            )}
+            {/* 오늘 목표 완료 — 높이 고정(32px)으로 레이아웃 흔들림 방지 */}
+            <div className="flex items-center justify-end" style={{ minHeight: '32px' }}>
+              {previewKey === 'today' && goalValue && onCompleteGoal && !isGoalCompleted && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                      navigator.vibrate(40);
+                    }
+                    onCompleteGoal();
+                  }}
+                  className="flex items-center gap-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] active:scale-95 transition-all duration-150 cursor-pointer"
+                  title={`완료 (+${GOAL_COMPLETE_XP}xp)`}
+                >
+                  <span className="text-[12px] font-semibold">{GOAL_COMPLETE_XP}xp</span>
+                  <CheckCircle2 size={32} strokeWidth={1.5} fill="white" />
+                </button>
+              )}
+              {previewKey === 'today' && isGoalCompleted && (
+                <span className="text-[12px] font-bold" style={{ color: 'var(--g-success)' }}>+{GOAL_COMPLETE_XP}xp</span>
+              )}
+            </div>
 
             <svg
               width="14"

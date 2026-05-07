@@ -7,6 +7,7 @@ import type { Task, Routine, RoutineInstance, Project, RecurrenceType } from '@/
 import ColorDot from '@/components/ui/ColorDot';
 import { shouldCreateInstance } from '@/lib/routine';
 import { calculateDailyXP } from '@/lib/xp';
+import { getToday } from '@/lib/date';
 
 interface CalendarViewProps {
   tasks: Task[];
@@ -22,12 +23,6 @@ type ViewMode = 'week' | 'month';
 type FilterMode = 'all' | 'todo' | 'routine';
 
 const KO_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
-function getToday(): string {
-  const now = new Date();
-  if (now.getHours() < 5) now.setDate(now.getDate() - 1);
-  return now.toISOString().split('T')[0];
-}
 
 function toDateString(d: Date): string {
   const y = d.getFullYear();

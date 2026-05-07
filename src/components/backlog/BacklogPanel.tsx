@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, KeyboardEvent } from 'react';
+import { useDroppable } from '@dnd-kit/core';
 import { ChevronDown, Clock, Inbox, Plus } from 'lucide-react';
 import RepeatCountIcon from '@/components/ui/RepeatCountIcon';
 import { Task, RoutineInstance, Project } from '@/lib/types';
@@ -71,6 +72,8 @@ export default function BacklogPanel({
     if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAdd();
   };
 
+  const { isOver, setNodeRef: setDropRef } = useDroppable({ id: 'backlog-drop' });
+
   const totalCount = items.length;
 
   // Group by origin
@@ -85,7 +88,13 @@ export default function BacklogPanel({
   );
 
   return (
-    <section className="rounded-[calc(var(--radius)*1.4)] overflow-hidden bg-[var(--card)]">
+    <section
+      ref={setDropRef}
+      className={[
+        'rounded-[calc(var(--radius)*1.4)] overflow-hidden bg-[var(--card)] transition-all duration-150',
+        isOver ? 'ring-2 ring-[var(--accent)] ring-inset' : '',
+      ].join(' ')}
+    >
       {/* Header */}
       <button
         onClick={() => setExpanded((v) => !v)}

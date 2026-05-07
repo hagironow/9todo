@@ -302,8 +302,8 @@ export default function Home() {
   // 캘린더 dot indicator — 데이터 있는 날짜들
   const datesWithData = useMemo(() => {
     const set = new Set<string>();
-    for (const t of state.tasks) set.add(t.date);
-    for (const ri of state.routineInstances) set.add(ri.date);
+    for (const t of state.tasks) if (t.date) set.add(t.date);
+    for (const ri of state.routineInstances) if (ri.date) set.add(ri.date);
     return set;
   }, [state.tasks, state.routineInstances]);
 

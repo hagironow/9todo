@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import type { Routine, RoutineInstance, RecurrenceType } from '@/lib/types';
 import { shouldCreateInstance } from '@/lib/routine';
+import { getToday } from '@/lib/date';
 
 interface RoutineCalendarViewProps {
   routines: Routine[];
@@ -22,12 +23,6 @@ const RECURRENCE_LABELS: Record<RecurrenceType, string> = {
 
 function toDateString(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
-
-function getToday(): string {
-  const now = new Date();
-  if (now.getHours() < 5) now.setDate(now.getDate() - 1);
-  return now.toISOString().split('T')[0];
 }
 
 export default function RoutineCalendarView({

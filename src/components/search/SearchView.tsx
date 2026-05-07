@@ -25,7 +25,7 @@ export default function SearchView({ tasks, notes, projects, onClose }: SearchVi
     if (!q) return [];
     return tasks
       .filter((t) => t.title.toLowerCase().includes(q))
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
       .slice(0, 30);
   }, [tasks, q]);
 
@@ -103,7 +103,7 @@ export default function SearchView({ tasks, notes, projects, onClose }: SearchVi
                         <span className="text-[10px] text-[var(--muted-foreground)]">{proj.name}</span>
                       </span>
                     )}
-                    <span className="text-xs text-[var(--muted-foreground)] shrink-0">{task.date}</span>
+                    <span className="text-xs text-[var(--muted-foreground)] shrink-0">{task.date ?? '백로그'}</span>
                   </div>
                 );
               })}
