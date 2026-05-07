@@ -55,11 +55,11 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
-const STORAGE_KEY = '9block_survey';
-const SESSION_KEY = '9block_survey_session';
+const STORAGE_KEY = '9todo_survey';
+const SESSION_KEY = '9todo_survey_session';
 
 function getDaysSinceFirstUse() {
-  const first = localStorage.getItem('9block_first_use');
+  const first = localStorage.getItem('9todo_first_use');
   if (!first) return 0;
   return Math.floor((Date.now() - new Date(first).getTime()) / 86400000);
 }

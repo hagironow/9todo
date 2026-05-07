@@ -15,12 +15,14 @@ interface AppShellProps {
   onEditProject?: (project: Project) => void;
   onDeleteProject?: (projectId: string) => void;
   onArchiveProject?: (projectId: string) => void;
+  onUnarchiveProject?: (projectId: string) => void;
   onLoginClick?: () => void;
   onExport?: () => void;
   onImport?: () => void;
   onResetData?: () => void;
   projectFirstMode: boolean;
   onProjectFirstModeChange: (enabled: boolean) => void;
+  onSearchClick?: () => void;
   rightPanel?: ReactNode;
   children: ReactNode;
 }
@@ -35,12 +37,14 @@ export default function AppShell({
   onEditProject,
   onDeleteProject,
   onArchiveProject,
+  onUnarchiveProject,
   onLoginClick,
   onExport,
   onImport,
   onResetData,
   projectFirstMode,
   onProjectFirstModeChange,
+  onSearchClick,
   rightPanel,
   children,
 }: AppShellProps) {
@@ -59,6 +63,8 @@ export default function AppShell({
         onEditProject={onEditProject}
         onDeleteProject={onDeleteProject}
         onArchiveProject={onArchiveProject}
+            onUnarchiveProject={onUnarchiveProject}
+            onSearchClick={onSearchClick}
         onLoginClick={onLoginClick}
         onExport={onExport}
         onImport={onImport}
@@ -94,6 +100,8 @@ export default function AppShell({
               onEditProject={onEditProject}
               onDeleteProject={onDeleteProject}
               onArchiveProject={onArchiveProject}
+            onUnarchiveProject={onUnarchiveProject}
+            onSearchClick={onSearchClick}
               onLoginClick={() => {
                 onLoginClick?.();
                 setSidebarOpen(false);

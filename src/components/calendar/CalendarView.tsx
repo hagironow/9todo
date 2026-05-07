@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { ChevronLeft, ChevronRight, Check, Plus } from 'lucide-react';
 import type { Task, Routine, RoutineInstance, Project, RecurrenceType } from '@/lib/types';
+import ColorDot from '@/components/ui/ColorDot';
 import { shouldCreateInstance } from '@/lib/routine';
 import { calculateDailyXP } from '@/lib/xp';
 
@@ -12,6 +14,8 @@ interface CalendarViewProps {
   routineInstances: RoutineInstance[];
   projects: Project[];
   onEditRoutine?: (routine: Routine) => void;
+  onViewModeChange?: (mode: ViewMode) => void;
+  onCreateTask?: (title: string, date: string, projectId: string | null) => void;
 }
 
 type ViewMode = 'week' | 'month';
@@ -59,12 +63,140 @@ interface DayData {
   xp: number;
 }
 
+/** 날짜 셀 인라인 입력 */
+function DayCellInput({
+  date,
+  projects,
+  onSubmit,
+  onClose,
+}: {
+  date: string;
+  projects: Project[];
+  onSubmit: (title: string, date: string, projectId: string | null) => void;
+  onClose: () => void;
+}) {
+  const [value, setValue] = useState('');
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const tagRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const activeProjects = projects.filter((p) => !p.archived);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // 외부 클릭 시 커밋
+  useEffect(() => {
+    const handle = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (containerRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      commit();
+    };
+    const timer = setTimeout(() => document.addEventListener('mousedown', handle), 50);
+    return () => { clearTimeout(timer); document.removeEventListener('mousedown', handle); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, selectedProject]);
+
+  const commit = () => {
+    const trimmed = value.trim();
+    if (trimmed) onSubmit(trimmed, date, selectedProject?.id ?? null);
+    onClose();
+  };
+
+  const openDropdown = useCallback(() => {
+    if (!tagRef.current) return;
+    const rect = tagRef.current.getBoundingClientRect();
+    setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+    setDropdownOpen(true);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="flex flex-col gap-1 mt-1">
+      <button
+        ref={tagRef}
+        onClick={() => dropdownOpen ? setDropdownOpen(false) : openDropdown()}
+        className={[
+          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full self-start',
+          'text-[10px] font-medium transition-colors duration-100',
+          'border border-[var(--border)] hover:border-[var(--foreground)]',
+          'cursor-pointer',
+          selectedProject ? 'text-[var(--foreground)]' : 'text-[var(--muted-foreground)]',
+        ].join(' ')}
+      >
+        <ColorDot color={selectedProject?.color ?? '#8A8A8A'} size="sm" />
+        <span className="truncate max-w-[60px]">{selectedProject?.name ?? '미분류'}</span>
+      </button>
+
+      {dropdownOpen && dropdownPos && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed z-[9999] w-44 rounded-[calc(var(--radius)*1.4)] border border-[var(--border)] bg-[var(--popover)] shadow-xl overflow-hidden animate-[status-appear_0.12s_ease_forwards]"
+          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+          onMouseLeave={() => setDropdownOpen(false)}
+        >
+          {activeProjects.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => { setSelectedProject(p); setDropdownOpen(false); inputRef.current?.focus(); }}
+              className={[
+                'w-full flex items-center gap-2 px-3 py-1.5',
+                'text-[var(--fs-tag)] text-left transition-colors duration-100',
+                selectedProject?.id === p.id
+                  ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-semibold'
+                  : 'text-[var(--foreground)] hover:bg-[var(--muted)]',
+              ].join(' ')}
+            >
+              <ColorDot color={p.color} size="sm" />
+              <span className="truncate">{p.name}</span>
+            </button>
+          ))}
+          {activeProjects.length > 0 && <div className="border-t border-[var(--border)]" />}
+          <button
+            onClick={() => { setSelectedProject(null); setDropdownOpen(false); inputRef.current?.focus(); }}
+            className={[
+              'w-full flex items-center gap-2 px-3 py-1.5',
+              'text-[var(--fs-tag)] text-left transition-colors duration-100',
+              !selectedProject
+                ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-semibold'
+                : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)]',
+            ].join(' ')}
+          >
+            <span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] inline-block" />
+            <span>미분류</span>
+          </button>
+        </div>,
+        document.body,
+      )}
+
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.nativeEvent.isComposing) commit();
+          if (e.key === 'Escape') onClose();
+        }}
+        placeholder="할 일 입력..."
+        className="w-full text-[12px] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--border)] focus:border-[var(--foreground)] placeholder:text-[var(--muted-foreground)] py-0.5"
+      />
+    </div>
+  );
+}
+
 export default function CalendarView({
   tasks,
   routines,
   routineInstances,
   projects,
   onEditRoutine,
+  onViewModeChange,
+  onCreateTask,
 }: CalendarViewProps) {
   const todayStr = getToday();
   const [todayY, todayM] = todayStr.split('-').map(Number);
@@ -75,6 +207,7 @@ export default function CalendarView({
   const [viewMonth, setViewMonth] = useState(todayM - 1);
   const [weekAnchor, setWeekAnchor] = useState(todayStr);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [inputDate, setInputDate] = useState<string | null>(null);
 
   const activeRoutines = routines.filter((r) => r.isActive);
 
@@ -342,7 +475,7 @@ export default function CalendarView({
           {/* 뷰 토글 */}
           <div className="flex items-center bg-[var(--card)] rounded-[var(--radius-sm)] p-0.5">
             <button
-              onClick={() => setViewMode('week')}
+              onClick={() => { setViewMode('week'); onViewModeChange?.('week'); }}
               className={[
                 'px-2.5 py-1 rounded-[var(--radius-sm)] text-[12px] font-medium transition-colors',
                 viewMode === 'week'
@@ -353,7 +486,7 @@ export default function CalendarView({
               이번주
             </button>
             <button
-              onClick={() => setViewMode('month')}
+              onClick={() => { setViewMode('month'); onViewModeChange?.('month'); }}
               className={[
                 'px-2.5 py-1 rounded-[var(--radius-sm)] text-[12px] font-medium transition-colors',
                 viewMode === 'month'
@@ -408,11 +541,26 @@ export default function CalendarView({
                 <div
                   key={dateStr}
                   className={[
-                    'min-h-[120px] p-2 flex flex-col',
+                    'group/cell relative min-h-[120px] p-2 flex flex-col',
                     i < 6 ? 'border-r border-[var(--border)]' : '',
                   ].join(' ')}
                 >
                   {data && renderDaySections(data, dateStr, false)}
+                  {inputDate === dateStr && onCreateTask ? (
+                    <DayCellInput
+                      date={dateStr}
+                      projects={projects}
+                      onSubmit={onCreateTask}
+                      onClose={() => setInputDate(null)}
+                    />
+                  ) : onCreateTask && (
+                    <button
+                      onClick={() => setInputDate(dateStr)}
+                      className="mt-auto pt-1 self-center text-[var(--muted-foreground)] opacity-0 group-hover/cell:opacity-100 transition-opacity duration-150 hover:text-[var(--foreground)]"
+                    >
+                      <Plus size={14} strokeWidth={1.5} />
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -452,7 +600,7 @@ export default function CalendarView({
                 <div
                   key={day}
                   className={[
-                    'min-h-[96px] p-1.5 flex flex-col gap-1',
+                    'group/cell min-h-[96px] p-1.5 flex flex-col gap-1',
                     'border-r border-b border-[var(--border)]',
                     dayOfWeek === 6 ? 'border-r-0' : '',
                   ].join(' ')}
@@ -468,9 +616,27 @@ export default function CalendarView({
                     >
                       {day}
                     </span>
-                    {data && renderXP(data.xp)}
+                    <div className="flex items-center gap-1">
+                      {data && renderXP(data.xp)}
+                      {onCreateTask && inputDate !== dateStr && (
+                        <button
+                          onClick={() => setInputDate(dateStr)}
+                          className="text-[var(--muted-foreground)] opacity-0 group-hover/cell:opacity-100 transition-opacity duration-150 hover:text-[var(--foreground)]"
+                        >
+                          <Plus size={12} strokeWidth={1.5} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {data && renderDaySections(data, dateStr, true)}
+                  {inputDate === dateStr && onCreateTask && (
+                    <DayCellInput
+                      date={dateStr}
+                      projects={projects}
+                      onSubmit={onCreateTask}
+                      onClose={() => setInputDate(null)}
+                    />
+                  )}
                 </div>
               );
             })}

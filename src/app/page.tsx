@@ -46,6 +46,8 @@ import { exportToMarkdown, exportToJSON, downloadFile } from '@/lib/export';
 import { calculateDailyXP, calculateTotalXP } from '@/lib/xp';
 import StorageConsentBanner from '@/components/modals/StorageConsentBanner';
 import ProjectDetailView from '@/components/project-detail/ProjectDetailView';
+import SearchView from '@/components/search/SearchView';
+import Dialog from '@/components/ui/Dialog';
 import { importStateFromJSON, EMPTY_STATE } from '@/hooks/useAppData';
 
 /**
@@ -143,6 +145,9 @@ export default function Home() {
 
   const currentPeriod = useCurrentPeriod();
   const [today, setToday] = useState<string>(getToday);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [importErrorOpen, setImportErrorOpen] = useState(false);
 
   const handlePrevDay = useCallback(() => {
     setToday((prev) => {
@@ -217,6 +222,7 @@ export default function Home() {
 
   // 캘린더 모달
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarViewMode, setCalendarViewMode] = useState<'week' | 'month'>('week');
 
   // 루틴 생성 모달
   const [routineModalOpen, setRoutineModalOpen] = useState(false);
@@ -763,11 +769,13 @@ export default function Home() {
         onEditProject={handleEditProject}
         onDeleteProject={handleDeleteProject}
         onArchiveProject={handleArchiveProject}
+        onUnarchiveProject={(id) => updateProject(id, { archived: false })}
+        onSearchClick={() => setSearchOpen(true)}
         onLoginClick={() => setLoginModalOpen(true)}
         onExport={() => {
           const json = exportToJSON(state);
           const todayStr = new Date().toISOString().split('T')[0];
-          downloadFile(json, `9block_${todayStr}.json`, 'application/json');
+          downloadFile(json, `9todo_${todayStr}.json`, 'application/json');
         }}
         onImport={() => {
           const input = document.createElement('input');
@@ -782,19 +790,14 @@ export default function Home() {
                 const imported = importStateFromJSON(ev.target?.result as string);
                 batchUpdate(() => imported);
               } catch {
-                alert('유효하지 않은 파일입니다.');
+                setImportErrorOpen(true);
               }
             };
             reader.readAsText(file);
           };
           input.click();
         }}
-        onResetData={() => {
-          if (window.confirm('모든 데이터를 삭제하시겠어요?\n이 작업은 되돌릴 수 없습니다.')) {
-            localStorage.removeItem('9block_state');
-            batchUpdate(() => EMPTY_STATE);
-          }
-        }}
+        onResetData={() => setResetConfirmOpen(true)}
         projectFirstMode={state.projectFirstMode}
         onProjectFirstModeChange={(enabled) => {
           setProjectFirstMode(enabled);
@@ -818,6 +821,15 @@ export default function Home() {
         }
       >
         <div className="w-full max-w-5xl px-4 md:px-8 py-6 flex flex-col gap-5">
+          {searchOpen ? (
+            <SearchView
+              tasks={state.tasks}
+              notes={state.notes ?? []}
+              projects={state.projects}
+              onClose={() => setSearchOpen(false)}
+            />
+          ) : (
+          <>
           {/* Goal Compass — 프로젝트 상세 뷰에서는 숨김 */}
           {!(state.activeProjectFilter
             && state.activeProjectFilter !== '__calendar__'
@@ -830,7 +842,7 @@ export default function Home() {
               onSaveGoal={handleSaveGoal}
               onSaveAffirmation={handleSaveAffirmation}
               totalXP={totalXP}
-              previewKey={state.activeProjectFilter === '__calendar__' ? 'month' : 'week'}
+              previewKey={state.activeProjectFilter === '__calendar__' ? calendarViewMode === 'week' ? 'week' : 'month' : 'today'}
             />
           )}
 
@@ -847,6 +859,8 @@ export default function Home() {
                 setRoutineModalCoord(null);
                 setRoutineModalOpen(true);
               }}
+              onViewModeChange={setCalendarViewMode}
+              onCreateTask={(title, date, projectId) => addTask(title, date, { projectId })}
             />
           ) : (() => {
             // 실제 프로젝트 ID인지 확인 (null, __unassigned__ 제외)
@@ -930,6 +944,8 @@ export default function Home() {
               </>
             );
           })()}
+          </>
+          )}
         </div>
       </AppShell>
 
@@ -1001,6 +1017,27 @@ export default function Home() {
         onGoToday={handleGoToday}
       />
       <StorageConsentBanner />
+
+      {/* 데이터 삭제 확인 */}
+      <Dialog open={resetConfirmOpen} onClose={() => setResetConfirmOpen(false)} title="모든 데이터를 삭제할까요?" width="sm">
+        <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          삭제한 데이터는 복구할 수 없습니다.
+        </p>
+        <div className="flex items-center gap-2 pt-1">
+          <button onClick={() => setResetConfirmOpen(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+          <button onClick={() => { localStorage.removeItem('9todo_state'); batchUpdate(() => EMPTY_STATE); setResetConfirmOpen(false); }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
+        </div>
+      </Dialog>
+
+      {/* 가져오기 오류 */}
+      <Dialog open={importErrorOpen} onClose={() => setImportErrorOpen(false)} title="가져오기 실패" width="sm">
+        <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          유효하지 않은 파일입니다.
+        </p>
+        <div className="flex items-center gap-2 pt-1">
+          <button onClick={() => setImportErrorOpen(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] transition-opacity hover:opacity-85">확인</button>
+        </div>
+      </Dialog>
     </DndContext>
   );
 }

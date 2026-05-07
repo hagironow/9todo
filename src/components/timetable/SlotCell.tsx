@@ -145,7 +145,7 @@ export default function SlotCell({
         (containerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
       }}
       className={[
-        'relative min-h-[64px] rounded-lg transition-all duration-150',
+        'relative min-h-[80px] rounded-lg transition-all duration-150',
         isOver
           ? 'ring-2 ring-[var(--foreground)] bg-[var(--foreground)]/8 scale-[1.02]'
           : 'bg-[var(--surface-inset)]',
@@ -168,7 +168,7 @@ export default function SlotCell({
         />
       ) : inputting ? (
         /* 통합 입력 모드: 상단 프로젝트 태그 + 하단 텍스트 입력 */
-        <div className="w-full h-full min-h-[64px] flex flex-col justify-between p-2 gap-1">
+        <div className="w-full h-full min-h-[80px] flex flex-col justify-between p-2 gap-1">
           {/* 상단: 프로젝트 선택 태그 */}
           <div className="relative">
             <button
@@ -264,12 +264,12 @@ export default function SlotCell({
           />
         </div>
       ) : isReadOnly ? (
-        <div className="w-full h-full min-h-[64px]" />
+        <div className="w-full h-full min-h-[80px]" />
       ) : (
         <button
           onClick={openInput}
           className={[
-            'w-full h-full min-h-[64px] flex items-center justify-center',
+            'w-full h-full min-h-[80px] flex items-center justify-center',
             'rounded-lg',
             'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]',
             'transition-colors duration-150 cursor-pointer',

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import type { AppState } from './types';
 
-const DATA_FILE = path.join(process.cwd(), 'data', '9block.json');
+const DATA_FILE = path.join(process.cwd(), 'data', '9todo.json');
 
 const DEFAULT_STATE: AppState = {
   projects: [],

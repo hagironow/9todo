@@ -13,8 +13,8 @@ import type {
 } from '@/lib/types';
 import { resolveColor, hexToColorIndex, DEFAULT_THEME } from '@/lib/colors';
 
-const STORAGE_KEY = '9block_state';
-const CONSENT_KEY = '9block_storage_consent';
+const STORAGE_KEY = '9todo_state';
+const CONSENT_KEY = '9todo_storage_consent';
 
 export const EMPTY_STATE: AppState = {
   projects: [],

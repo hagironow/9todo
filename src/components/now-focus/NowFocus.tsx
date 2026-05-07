@@ -23,7 +23,7 @@ interface NowFocusProps {
 type PanelMode = 'timer' | 'note';
 
 const DURATION_OPTIONS = [15, 20, 25, 30, 45, 50, 60];
-const LS_KEY = '9block_timer_duration';
+const LS_KEY = '9todo_timer_duration';
 
 function getStoredDuration(): number {
   if (typeof window === 'undefined') return 25;
@@ -288,6 +288,7 @@ function QuickNotePanel({
   const [projectId, setProjectId] = useState(lastUsedProjectId ?? '');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const activeProjects = projects.filter((p) => !p.archived);
 
   const recentNotes = [...notes]
@@ -346,7 +347,7 @@ function QuickNotePanel({
                         {dateStr}
                       </span>
                       <button
-                        onClick={() => onRemove(note.id)}
+                        onClick={() => setDeleteTargetId(note.id)}
                         className="text-xs ml-1 opacity-0 group-hover/note:opacity-100 transition-opacity"
                         style={{ color: 'var(--timer-muted)' }}
                       >
@@ -449,6 +450,19 @@ function QuickNotePanel({
           </button>
         </div>
       </div>
+
+      {/* 삭제 확인 모달 */}
+      {deleteTargetId && (
+        <Dialog open onClose={() => setDeleteTargetId(null)} title="노트를 삭제할까요?" width="sm">
+          <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
+            삭제한 노트는 복구할 수 없습니다.
+          </p>
+          <div className="flex items-center gap-2 pt-1">
+            <button onClick={() => setDeleteTargetId(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+            <button onClick={() => { onRemove(deleteTargetId); setDeleteTargetId(null); }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--g-error)] text-white transition-opacity hover:opacity-85">삭제</button>
+          </div>
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -496,7 +510,6 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
             : { '--timer-bg': '#ffffff', '--timer-fg': '#1a1a1a', '--timer-muted': '#8a8a8a', '--timer-muted-bg': '#f0f0f0', '--timer-hover': '#e8e8e8', '--timer-btn': '#e8e8e8', '--timer-btn-fg': '#888' }
           ) as React.CSSProperties,
           backgroundColor: timerDark ? '#111111' : '#ffffff',
-          height: '620px',
         }}
       >
         {/* 상단 탭 바 */}
@@ -535,18 +548,10 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
           </button>
         </div>
 
-        {mode === 'note' && onAddNote && onRemoveNote ? (
-          <QuickNotePanel
-            projects={projects}
-            notes={notes ?? []}
-            onAdd={onAddNote}
-            onRemove={onRemoveNote}
-            onUpdate={onUpdateNote ?? (() => {})}
-            lastUsedProjectId={lastUsedProjectId}
-            timerDark={timerDark}
-          />
-        ) : (
-          <>
+        {/* 컨텐츠: 타이머가 높이를 결정하고, 노트는 같은 높이를 공유 */}
+        <div className="relative flex-1">
+          {/* 타이머 — 항상 렌더링하여 높이 결정 (노트 모드일 때는 숨김) */}
+          <div style={{ visibility: mode === 'timer' ? 'visible' : 'hidden' }} aria-hidden={mode !== 'timer'}>
             {/* 타이머 영역 */}
             <div className="flex flex-col items-center justify-center px-6 py-5 gap-2">
               {/* 타이틀 — 중앙 정렬 */}
@@ -625,8 +630,23 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
 
             {secondary && <SecondaryBar item={secondary} project={getProject(secondary)} durationMin={durationMin} onComplete={onComplete} onDefer={onDefer} onRepeat={onRepeat} isReadOnly={isReadOnly} />}
             {tertiary && <SecondaryBar item={tertiary} project={getProject(tertiary)} durationMin={durationMin} onComplete={onComplete} onDefer={onDefer} onRepeat={onRepeat} isReadOnly={isReadOnly} />}
-          </>
-        )}
+          </div>
+
+          {/* 노트 — 타이머 위에 오버레이, 같은 높이 */}
+          {mode === 'note' && onAddNote && onRemoveNote && (
+            <div className="absolute inset-0 flex flex-col" style={{ backgroundColor: timerDark ? '#111111' : '#ffffff' }}>
+              <QuickNotePanel
+                projects={projects}
+                notes={notes ?? []}
+                onAdd={onAddNote}
+                onRemove={onRemoveNote}
+                onUpdate={onUpdateNote ?? (() => {})}
+                lastUsedProjectId={lastUsedProjectId}
+                timerDark={timerDark}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {confirm && primary && <ConfirmModal type={confirm}

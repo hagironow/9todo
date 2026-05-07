@@ -1,9 +1,44 @@
 import type { Metadata } from "next";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "9block",
-  description: "타임박스 플래너 — 9칸 블록에 오늘을 채우다",
+  title: "9todo — 9칸 타임박스 플래너",
+  description:
+    "하루를 9칸에 담다. 아침·오후·저녁 × 3순위로 오늘 할 일을 배치하는 게임형 시간관리 앱.",
+  keywords: [
+    "타임박스",
+    "시간관리",
+    "할일관리",
+    "플래너",
+    "9todo",
+    "timebox",
+    "daily planner",
+    "하루 계획",
+    "투두리스트",
+    "투두 앱",
+    "루틴 관리",
+    "루틴 트래커",
+    "뽀모도로",
+    "뽀모도로 타이머",
+    "타이머 기록",
+    "집중 타이머",
+    "todo list",
+    "routine tracker",
+    "pomodoro timer",
+    "생산성 앱",
+    "productivity app",
+    "시간표 앱",
+    "우선순위 관리",
+    "하루 루틴",
+  ],
+  icons: {
+    icon: "/favicon.svg",
+  },
+  metadataBase: new URL("https://9todo.app"),
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({
@@ -17,13 +52,17 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{if(window.matchMedia('(prefers-color-scheme:dark)').matches){document.documentElement.classList.add('dark')}}catch(e){}})()`,
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-[var(--background)]">{children}</body>
+      <body className="min-h-full flex flex-col bg-[var(--background)]">
+        <GoogleAnalytics />
+        {children}
+      </body>
     </html>
   );
 }

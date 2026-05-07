@@ -464,6 +464,7 @@ function NoteRow({
   note: Note;
   onRemove: (id: string) => void;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const dateStr = new Date(note.createdAt).toLocaleDateString('ko-KR', {
     month: 'short',
     day: 'numeric',
@@ -472,19 +473,33 @@ function NoteRow({
   });
 
   return (
-    <div className="group flex items-start gap-3 px-3 py-2 rounded-[var(--radius-sm)] bg-[var(--card)]">
-      <span className="flex-1 text-sm text-[var(--foreground)] whitespace-pre-wrap break-words">
-        {note.content}
-      </span>
-      <span className="text-xs text-[var(--muted-foreground)] shrink-0 pt-0.5">
-        {dateStr}
-      </span>
-      <button
-        onClick={() => onRemove(note.id)}
-        className="text-xs text-[var(--muted-foreground)] hover:text-[var(--destructive)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 pt-0.5"
-      >
-        ×
-      </button>
-    </div>
+    <>
+      <div className="group flex items-start gap-3 px-3 py-2 rounded-[var(--radius-sm)] bg-[var(--card)]">
+        <span className="flex-1 text-sm text-[var(--foreground)] whitespace-pre-wrap break-words">
+          {note.content}
+        </span>
+        <span className="text-xs text-[var(--muted-foreground)] shrink-0 pt-0.5">
+          {dateStr}
+        </span>
+        <button
+          onClick={() => setConfirmDelete(true)}
+          className="text-xs text-[var(--muted-foreground)] hover:text-[var(--destructive)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 pt-0.5"
+        >
+          ×
+        </button>
+      </div>
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius)] p-5 shadow-xl w-72 flex flex-col gap-3">
+            <p className="font-semibold text-[var(--foreground)]">노트를 삭제할까요?</p>
+            <p className="text-sm text-[var(--muted-foreground)]">삭제한 노트는 복구할 수 없습니다.</p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setConfirmDelete(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+              <button onClick={() => { onRemove(note.id); setConfirmDelete(false); }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

@@ -154,7 +154,7 @@ export default function ItemCard({
                 'border border-[var(--border)] hover:border-[var(--accent)] cursor-pointer transition-colors',
                 project ? 'text-[var(--foreground)]' : 'text-[var(--muted-foreground)]',
               ].join(' ')}
-              style={project ? { backgroundColor: `${project.color}18`, color: project.color } : { backgroundColor: 'var(--muted)' }}
+              style={project ? { backgroundColor: 'var(--surface-hover)', color: project.color } : { backgroundColor: 'var(--muted)' }}
             >
               <ColorDot color={project?.color ?? '#8A8A8A'} size="sm" />
               <span className="truncate max-w-[60px]">{project?.name ?? '미분류'}</span>
@@ -163,7 +163,7 @@ export default function ItemCard({
             <span
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium"
               style={{
-                backgroundColor: `${project.color}18`,
+                backgroundColor: 'var(--surface-hover)',
                 color: project.color,
               }}
             >
