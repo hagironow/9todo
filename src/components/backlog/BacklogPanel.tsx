@@ -93,7 +93,7 @@ export default function BacklogPanel({
         aria-expanded={expanded}
       >
         <div className="flex items-center gap-2">
-          <span className="text-[var(--fs-item)] font-semibold text-[var(--foreground)]">
+          <span className="text-[15px] font-semibold text-[var(--foreground)]">
             백로그
           </span>
           {totalCount > 0 && (
@@ -117,7 +117,7 @@ export default function BacklogPanel({
           {totalCount === 0 ? (
             <div className="py-8 flex flex-col items-center gap-2 text-center px-3">
               <Inbox size={24} className="text-[var(--muted-foreground)]" />
-              <p className="text-[var(--fs-item)] text-[var(--muted-foreground)]">
+              <p className="text-[14px] text-[var(--muted-foreground)]">
                 백로그가 비어있습니다
               </p>
             </div>

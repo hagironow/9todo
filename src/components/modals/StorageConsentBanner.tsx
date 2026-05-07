@@ -20,15 +20,15 @@ export default function StorageConsentBanner() {
   };
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-[9999] px-4 py-3 bg-[var(--card)] border-t border-[var(--border)] shadow-lg">
-      <div className="max-w-2xl mx-auto flex items-center justify-between gap-4 whitespace-nowrap">
-        <p className="text-[var(--fs-item)] text-[var(--foreground)]">
-          데이터는 서버에 저장되거나 보관되지 않습니다. 데이터 내보내기를 통해 수동으로 저장해 주세요.
+    <div className="fixed bottom-0 inset-x-0 z-[9999] px-3 py-2.5 bg-[var(--card)] border-t border-[var(--border)] shadow-lg">
+      <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
+        <p className="text-xs text-[var(--foreground)] leading-snug">
+          데이터는 서버에 저장되지 않습니다. 내보내기를 통해 수동 저장해 주세요.
         </p>
         <button
           onClick={handleAccept}
-          className="flex-shrink-0 px-4 py-1.5 rounded-[var(--radius)] bg-[var(--foreground)] font-semibold hover:opacity-85 transition-opacity"
-          style={{ color: 'var(--background)', fontSize: 'var(--fs-item)' }}
+          className="flex-shrink-0 px-3 py-1 rounded-[var(--radius)] bg-[var(--foreground)] text-xs font-semibold hover:opacity-85 transition-opacity"
+          style={{ color: 'var(--background)' }}
         >
           확인
         </button>

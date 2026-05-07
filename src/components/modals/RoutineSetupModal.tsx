@@ -20,6 +20,7 @@ interface RoutineSetupModalProps {
   initialTitle?: string;
   initialCoord?: SlotCoord | null;
   editingRoutine?: Routine | null;
+  occupiedSlots?: Record<TimePeriod, Record<Priority, boolean>>;
   onSave: (data: RoutineSetupData) => void;
   onDelete?: () => void;
 }
@@ -89,6 +90,7 @@ export default function RoutineSetupModal({
   initialTitle = '',
   initialCoord,
   editingRoutine,
+  occupiedSlots,
   onSave,
   onDelete,
 }: RoutineSetupModalProps) {
@@ -122,6 +124,16 @@ export default function RoutineSetupModal({
 
   const isEditing = !!editingRoutine;
   const displayTitle = isEditing ? editingRoutine.title : initialTitle;
+
+  // 현재 선택한 슬롯이 이미 사용 중인지 확인 (편집 모드에서 자기 자신의 슬롯은 제외)
+  const isSlotOccupied = (() => {
+    if (!occupiedSlots) return false;
+    const occupied = occupiedSlots[period]?.[priority] ?? false;
+    if (isEditing && editingRoutine.defaultSlot.period === period && editingRoutine.defaultSlot.priority === priority) {
+      return false;
+    }
+    return occupied;
+  })();
 
   const toggleDay = (day: number) => {
     setDaysOfWeek((prev) =>
@@ -235,6 +247,11 @@ export default function RoutineSetupModal({
             </button>
           ))}
         </div>
+        {isSlotOccupied && (
+          <span className="text-[11px] text-[#ef4444]">
+            이 슬롯은 이미 사용 중이에요
+          </span>
+        )}
       </div>
 
       {/* 시작일 */}
@@ -265,7 +282,7 @@ export default function RoutineSetupModal({
           <Button variant="ghost" size="lg" onClick={onClose} className="flex-1">
             취소
           </Button>
-          <Button variant="primary" size="lg" onClick={handleSave} className="flex-1">
+          <Button variant="primary" size="lg" onClick={handleSave} disabled={isSlotOccupied} className="flex-1">
             저장
           </Button>
         </div>

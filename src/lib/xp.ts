@@ -37,10 +37,13 @@ function scoreTask(task: Task, today: string): number {
   return 0;
 }
 
+export const GOAL_COMPLETE_XP = 10;
+
 /** 전체 누적 XP (모든 날짜 합산) */
 export function calculateTotalXP(
   tasks: Task[],
   routineInstances: RoutineInstance[],
+  goalCompletedDates?: string[],
 ): number {
   const today = getToday();
   let xp = 0;
@@ -53,6 +56,8 @@ export function calculateTotalXP(
     if (ri.completedAt) xp += 1;
   }
 
+  xp += (goalCompletedDates?.length ?? 0) * GOAL_COMPLETE_XP;
+
   return xp;
 }
 
@@ -60,7 +65,8 @@ export function calculateTotalXP(
 export function calculateDailyXP(
   tasks: Task[],
   routineInstances: RoutineInstance[],
-  date: string
+  date: string,
+  goalCompletedDates?: string[],
 ): number {
   const today = getToday();
   let xp = 0;
@@ -75,6 +81,8 @@ export function calculateDailyXP(
   for (const ri of dateInstances) {
     if (ri.completedAt) xp += 1;
   }
+
+  if (goalCompletedDates?.includes(date)) xp += GOAL_COMPLETE_XP;
 
   return xp;
 }

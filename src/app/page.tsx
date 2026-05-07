@@ -30,6 +30,7 @@ import AppShell from '@/components/layout/AppShell';
 import GoalCompass from '@/components/goal-compass/GoalCompass';
 import NowFocus from '@/components/now-focus/NowFocus';
 import TimetableGrid from '@/components/timetable/TimetableGrid';
+import MobileTimetableList from '@/components/timetable/MobileTimetableList';
 import DateNav from '@/components/date-nav/DateNav';
 import BacklogPanel from '@/components/backlog/BacklogPanel';
 import SlotPickerModal from '@/components/modals/SlotPickerModal';
@@ -141,6 +142,7 @@ export default function Home() {
     addNote,
     removeNote,
     updateNoteContent,
+    completeGoal,
   } = useAppData();
 
   const currentPeriod = useCurrentPeriod();
@@ -288,6 +290,21 @@ export default function Home() {
     return map;
   }, [routineItems]);
 
+  // 루틴 슬롯 점유 여부 맵 (RoutineSetupModal에 전달)
+  const occupiedRoutineSlots = useMemo((): Record<TimePeriod, Record<Priority, boolean>> => {
+    const map: Record<TimePeriod, Record<Priority, boolean>> = {
+      morning: { 1: false, 2: false, 3: false },
+      afternoon: { 1: false, 2: false, 3: false },
+      evening: { 1: false, 2: false, 3: false },
+    };
+    for (const p of (['morning', 'afternoon', 'evening'] as TimePeriod[])) {
+      for (const pr of ([1, 2, 3] as Priority[])) {
+        map[p][pr] = !!routineSlots[p][pr];
+      }
+    }
+    return map;
+  }, [routineSlots]);
+
   // Backlog items (태스크만 — 슬롯 없거나 null, 미완료)
   const backlogItems = useMemo(() => {
     const tasks = state.tasks.filter(
@@ -301,13 +318,13 @@ export default function Home() {
 
   // XP 계산
   const dailyXP = useMemo(
-    () => calculateDailyXP(state.tasks, state.routineInstances, today),
-    [state.tasks, state.routineInstances, today]
+    () => calculateDailyXP(state.tasks, state.routineInstances, today, state.goalCompletedDates),
+    [state.tasks, state.routineInstances, today, state.goalCompletedDates]
   );
 
   const totalXP = useMemo(
-    () => calculateTotalXP(state.tasks, state.routineInstances),
-    [state.tasks, state.routineInstances]
+    () => calculateTotalXP(state.tasks, state.routineInstances, state.goalCompletedDates),
+    [state.tasks, state.routineInstances, state.goalCompletedDates]
   );
 
   // 캘린더 dot indicator — 데이터 있는 날짜들
@@ -843,6 +860,8 @@ export default function Home() {
               onSaveAffirmation={handleSaveAffirmation}
               totalXP={totalXP}
               previewKey={state.activeProjectFilter === '__calendar__' ? calendarViewMode === 'week' ? 'week' : 'month' : 'today'}
+              onCompleteGoal={() => { completeGoal(today); triggerConfetti({}); }}
+              isGoalCompleted={(state.goalCompletedDates ?? []).includes(today)}
             />
           )}
 
@@ -908,8 +927,32 @@ export default function Home() {
                   <ReadOnlyBanner date={today} onGoToday={handleGoToday} />
                 )}
 
-                {/* Timetable Grid */}
-                <TimetableGrid
+                {/* Timetable Grid — desktop */}
+                <div className="hidden md:block">
+                  <TimetableGrid
+                    currentPeriod={currentPeriod}
+                    slots={filteredSlots}
+                    routineSlots={filteredRoutineSlots}
+                    onComplete={handleComplete}
+                    onDefer={handleDefer}
+                    onRepeat={handleRepeat}
+                    onSlotClick={handleSlotClick}
+                    onDelete={handleDelete}
+                    onUpdateTitle={handleUpdateTitle}
+                    onUpdateProject={handleUpdateProject}
+                    onCreateInSlot={handleCreateInSlot}
+                    onUncomplete={handleUncomplete}
+                    onCreateRoutine={handleCreateRoutine}
+                    onEditRoutine={handleEditRoutine}
+                    projectFirstMode={state.projectFirstMode}
+                    projects={state.projects}
+                    isReadOnly={isReadOnly}
+                    onItemSelect={() => {}}
+                  />
+                </div>
+
+                {/* Timetable List — mobile */}
+                <MobileTimetableList
                   currentPeriod={currentPeriod}
                   slots={filteredSlots}
                   routineSlots={filteredRoutineSlots}
@@ -924,7 +967,6 @@ export default function Home() {
                   onUncomplete={handleUncomplete}
                   onCreateRoutine={handleCreateRoutine}
                   onEditRoutine={handleEditRoutine}
-                  projectFirstMode={state.projectFirstMode}
                   projects={state.projects}
                   isReadOnly={isReadOnly}
                   onItemSelect={() => {}}
@@ -1003,6 +1045,7 @@ export default function Home() {
         initialTitle={routineModalTitle}
         initialCoord={routineModalCoord}
         editingRoutine={editingRoutine}
+        occupiedSlots={occupiedRoutineSlots}
         onSave={handleRoutineSetupSave}
         onDelete={handleDeleteRoutine}
       />

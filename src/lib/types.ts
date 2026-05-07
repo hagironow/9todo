@@ -81,6 +81,7 @@ export interface AppState {
   routineInstances: RoutineInstance[];
   notes: Note[];
   goalCompass: GoalCompass;
+  goalCompletedDates: string[]; // 오늘 목표 완료한 날짜 목록
   lastUsedProjectId: string | null;
   activeProjectFilter: string | null;
   projectFirstMode: boolean;

@@ -1,0 +1,482 @@
+'use client';
+
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Check, SkipForward, RefreshCw, Trash2, Plus, Repeat } from 'lucide-react';
+import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project } from '@/lib/types';
+import Badge from '@/components/ui/Badge';
+import ColorDot from '@/components/ui/ColorDot';
+
+interface MobileTimetableListProps {
+  currentPeriod: TimePeriod;
+  slots: Record<TimePeriod, Record<Priority, ScheduledItem | null>>;
+  routineSlots?: Record<TimePeriod, Record<Priority, ScheduledItem | null>>;
+  onComplete: (item: ScheduledItem) => void;
+  onDefer: (item: ScheduledItem) => void;
+  onRepeat: (item: ScheduledItem) => void;
+  onSlotClick: (period: TimePeriod, priority: Priority) => void;
+  onDelete?: (item: ScheduledItem) => void;
+  onUpdateTitle?: (item: ScheduledItem, title: string) => void;
+  onUpdateProject?: (item: ScheduledItem, projectId: string | null) => void;
+  onCreateInSlot?: (title: string, coord: SlotCoord, projectId?: string | null) => void;
+  onUncomplete?: (item: ScheduledItem) => void;
+  onCreateRoutine?: (title: string, coord: SlotCoord) => void;
+  onEditRoutine?: (item: ScheduledItem) => void;
+  projectFirstMode?: boolean;
+  projects?: Project[];
+  isReadOnly?: boolean;
+  onItemSelect?: (item: ScheduledItem) => void;
+}
+
+type RowStatus = 'active' | 'past' | 'future';
+
+const PERIODS: { period: TimePeriod; label: string; time: string }[] = [
+  { period: 'morning',   label: '오전', time: '9–12' },
+  { period: 'afternoon', label: '오후', time: '12–18' },
+  { period: 'evening',   label: '저녁', time: '18–5' },
+];
+
+const PERIOD_ORDER: TimePeriod[] = ['morning', 'afternoon', 'evening'];
+const PRIORITIES: Priority[] = [1, 2, 3];
+
+function getStatus(period: TimePeriod, current: TimePeriod): RowStatus {
+  const pIdx = PERIOD_ORDER.indexOf(period);
+  const cIdx = PERIOD_ORDER.indexOf(current);
+  if (pIdx === cIdx) return 'active';
+  if (pIdx < cIdx) return 'past';
+  return 'future';
+}
+
+function getXpForPriority(priority: Priority): number {
+  return priority === 1 ? 3 : priority === 2 ? 2 : 1;
+}
+
+function getPriorityLabel(priority: Priority): string {
+  return priority === 1 ? '1st' : priority === 2 ? '2nd' : '3rd';
+}
+
+function getItemTitle(item: ScheduledItem): string {
+  if ('title' in item) return item.title;
+  if ('routineDetails' in item && item.routineDetails) return item.routineDetails.title;
+  return '';
+}
+
+function getPeriodLabel(period: TimePeriod): string {
+  return period === 'morning' ? '오전' : period === 'afternoon' ? '오후' : '저녁';
+}
+
+// ─── Collected item with metadata ─────────────────────────────────────────────
+
+interface CardItem {
+  item: ScheduledItem;
+  period: TimePeriod;
+  priority: Priority;
+  isRoutine: boolean;
+}
+
+// ─── Item Card (tap to reveal actions) ────────────────────────────────────────
+
+function MobileCard({
+  card,
+  currentPeriod,
+  projects,
+  isReadOnly,
+  tappedId,
+  onTap,
+  onComplete,
+  onDefer,
+  onRepeat,
+  onDelete,
+  onUncomplete,
+}: {
+  card: CardItem;
+  currentPeriod: TimePeriod;
+  projects?: Project[];
+  isReadOnly?: boolean;
+  tappedId: string | null;
+  onTap: (id: string | null) => void;
+  onComplete: (item: ScheduledItem) => void;
+  onDefer: (item: ScheduledItem) => void;
+  onRepeat: (item: ScheduledItem) => void;
+  onDelete?: (item: ScheduledItem) => void;
+  onUncomplete?: (item: ScheduledItem) => void;
+}) {
+  const { item, period, priority, isRoutine } = card;
+  const isCompleted = !!item.completedAt;
+  const title = getItemTitle(item);
+  const xp = getXpForPriority(priority);
+  const isTapped = tappedId === item.id;
+
+  const deferCount = 'deferCount' in item ? item.deferCount : 0;
+  const continueCount = 'continueCount' in item ? (item as { continueCount?: number }).continueCount ?? 0 : 0;
+  const origin = 'origin' in item ? (item as { origin?: string }).origin as 'deferred' | 'repeated' | undefined : undefined;
+
+  const itemProjectId = 'projectId' in item ? (item as { projectId?: string | null }).projectId : null;
+  const proj = itemProjectId ? (projects ?? []).find((p) => p.id === itemProjectId) ?? null : null;
+
+  // Left bar color
+  const status = getStatus(period, currentPeriod);
+  const lineColor = isCompleted
+    ? 'var(--g-success)'
+    : status === 'active'
+    ? '#F59E0B'
+    : 'var(--accent)';
+
+  const handleTap = () => {
+    if (isReadOnly || isCompleted) return;
+    onTap(isTapped ? null : item.id);
+  };
+
+  return (
+    <div
+      className={[
+        'relative rounded-[var(--radius)] overflow-hidden transition-all duration-150 flex',
+        isCompleted ? 'bg-[var(--surface-inset)]/60' : 'bg-[var(--card)]',
+      ].join(' ')}
+      style={isRoutine ? { border: '1px dashed var(--border-subtle)' } : undefined}
+      onClick={handleTap}
+    >
+      {/* Left color bar — indented, no vertical padding */}
+      <div className="flex-shrink-0 pl-3 flex items-stretch">
+        <div
+          className="w-[2px] transition-colors duration-300"
+          style={{ backgroundColor: lineColor }}
+        />
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 px-3.5 py-3.5 flex items-center gap-3">
+        {/* Left: period + priority — vertically centered */}
+        <div className="flex flex-col items-center justify-center gap-0.5 flex-shrink-0 w-8">
+          <span className="text-[10px] text-[var(--muted-foreground)] leading-none text-center">
+            {getPeriodLabel(period)}
+          </span>
+          <span
+            className={[
+              'text-[12px] font-bold leading-none text-center',
+              priority === 1 ? 'text-[var(--accent)]'
+                : priority === 2 ? 'text-[var(--foreground)]'
+                : 'text-[var(--muted-foreground)]',
+            ].join(' ')}
+          >
+            {getPriorityLabel(priority)}
+          </span>
+        </div>
+
+        {/* Center: content */}
+        <div className="flex-1 min-w-0">
+          {/* Project tag */}
+          <div className="flex items-center gap-1.5 mb-1">
+            {isRoutine ? (
+              <span className="inline-flex items-center gap-1 text-[10px] text-[var(--muted-foreground)]">
+                <Repeat size={10} strokeWidth={1.8} />
+                루틴
+              </span>
+            ) : proj ? (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+                style={{ backgroundColor: 'var(--surface-hover)', color: proj.color }}
+              >
+                <ColorDot color={proj.color} size="sm" />
+                <span className="truncate max-w-[100px]">{proj.name}</span>
+              </span>
+            ) : (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium text-[var(--muted-foreground)]"
+                style={{ backgroundColor: 'var(--muted)' }}
+              >
+                <span className="w-[6px] h-[6px] rounded-full bg-[var(--muted-foreground)] inline-block" />
+                미분류
+              </span>
+            )}
+          </div>
+          {/* Title */}
+          <p
+            className={[
+              'text-[15px] font-medium leading-snug',
+              isCompleted
+                ? 'line-through text-[var(--muted-foreground)]'
+                : 'text-[var(--card-foreground)]',
+            ].join(' ')}
+          >
+            {title}
+          </p>
+        </div>
+
+        {/* Right: badges + xp — vertically centered */}
+        <div className="flex flex-col items-center justify-center gap-1 flex-shrink-0">
+          {(deferCount > 0 || continueCount > 0 || origin) && (
+            <Badge count={deferCount} continueCount={continueCount} origin={origin} />
+          )}
+          {isCompleted ? (
+            <span className="text-[11px] font-bold" style={{ color: 'var(--g-success)' }}>+{xp}xp</span>
+          ) : !isRoutine ? (
+            <span className="text-[11px] font-medium opacity-40" style={{ color: 'var(--primary)' }}>{xp}xp</span>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Tap action overlay */}
+      {isTapped && !isCompleted && !isReadOnly && (
+        <div className="absolute inset-0 rounded-[var(--radius)] bg-[var(--surface-inset)]/95 backdrop-blur-sm flex items-center justify-center gap-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); onComplete(item); onTap(null); }}
+            className="w-10 h-10 flex flex-col items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)]"
+          >
+            <Check size={18} strokeWidth={2.5} />
+          </button>
+          {!isRoutine && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDefer(item); onTap(null); }}
+              className="w-10 h-10 flex flex-col items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)]"
+            >
+              <SkipForward size={16} />
+            </button>
+          )}
+          {!isRoutine && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRepeat(item); onTap(null); }}
+              className="w-10 h-10 flex flex-col items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)]"
+            >
+              <RefreshCw size={15} />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(item); onTap(null); }}
+              className="w-10 h-10 flex flex-col items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)]"
+            >
+              <Trash2 size={15} />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Completed: tap to uncomplete */}
+      {isCompleted && !isReadOnly && onUncomplete && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onUncomplete(item); }}
+          className="absolute top-2 right-3 text-[11px] text-[var(--muted-foreground)]"
+        >
+          완료 취소
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Add Button Bottom Sheet ─────────────────────────────────────────────────
+
+function AddSlotPicker({
+  open,
+  onClose,
+  slots,
+  onCreateInSlot,
+}: {
+  open: boolean;
+  onClose: () => void;
+  slots: Record<TimePeriod, Record<Priority, ScheduledItem | null>>;
+  onCreateInSlot?: (title: string, coord: SlotCoord, projectId?: string | null) => void;
+}) {
+  const [selectedCoord, setSelectedCoord] = useState<SlotCoord | null>(null);
+  const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (selectedCoord) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [selectedCoord]);
+
+  useEffect(() => {
+    if (!open) {
+      setSelectedCoord(null);
+      setInputValue('');
+    }
+  }, [open]);
+
+  if (!open) return null;
+
+  const emptySlots: { coord: SlotCoord; label: string }[] = [];
+  for (const { period, label } of PERIODS) {
+    for (const priority of PRIORITIES) {
+      if (!slots[period][priority]) {
+        emptySlots.push({
+          coord: { period, priority },
+          label: `${label} ${getPriorityLabel(priority)}`,
+        });
+      }
+    }
+  }
+
+  const commitInput = () => {
+    const trimmed = inputValue.trim();
+    if (trimmed && selectedCoord && onCreateInSlot) {
+      onCreateInSlot(trimmed, selectedCoord, null);
+    }
+    setInputValue('');
+    setSelectedCoord(null);
+    onClose();
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-[9998] bg-black/40" onClick={onClose} />
+      {/* Sheet */}
+      <div className="fixed bottom-0 inset-x-0 z-[9999] bg-[var(--card)] rounded-t-2xl p-4 pb-8 max-h-[60vh] overflow-y-auto">
+        <div className="w-10 h-1 rounded-full bg-[var(--border)] mx-auto mb-4" />
+
+        {selectedCoord ? (
+          /* Input mode */
+          <div>
+            <p className="text-[13px] text-[var(--muted-foreground)] mb-2">
+              {getPeriodLabel(selectedCoord.period)} {getPriorityLabel(selectedCoord.priority)}에 추가
+            </p>
+            <input
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitInput();
+                if (e.key === 'Escape') { setSelectedCoord(null); setInputValue(''); }
+              }}
+              placeholder="할 일 입력..."
+              className="w-full px-4 py-3 rounded-[var(--radius)] bg-[var(--background)] text-[var(--foreground)] text-[15px] outline-none border border-[var(--border)] focus:border-[var(--accent)]"
+            />
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => { setSelectedCoord(null); setInputValue(''); }}
+                className="flex-1 py-2.5 rounded-[var(--radius)] text-[14px] text-[var(--muted-foreground)] bg-[var(--muted)]"
+              >
+                뒤로
+              </button>
+              <button
+                onClick={commitInput}
+                className="flex-1 py-2.5 rounded-[var(--radius)] text-[14px] font-semibold bg-[var(--foreground)] text-[var(--background)]"
+              >
+                추가
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Slot picker */
+          <div>
+            <p className="text-[15px] font-semibold text-[var(--foreground)] mb-3">어디에 추가할까요?</p>
+            {emptySlots.length === 0 ? (
+              <p className="text-[13px] text-[var(--muted-foreground)] text-center py-6">빈 슬롯이 없어요</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {emptySlots.map(({ coord, label }) => (
+                  <button
+                    key={`${coord.period}-${coord.priority}`}
+                    onClick={() => setSelectedCoord(coord)}
+                    className="py-3 px-2 rounded-[var(--radius)] bg-[var(--background)] border border-[var(--border)] text-[13px] text-[var(--foreground)] font-medium text-center active:bg-[var(--muted)] transition-colors"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export default function MobileTimetableList({
+  currentPeriod,
+  slots,
+  routineSlots,
+  onComplete,
+  onDefer,
+  onRepeat,
+  onDelete,
+  onCreateInSlot,
+  onUncomplete,
+  projects,
+  isReadOnly,
+}: MobileTimetableListProps) {
+  const [tappedId, setTappedId] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+
+  // Tap outside to deselect
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!tappedId) return;
+    const handler = (e: TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setTappedId(null);
+      }
+    };
+    document.addEventListener('touchstart', handler);
+    return () => document.removeEventListener('touchstart', handler);
+  }, [tappedId]);
+
+  // Collect all filled items in order: morning 1,2,3 → afternoon 1,2,3 → evening 1,2,3
+  const cards: CardItem[] = [];
+  for (const { period } of PERIODS) {
+    for (const priority of PRIORITIES) {
+      const item = slots[period][priority];
+      if (item) {
+        cards.push({ item, period, priority, isRoutine: false });
+      }
+      const routineItem = routineSlots?.[period]?.[priority];
+      if (routineItem) {
+        cards.push({ item: routineItem, period, priority, isRoutine: true });
+      }
+    }
+  }
+
+  const hasEmpty = PERIODS.some(({ period }) =>
+    PRIORITIES.some((p) => !slots[period][p])
+  );
+
+  return (
+    <div ref={containerRef} className="md:hidden flex flex-col gap-2">
+      {cards.length === 0 ? (
+        <div className="py-12 text-center">
+          <p className="text-[14px] text-[var(--muted-foreground)]">오늘 할 일을 추가해 보세요</p>
+        </div>
+      ) : (
+        cards.map((card) => (
+          <MobileCard
+            key={card.item.id}
+            card={card}
+            currentPeriod={currentPeriod}
+            projects={projects}
+            isReadOnly={isReadOnly}
+            tappedId={tappedId}
+            onTap={setTappedId}
+            onComplete={onComplete}
+            onDefer={onDefer}
+            onRepeat={onRepeat}
+            onDelete={onDelete}
+            onUncomplete={onUncomplete}
+          />
+        ))
+      )}
+
+      {/* Add button */}
+      {!isReadOnly && hasEmpty && (
+        <button
+          onClick={() => setAddOpen(true)}
+          className="flex items-center justify-center gap-2 py-3.5 rounded-[var(--radius)] border border-dashed border-[var(--border)] text-[14px] text-[var(--muted-foreground)] active:bg-[var(--muted)] transition-colors"
+        >
+          <Plus size={16} strokeWidth={1.5} />
+          할 일 추가
+        </button>
+      )}
+
+      {/* Add slot picker bottom sheet */}
+      <AddSlotPicker
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        slots={slots}
+        onCreateInSlot={onCreateInSlot}
+      />
+    </div>
+  );
+}

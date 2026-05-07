@@ -22,6 +22,7 @@ const DEFAULT_STATE: AppState = {
     },
     affirmation: '',
   },
+  goalCompletedDates: [],
   lastUsedProjectId: null,
   activeProjectFilter: null,
   projectFirstMode: true,

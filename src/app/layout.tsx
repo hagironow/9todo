@@ -35,6 +35,30 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.svg",
   },
+  openGraph: {
+    title: "9todo — 9칸 타임박스 플래너",
+    description:
+      "하루를 9칸에 담다. 아침·오후·저녁 × 3순위로 오늘 할 일을 배치하는 게임형 시간관리 앱.",
+    url: "https://9todo.app",
+    siteName: "9todo",
+    images: [
+      {
+        url: "/og_9todo.jpg",
+        width: 1200,
+        height: 630,
+        alt: "9todo — 9칸 타임박스 플래너",
+      },
+    ],
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "9todo — 9칸 타임박스 플래너",
+    description:
+      "하루를 9칸에 담다. 아침·오후·저녁 × 3순위로 오늘 할 일을 배치하는 게임형 시간관리 앱.",
+    images: ["/og_9todo.jpg"],
+  },
   metadataBase: new URL("https://9todo.app"),
   alternates: {
     canonical: "/",
@@ -47,7 +71,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="ko" className="h-full antialiased dark" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -55,7 +79,7 @@ export default function RootLayout({
         <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if(window.matchMedia('(prefers-color-scheme:dark)').matches){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+            __html: `(function(){try{document.documentElement.classList.add('dark')}catch(e){}})()`,
           }}
         />
       </head>

@@ -503,7 +503,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
   return (
     <>
       <div
-        className="flex flex-col group rounded-[40px] overflow-hidden transition-colors duration-200"
+        className="flex flex-col group rounded-[40px] lg:rounded-[40px] max-lg:rounded-none overflow-hidden transition-colors duration-200 max-lg:min-h-full"
         style={{
           ...(timerDark
             ? { '--timer-bg': '#111111', '--timer-fg': '#e0e0e0', '--timer-muted': '#888', '--timer-muted-bg': '#1a1a1a', '--timer-hover': '#1f1f1f', '--timer-btn': '#2a2a2a', '--timer-btn-fg': '#aaa' }
@@ -549,9 +549,9 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
         </div>
 
         {/* 컨텐츠: 타이머가 높이를 결정하고, 노트는 같은 높이를 공유 */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-h-0">
           {/* 타이머 — 항상 렌더링하여 높이 결정 (노트 모드일 때는 숨김) */}
-          <div style={{ visibility: mode === 'timer' ? 'visible' : 'hidden' }} aria-hidden={mode !== 'timer'}>
+          <div className={mode === 'timer' ? '' : 'hidden'} aria-hidden={mode !== 'timer'}>
             {/* 타이머 영역 */}
             <div className="flex flex-col items-center justify-center px-6 py-5 gap-2">
               {/* 타이틀 — 중앙 정렬 */}
@@ -632,9 +632,9 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
             {tertiary && <SecondaryBar item={tertiary} project={getProject(tertiary)} durationMin={durationMin} onComplete={onComplete} onDefer={onDefer} onRepeat={onRepeat} isReadOnly={isReadOnly} />}
           </div>
 
-          {/* 노트 — 타이머 위에 오버레이, 같은 높이 */}
+          {/* 노트 — 데스크탑: 오버레이 / 모바일: 자연 플로우 */}
           {mode === 'note' && onAddNote && onRemoveNote && (
-            <div className="absolute inset-0 flex flex-col" style={{ backgroundColor: timerDark ? '#111111' : '#ffffff' }}>
+            <div className="lg:absolute lg:inset-0 flex flex-col min-h-[400px]" style={{ backgroundColor: timerDark ? '#111111' : '#ffffff' }}>
               <QuickNotePanel
                 projects={projects}
                 notes={notes ?? []}
