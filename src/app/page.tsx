@@ -963,6 +963,7 @@ export default function Home() {
                     projectFirstMode={state.projectFirstMode}
                     projects={state.projects}
                     isReadOnly={isReadOnly}
+                    isToday={isToday}
                     onItemSelect={() => {}}
                   />
                 </div>
@@ -985,6 +986,7 @@ export default function Home() {
                   onEditRoutine={handleEditRoutine}
                   projects={state.projects}
                   isReadOnly={isReadOnly}
+                  isToday={isToday}
                   onItemSelect={() => {}}
                   onSendToBacklog={handleSendToBacklog}
                 />

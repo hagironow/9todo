@@ -23,6 +23,7 @@ interface TimetableGridProps {
   projectFirstMode?: boolean;
   projects?: Project[];
   isReadOnly?: boolean;
+  isToday?: boolean;
   onItemSelect?: (item: ScheduledItem) => void;
 }
 
@@ -60,6 +61,7 @@ export default function TimetableGrid({
   projectFirstMode,
   projects,
   isReadOnly,
+  isToday = true,
   onItemSelect,
 }: TimetableGridProps) {
   return (
@@ -92,7 +94,7 @@ export default function TimetableGrid({
             period={period}
             label={label}
             timeLabel={time}
-            status={getStatus(period, currentPeriod)}
+            status={isToday ? getStatus(period, currentPeriod) : 'future'}
             slots={slots[period]}
             routineSlots={routineSlots?.[period]}
             onComplete={onComplete}
