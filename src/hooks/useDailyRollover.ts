@@ -52,15 +52,15 @@ export function useDailyRollover({
         }
       }
 
-      // 3. goals.today 리셋 — 어제 완료 체크했으면 비우기 (완료 안 했으면 유지)
+      // 3. goals.today 리셋 — 어제 완료했으면 오늘은 비우기 (어제만 체크, 과거 전체 X)
       let nextGoalCompass = prev.goalCompass;
       if (today === realToday) {
         const completedDates = prev.goalCompletedDates ?? [];
         const yesterday = getPreviousDay(today);
-        // 어제(또는 그 이전) 완료 기록이 있고, 오늘은 아직 완료 안 했으면 리셋
-        const hasYesterdayOrBefore = completedDates.some((d) => d <= yesterday);
+        // 어제 완료 기록이 있고, 오늘은 아직 완료 안 했으면 리셋
+        const hasYesterdayCompletion = completedDates.includes(yesterday);
         const hasTodayCompletion = completedDates.includes(today);
-        if (hasYesterdayOrBefore && !hasTodayCompletion && prev.goalCompass.goals.today) {
+        if (hasYesterdayCompletion && !hasTodayCompletion && prev.goalCompass.goals.today) {
           nextGoalCompass = {
             ...prev.goalCompass,
             goals: { ...prev.goalCompass.goals, today: '' },

@@ -1,0 +1,1 @@
+- [커밋 시 /commit 스킬 필수](feedback_use_commit_skill.md) — 직접 git commit 금지, 멀티세션 덮어쓰기 방지
