@@ -8,6 +8,8 @@ interface SlotPickerModalProps {
   onClose: () => void;
   slots: Record<TimePeriod, Record<Priority, ScheduledItem | null>>;
   onSelect: (coord: SlotCoord) => void;
+  title?: string;
+  description?: string;
 }
 
 const PERIODS: { period: TimePeriod; label: string }[] = [
@@ -23,11 +25,13 @@ export default function SlotPickerModal({
   onClose,
   slots,
   onSelect,
+  title,
+  description,
 }: SlotPickerModalProps) {
   return (
-    <Dialog open={open} onClose={onClose} title="슬롯 배치" width="md">
+    <Dialog open={open} onClose={onClose} title={title ?? '슬롯 배치'} width="md">
       <p className="text-[var(--fs-tag)] text-[var(--muted-foreground)]">
-        배치할 슬롯을 선택하세요
+        {description ?? '배치할 슬롯을 선택하세요'}
       </p>
 
       {/* 우선순위 헤더 */}

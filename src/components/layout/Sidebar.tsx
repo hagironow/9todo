@@ -30,6 +30,7 @@ interface SidebarProps {
 const FILTERS = [
   { id: null, label: '오늘' },
   { id: '__calendar__', label: '캘린더' },
+  { id: '__retrospective__', label: '회고' },
 ] as const;
 
 function ProjectMenu({

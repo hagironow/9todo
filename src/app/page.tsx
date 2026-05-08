@@ -40,6 +40,8 @@ import LoginModal from '@/components/modals/LoginModal';
 import CalendarModal from '@/components/modals/CalendarModal';
 import RoutineSetupModal from '@/components/modals/RoutineSetupModal';
 import CalendarView from '@/components/calendar/CalendarView';
+import DailyRetro from '@/components/retrospective/DailyRetro';
+import RetrospectiveListView from '@/components/retrospective/RetrospectiveListView';
 import ReadOnlyBanner from '@/components/date-nav/ReadOnlyBanner';
 import { triggerConfetti } from '@/components/effects/ParticleBurst';
 import { createRoutineInstance } from '@/lib/routine';
@@ -131,6 +133,8 @@ export default function Home() {
     removeNote,
     updateNoteContent,
     completeGoal,
+    upsertRetrospective,
+    removeRetrospective,
   } = useAppData();
 
   const currentPeriod = useCurrentPeriod();
@@ -362,7 +366,7 @@ export default function Home() {
   const filteredRoutineSlots = useMemo(() => {
     if (!state.activeProjectFilter) return routineSlots;
     const filter = state.activeProjectFilter;
-    if (filter === '__unassigned__' || filter === '__calendar__') return routineSlots;
+    if (filter === '__unassigned__' || filter === '__calendar__' || filter === '__retrospective__') return routineSlots;
     const result: Record<TimePeriod, Record<Priority, ScheduledItem | null>> = {
       morning: { 1: null, 2: null, 3: null },
       afternoon: { 1: null, 2: null, 3: null },
@@ -883,6 +887,11 @@ export default function Home() {
           // 토글 OFF 시 프로젝트 필터 해제
           if (!enabled) setActiveProjectFilter(null);
         }}
+        rightPanelAccentColor={
+          playItems[0] && 'projectId' in playItems[0] && (playItems[0] as { projectId?: string | null }).projectId
+            ? state.projects.find((p) => p.id === (playItems[0] as { projectId: string }).projectId)?.color
+            : undefined
+        }
         rightPanel={
           <NowFocus
             items={playItems}
@@ -909,12 +918,13 @@ export default function Home() {
             />
           ) : (
           <>
-          {/* Goal Compass — 프로젝트 상세 뷰에서는 숨김 */}
+          {/* Goal Compass — 프로젝트 상세 뷰, 회고 뷰에서는 숨김 */}
           {!(state.activeProjectFilter
             && state.activeProjectFilter !== '__calendar__'
             && state.activeProjectFilter !== '__unassigned__'
+            && state.activeProjectFilter !== '__retrospective__'
             && state.projects.some((p) => p.id === state.activeProjectFilter)
-          ) && (
+          ) && state.activeProjectFilter !== '__retrospective__' && (
             <GoalCompass
               data={state.goalCompass}
               onSaveIdentity={handleSaveIdentity}
@@ -927,7 +937,14 @@ export default function Home() {
             />
           )}
 
-          {state.activeProjectFilter === '__calendar__' ? (
+          {state.activeProjectFilter === '__retrospective__' ? (
+            /* 회고 뷰 */
+            <RetrospectiveListView
+              retrospectives={state.retrospectives ?? []}
+              onSave={upsertRetrospective}
+              onDelete={removeRetrospective}
+            />
+          ) : state.activeProjectFilter === '__calendar__' ? (
             /* 캘린더 뷰 */
             <CalendarView
               tasks={state.tasks}
@@ -942,6 +959,8 @@ export default function Home() {
               }}
               onViewModeChange={setCalendarViewMode}
               onCreateTask={(title, date, projectId) => addTask(title, date, { projectId })}
+              retrospectives={state.retrospectives ?? []}
+              onSaveRetro={upsertRetrospective}
             />
           ) : (() => {
             // 실제 프로젝트 ID인지 확인 (null, __unassigned__ 제외)
@@ -1044,9 +1063,18 @@ export default function Home() {
                   getTitleForItem={getTitleForItem}
                   isRoutineInstance={isRoutineInstanceFn}
                   onPlaceInSlot={handlePlaceInSlot}
+                  onUpdateTitle={handleUpdateTitle}
+                  onDelete={handleDelete}
                   onAdd={(title, projectId) => addTask(title, today, { projectId })}
                   lastUsedProjectId={state.lastUsedProjectId}
                   isReadOnly={isReadOnly}
+                />
+
+                {/* 일간 회고 */}
+                <DailyRetro
+                  date={today}
+                  retrospectives={state.retrospectives ?? []}
+                  onSave={upsertRetrospective}
                 />
               </>
             );

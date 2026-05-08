@@ -3,8 +3,9 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Check, Plus } from 'lucide-react';
-import type { Task, Routine, RoutineInstance, Project, RecurrenceType } from '@/lib/types';
+import type { Task, Routine, RoutineInstance, Project, RecurrenceType, RetrospectiveEntry, RetroScope } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
+import RetroInput from '@/components/retrospective/RetroInput';
 import { shouldCreateInstance } from '@/lib/routine';
 import { calculateDailyXP } from '@/lib/xp';
 import { getToday } from '@/lib/date';
@@ -17,6 +18,8 @@ interface CalendarViewProps {
   onEditRoutine?: (routine: Routine) => void;
   onViewModeChange?: (mode: ViewMode) => void;
   onCreateTask?: (title: string, date: string, projectId: string | null) => void;
+  retrospectives?: RetrospectiveEntry[];
+  onSaveRetro?: (scope: RetroScope, scopeKey: string, content: string) => void;
 }
 
 type ViewMode = 'week' | 'month';
@@ -33,6 +36,19 @@ function toDateString(d: Date): string {
 
 function toDateStringYMD(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/** ISO week key: YYYY-Www (월요일 기준 주차) */
+function getWeekScopeKey(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  // ISO week: Thursday-based
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  const startOfWeek1 = new Date(jan4);
+  startOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const diff = d.getTime() - startOfWeek1.getTime();
+  const week = Math.floor(diff / (7 * 86400000)) + 1;
+  const year = d.getFullYear();
+  return `${year}-W${String(week).padStart(2, '0')}`;
 }
 
 function getWeekDates(dateStr: string): string[] {
@@ -192,6 +208,8 @@ export default function CalendarView({
   onEditRoutine,
   onViewModeChange,
   onCreateTask,
+  retrospectives = [],
+  onSaveRetro,
 }: CalendarViewProps) {
   const todayStr = getToday();
   const [todayY, todayM] = todayStr.split('-').map(Number);
@@ -560,6 +578,25 @@ export default function CalendarView({
               );
             })}
           </div>
+
+          {/* 주간 회고 */}
+          {onSaveRetro && (() => {
+            const weekKey = getWeekScopeKey(weekAnchor);
+            const existing = retrospectives.find((r) => r.scope === 'week' && r.scopeKey === weekKey);
+            return (
+              <div className="border-t border-[var(--border)] p-4">
+                <RetroInput
+                  scope="week"
+                  scopeKey={weekKey}
+                  initialContent={existing?.content ?? ''}
+                  onSave={onSaveRetro}
+                  label="이번 주 회고"
+                  placeholder="이번 주는 어떤 한 주였나요?"
+                  compact
+                />
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -646,6 +683,25 @@ export default function CalendarView({
               />
             ))}
           </div>
+
+          {/* 월간 회고 */}
+          {onSaveRetro && (() => {
+            const monthKey = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+            const existing = retrospectives.find((r) => r.scope === 'month' && r.scopeKey === monthKey);
+            return (
+              <div className="border-t border-[var(--border)] p-4">
+                <RetroInput
+                  scope="month"
+                  scopeKey={monthKey}
+                  initialContent={existing?.content ?? ''}
+                  onSave={onSaveRetro}
+                  label="이번 달 회고"
+                  placeholder="이번 달은 어떤 한 달이었나요?"
+                  compact
+                />
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

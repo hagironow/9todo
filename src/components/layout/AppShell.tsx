@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, ReactElement, useState, cloneElement, isValidElement } from 'react';
+import { ReactNode, ReactElement, useState, useEffect, useCallback, cloneElement, isValidElement } from 'react';
+import { Timer } from 'lucide-react';
 import { Project } from '@/lib/types';
 import Sidebar from './Sidebar';
 import MobileHeader from './MobileHeader';
@@ -24,6 +25,7 @@ interface AppShellProps {
   onProjectFirstModeChange: (enabled: boolean) => void;
   onSearchClick?: () => void;
   rightPanel?: ReactNode;
+  rightPanelAccentColor?: string;
   children: ReactNode;
 }
 
@@ -46,10 +48,29 @@ export default function AppShell({
   onProjectFirstModeChange,
   onSearchClick,
   rightPanel,
+  rightPanelAccentColor,
   children,
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileNowFocusOpen, setMobileNowFocusOpen] = useState(false);
+  const [timerCollapsed, setTimerCollapsed] = useState(false);
+  const [timerManualOpen, setTimerManualOpen] = useState(false);
+
+  // xl(1280px) 미만이면 자동 축소
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1280px)');
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      setTimerCollapsed(!e.matches);
+      if (e.matches) setTimerManualOpen(false);
+    };
+    handler(mq);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const handleTimerFabClick = useCallback(() => {
+    setTimerManualOpen((v) => !v);
+  }, []);
 
   return (
     <div className="flex h-full min-h-screen bg-[var(--background)]">
@@ -140,11 +161,37 @@ export default function AppShell({
         </main>
       </div>
 
-      {/* 플로팅 타이머 — 데스크탑 */}
-      {rightPanel && (
+      {/* 플로팅 타이머 — 데스크탑 (xl 이상: 항상 표시 / lg~xl: FAB + 오버레이) */}
+      {rightPanel && !timerCollapsed && (
         <div className="hidden lg:block fixed bottom-5 right-5 z-50 w-[360px] max-h-[calc(100vh-40px)] rounded-[40px] shadow-2xl overflow-hidden">
           {rightPanel}
         </div>
+      )}
+
+      {/* FAB — lg~xl 사이에서만 표시 */}
+      {rightPanel && timerCollapsed && !timerManualOpen && (
+        <button
+          onClick={handleTimerFabClick}
+          className="hidden lg:flex fixed bottom-5 right-5 z-50 w-14 h-14 items-center justify-center rounded-full shadow-2xl transition-transform hover:scale-105 active:scale-95"
+          style={{ backgroundColor: rightPanelAccentColor || 'var(--accent)', color: 'white' }}
+        >
+          <Timer size={24} />
+        </button>
+      )}
+
+      {/* FAB → 펼침 오버레이 */}
+      {rightPanel && timerCollapsed && timerManualOpen && (
+        <>
+          <div
+            className="hidden lg:block fixed inset-0 z-40"
+            onClick={() => setTimerManualOpen(false)}
+          />
+          <div className="hidden lg:block fixed bottom-5 right-5 z-50 w-[360px] max-h-[calc(100vh-40px)] rounded-[40px] shadow-2xl overflow-hidden">
+            {isValidElement(rightPanel)
+              ? cloneElement(rightPanel as ReactElement<{ onClose?: () => void }>, { onClose: () => setTimerManualOpen(false) })
+              : rightPanel}
+          </div>
+        </>
       )}
 
       {/* 모바일 NowFocus — 풀스크린 레이어 */}

@@ -20,6 +20,8 @@ function isPeriodPassed(taskDate: string, period: TimePeriod, referenceDate: str
 }
 
 function scoreTask(task: Task, today: string): number {
+  // 또하기로 자동 완료된 원본은 XP 미부여
+  if (task.origin === 'continued') return 0;
   if (task.completedAt && task.slot) {
     return task.slot.priority === 1 ? 3 : task.slot.priority === 2 ? 2 : 1;
   }

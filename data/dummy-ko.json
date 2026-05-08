@@ -1,0 +1,460 @@
+{
+  "projects": [
+    {
+      "id": "proj-1",
+      "name": "AI 챗봇 앱",
+      "colorIndex": 0,
+      "color": "#6366f1",
+      "createdAt": "2026-04-20T09:00:00.000Z"
+    },
+    {
+      "id": "proj-2",
+      "name": "포트폴리오 사이트",
+      "colorIndex": 1,
+      "color": "#f59e0b",
+      "createdAt": "2026-04-22T09:00:00.000Z"
+    },
+    {
+      "id": "proj-3",
+      "name": "운동 트래커",
+      "colorIndex": 2,
+      "color": "#10b981",
+      "createdAt": "2026-04-25T09:00:00.000Z"
+    },
+    {
+      "id": "proj-4",
+      "name": "유튜브 채널",
+      "colorIndex": 3,
+      "color": "#ef4444",
+      "createdAt": "2026-05-01T09:00:00.000Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "GPT API 연동 테스트",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "morning", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-08T10:30:00.000Z",
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "timerSeconds": 2700,
+      "continueCount": 0
+    },
+    {
+      "id": "task-2",
+      "title": "채팅 UI 스크롤 버그 수정",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "morning", "priority": 2 },
+      "deferCount": 0,
+      "completedAt": "2026-05-08T11:15:00.000Z",
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "timerSeconds": 1800,
+      "continueCount": 0
+    },
+    {
+      "id": "task-3",
+      "title": "프로젝트 섹션 반응형 수정",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": { "period": "morning", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-4",
+      "title": "스트리밍 응답 구현",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "afternoon", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-5",
+      "title": "히어로 섹션 카피 작성",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": { "period": "afternoon", "priority": 2 },
+      "deferCount": 1,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "origin": "deferred",
+      "continueCount": 0
+    },
+    {
+      "id": "task-6",
+      "title": "영상 편집 — EP.12 인트로",
+      "type": "task",
+      "projectId": "proj-4",
+      "slot": { "period": "afternoon", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-7",
+      "title": "프롬프트 튜닝 실험",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "evening", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-8",
+      "title": "운동 앱 대시보드 와이어프레임",
+      "type": "task",
+      "projectId": "proj-3",
+      "slot": { "period": "evening", "priority": 2 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-9",
+      "title": "썸네일 디자인 — EP.12",
+      "type": "task",
+      "projectId": "proj-4",
+      "slot": { "period": "evening", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-b1",
+      "title": "에러 핸들링 리팩터링",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": null,
+      "deferCount": 2,
+      "completedAt": null,
+      "date": null,
+      "createdAt": "2026-05-04T09:00:00.000Z",
+      "origin": "deferred",
+      "continueCount": 0
+    },
+    {
+      "id": "task-b2",
+      "title": "SEO 메타태그 추가",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": null,
+      "deferCount": 1,
+      "completedAt": null,
+      "date": null,
+      "createdAt": "2026-05-05T09:00:00.000Z",
+      "origin": "deferred",
+      "continueCount": 0
+    },
+    {
+      "id": "task-b3",
+      "title": "운동 데이터 CSV 내보내기",
+      "type": "task",
+      "projectId": "proj-3",
+      "slot": null,
+      "deferCount": 0,
+      "completedAt": null,
+      "date": null,
+      "createdAt": "2026-05-06T09:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-1",
+      "title": "온보딩 플로우 구현",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "morning", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T10:00:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "timerSeconds": 3600,
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-2",
+      "title": "다크모드 토글 추가",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": { "period": "morning", "priority": 2 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T11:00:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "timerSeconds": 1500,
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-3",
+      "title": "DB 스키마 마이그레이션",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "afternoon", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T14:30:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "timerSeconds": 2700,
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-4",
+      "title": "운동 루틴 데이터 모델링",
+      "type": "task",
+      "projectId": "proj-3",
+      "slot": { "period": "afternoon", "priority": 2 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T15:30:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-5",
+      "title": "EP.11 업로드 + 커뮤니티 답글",
+      "type": "task",
+      "projectId": "proj-4",
+      "slot": { "period": "evening", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T20:00:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-6",
+      "title": "포트폴리오 프로젝트 카드 애니메이션",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": { "period": "evening", "priority": 2 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T21:00:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "timerSeconds": 1800,
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-7",
+      "title": "API 응답 캐싱 적용",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "morning", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T10:30:00.000Z",
+      "date": "2026-05-06",
+      "createdAt": "2026-05-05T22:00:00.000Z",
+      "timerSeconds": 2400,
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-8",
+      "title": "About 페이지 작성",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": { "period": "afternoon", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T14:00:00.000Z",
+      "date": "2026-05-06",
+      "createdAt": "2026-05-05T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-9",
+      "title": "영상 스크립트 — EP.12",
+      "type": "task",
+      "projectId": "proj-4",
+      "slot": { "period": "evening", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T21:00:00.000Z",
+      "date": "2026-05-06",
+      "createdAt": "2026-05-05T22:00:00.000Z",
+      "timerSeconds": 3600,
+      "continueCount": 0
+    }
+  ],
+  "routines": [
+    {
+      "id": "routine-1",
+      "title": "GitHub 이슈 체크",
+      "type": "routine",
+      "projectId": null,
+      "recurrence": "daily",
+      "defaultSlot": { "period": "morning", "priority": 3 },
+      "startDate": "2026-04-20",
+      "isActive": true,
+      "createdAt": "2026-04-20T09:00:00.000Z",
+      "scheduledTime": "09:00"
+    },
+    {
+      "id": "routine-2",
+      "title": "코드 리뷰 30분",
+      "type": "routine",
+      "projectId": "proj-1",
+      "recurrence": "daily",
+      "defaultSlot": { "period": "afternoon", "priority": 3 },
+      "startDate": "2026-04-20",
+      "isActive": true,
+      "createdAt": "2026-04-20T09:00:00.000Z"
+    },
+    {
+      "id": "routine-3",
+      "title": "주간 회고 작성",
+      "type": "routine",
+      "projectId": null,
+      "recurrence": "weekly",
+      "daysOfWeek": [0],
+      "defaultSlot": { "period": "evening", "priority": 3 },
+      "startDate": "2026-04-20",
+      "isActive": true,
+      "createdAt": "2026-04-20T09:00:00.000Z",
+      "scheduledTime": "21:00"
+    }
+  ],
+  "routineInstances": [
+    {
+      "id": "ri-1",
+      "routineId": "routine-1",
+      "date": "2026-05-08",
+      "slot": { "period": "morning", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-08T09:15:00.000Z"
+    },
+    {
+      "id": "ri-2",
+      "routineId": "routine-2",
+      "date": "2026-05-08",
+      "slot": { "period": "afternoon", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": null
+    },
+    {
+      "id": "ri-3",
+      "routineId": "routine-1",
+      "date": "2026-05-07",
+      "slot": { "period": "morning", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T09:10:00.000Z"
+    },
+    {
+      "id": "ri-4",
+      "routineId": "routine-2",
+      "date": "2026-05-07",
+      "slot": { "period": "afternoon", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T16:00:00.000Z"
+    },
+    {
+      "id": "ri-5",
+      "routineId": "routine-3",
+      "date": "2026-05-04",
+      "slot": { "period": "evening", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-04T21:30:00.000Z"
+    },
+    {
+      "id": "ri-6",
+      "routineId": "routine-1",
+      "date": "2026-05-06",
+      "slot": { "period": "morning", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T09:20:00.000Z"
+    },
+    {
+      "id": "ri-7",
+      "routineId": "routine-2",
+      "date": "2026-05-06",
+      "slot": { "period": "afternoon", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T15:30:00.000Z"
+    }
+  ],
+  "notes": [
+    {
+      "id": "note-1",
+      "projectId": "proj-1",
+      "content": "스트리밍 응답 시 토큰 카운터를 UI에 표시하면 좋겠다. 비용 감각이 생김.",
+      "createdAt": "2026-05-08T10:35:00.000Z"
+    },
+    {
+      "id": "note-2",
+      "projectId": "proj-1",
+      "content": "GPT-4o-mini가 충분히 빠르다. 기본 모델로 쓰고 복잡한 건 4o로 분기.",
+      "createdAt": "2026-05-07T11:00:00.000Z"
+    },
+    {
+      "id": "note-3",
+      "projectId": "proj-2",
+      "content": "히어로 섹션에 터미널 타이핑 애니메이션 넣기. 개발자 느낌 살리기.",
+      "createdAt": "2026-05-06T14:30:00.000Z"
+    },
+    {
+      "id": "note-4",
+      "projectId": "proj-4",
+      "content": "EP.12 주제: 사이드 프로젝트 시간 관리법. 9todo 사용 후기 포함.",
+      "createdAt": "2026-05-07T20:30:00.000Z"
+    },
+    {
+      "id": "note-5",
+      "projectId": "proj-3",
+      "content": "운동 기록은 세트/횟수/무게 3가지. 최대한 심플하게.",
+      "createdAt": "2026-05-05T18:00:00.000Z"
+    }
+  ],
+  "goalCompass": {
+    "identity": "나는 만드는 사람이다.",
+    "goals": {
+      "today": "AI 챗봇 스트리밍 응답 완성하기",
+      "week": "챗봇 MVP 배포 가능 상태 만들기",
+      "month": "AI 챗봇 앱 ProductHunt 런칭",
+      "quarter": "사이드 프로젝트 2개 런칭 완료",
+      "oneYear": "월 수익 $1,000 달성",
+      "fiveYear": "인디 해커로 독립 — 내가 만든 것으로 먹고살기"
+    },
+    "affirmation": "매일 조금씩, 꾸준히 만든다."
+  },
+  "goalCompletedDates": ["2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07"],
+  "lastUsedProjectId": "proj-1",
+  "activeProjectFilter": null,
+  "projectFirstMode": true,
+  "colorTheme": "vivid",
+  "retrospectives": [
+    {
+      "id": "retro-1",
+      "scope": "day",
+      "scopeKey": "2026-05-07",
+      "content": "온보딩 플로우 구현에 예상보다 시간이 걸렸지만 완성도는 만족. 내일은 스트리밍 응답에 집중.",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "updatedAt": "2026-05-07T22:00:00.000Z"
+    },
+    {
+      "id": "retro-2",
+      "scope": "week",
+      "scopeKey": "2026-W18",
+      "content": "AI 챗봇 핵심 기능 80% 완료. 포트폴리오도 진전. 유튜브는 살짝 밀렸지만 괜찮다.",
+      "createdAt": "2026-05-04T21:45:00.000Z",
+      "updatedAt": "2026-05-04T21:45:00.000Z"
+    }
+  ]
+}

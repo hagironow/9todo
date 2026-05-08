@@ -1,0 +1,460 @@
+{
+  "projects": [
+    {
+      "id": "proj-1",
+      "name": "AI Chatbot App",
+      "colorIndex": 0,
+      "color": "#6366f1",
+      "createdAt": "2026-04-20T09:00:00.000Z"
+    },
+    {
+      "id": "proj-2",
+      "name": "Portfolio Site",
+      "colorIndex": 1,
+      "color": "#f59e0b",
+      "createdAt": "2026-04-22T09:00:00.000Z"
+    },
+    {
+      "id": "proj-3",
+      "name": "Fitness Tracker",
+      "colorIndex": 2,
+      "color": "#10b981",
+      "createdAt": "2026-04-25T09:00:00.000Z"
+    },
+    {
+      "id": "proj-4",
+      "name": "YouTube Channel",
+      "colorIndex": 3,
+      "color": "#ef4444",
+      "createdAt": "2026-05-01T09:00:00.000Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Test GPT API integration",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "morning", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-08T10:30:00.000Z",
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "timerSeconds": 2700,
+      "continueCount": 0
+    },
+    {
+      "id": "task-2",
+      "title": "Fix chat UI scroll bug",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "morning", "priority": 2 },
+      "deferCount": 0,
+      "completedAt": "2026-05-08T11:15:00.000Z",
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "timerSeconds": 1800,
+      "continueCount": 0
+    },
+    {
+      "id": "task-3",
+      "title": "Make project section responsive",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": { "period": "morning", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-4",
+      "title": "Implement streaming responses",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "afternoon", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-5",
+      "title": "Write hero section copy",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": { "period": "afternoon", "priority": 2 },
+      "deferCount": 1,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "origin": "deferred",
+      "continueCount": 0
+    },
+    {
+      "id": "task-6",
+      "title": "Edit video — EP.12 intro",
+      "type": "task",
+      "projectId": "proj-4",
+      "slot": { "period": "afternoon", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-7",
+      "title": "Prompt tuning experiments",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "evening", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-8",
+      "title": "Wireframe fitness dashboard",
+      "type": "task",
+      "projectId": "proj-3",
+      "slot": { "period": "evening", "priority": 2 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-9",
+      "title": "Design thumbnail — EP.12",
+      "type": "task",
+      "projectId": "proj-4",
+      "slot": { "period": "evening", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": null,
+      "date": "2026-05-08",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-b1",
+      "title": "Refactor error handling",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": null,
+      "deferCount": 2,
+      "completedAt": null,
+      "date": null,
+      "createdAt": "2026-05-04T09:00:00.000Z",
+      "origin": "deferred",
+      "continueCount": 0
+    },
+    {
+      "id": "task-b2",
+      "title": "Add SEO meta tags",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": null,
+      "deferCount": 1,
+      "completedAt": null,
+      "date": null,
+      "createdAt": "2026-05-05T09:00:00.000Z",
+      "origin": "deferred",
+      "continueCount": 0
+    },
+    {
+      "id": "task-b3",
+      "title": "Export workout data to CSV",
+      "type": "task",
+      "projectId": "proj-3",
+      "slot": null,
+      "deferCount": 0,
+      "completedAt": null,
+      "date": null,
+      "createdAt": "2026-05-06T09:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-1",
+      "title": "Build onboarding flow",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "morning", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T10:00:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "timerSeconds": 3600,
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-2",
+      "title": "Add dark mode toggle",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": { "period": "morning", "priority": 2 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T11:00:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "timerSeconds": 1500,
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-3",
+      "title": "Run DB schema migration",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "afternoon", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T14:30:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "timerSeconds": 2700,
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-4",
+      "title": "Model workout data schema",
+      "type": "task",
+      "projectId": "proj-3",
+      "slot": { "period": "afternoon", "priority": 2 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T15:30:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-5",
+      "title": "Upload EP.11 + reply to comments",
+      "type": "task",
+      "projectId": "proj-4",
+      "slot": { "period": "evening", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T20:00:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-6",
+      "title": "Animate portfolio project cards",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": { "period": "evening", "priority": 2 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T21:00:00.000Z",
+      "date": "2026-05-07",
+      "createdAt": "2026-05-06T22:00:00.000Z",
+      "timerSeconds": 1800,
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-7",
+      "title": "Add API response caching",
+      "type": "task",
+      "projectId": "proj-1",
+      "slot": { "period": "morning", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T10:30:00.000Z",
+      "date": "2026-05-06",
+      "createdAt": "2026-05-05T22:00:00.000Z",
+      "timerSeconds": 2400,
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-8",
+      "title": "Write About page content",
+      "type": "task",
+      "projectId": "proj-2",
+      "slot": { "period": "afternoon", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T14:00:00.000Z",
+      "date": "2026-05-06",
+      "createdAt": "2026-05-05T22:00:00.000Z",
+      "continueCount": 0
+    },
+    {
+      "id": "task-prev-9",
+      "title": "Write script — EP.12",
+      "type": "task",
+      "projectId": "proj-4",
+      "slot": { "period": "evening", "priority": 1 },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T21:00:00.000Z",
+      "date": "2026-05-06",
+      "createdAt": "2026-05-05T22:00:00.000Z",
+      "timerSeconds": 3600,
+      "continueCount": 0
+    }
+  ],
+  "routines": [
+    {
+      "id": "routine-1",
+      "title": "Check GitHub issues",
+      "type": "routine",
+      "projectId": null,
+      "recurrence": "daily",
+      "defaultSlot": { "period": "morning", "priority": 3 },
+      "startDate": "2026-04-20",
+      "isActive": true,
+      "createdAt": "2026-04-20T09:00:00.000Z",
+      "scheduledTime": "09:00"
+    },
+    {
+      "id": "routine-2",
+      "title": "Code review 30min",
+      "type": "routine",
+      "projectId": "proj-1",
+      "recurrence": "daily",
+      "defaultSlot": { "period": "afternoon", "priority": 3 },
+      "startDate": "2026-04-20",
+      "isActive": true,
+      "createdAt": "2026-04-20T09:00:00.000Z"
+    },
+    {
+      "id": "routine-3",
+      "title": "Weekly retrospective",
+      "type": "routine",
+      "projectId": null,
+      "recurrence": "weekly",
+      "daysOfWeek": [0],
+      "defaultSlot": { "period": "evening", "priority": 3 },
+      "startDate": "2026-04-20",
+      "isActive": true,
+      "createdAt": "2026-04-20T09:00:00.000Z",
+      "scheduledTime": "21:00"
+    }
+  ],
+  "routineInstances": [
+    {
+      "id": "ri-1",
+      "routineId": "routine-1",
+      "date": "2026-05-08",
+      "slot": { "period": "morning", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-08T09:15:00.000Z"
+    },
+    {
+      "id": "ri-2",
+      "routineId": "routine-2",
+      "date": "2026-05-08",
+      "slot": { "period": "afternoon", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": null
+    },
+    {
+      "id": "ri-3",
+      "routineId": "routine-1",
+      "date": "2026-05-07",
+      "slot": { "period": "morning", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T09:10:00.000Z"
+    },
+    {
+      "id": "ri-4",
+      "routineId": "routine-2",
+      "date": "2026-05-07",
+      "slot": { "period": "afternoon", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-07T16:00:00.000Z"
+    },
+    {
+      "id": "ri-5",
+      "routineId": "routine-3",
+      "date": "2026-05-04",
+      "slot": { "period": "evening", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-04T21:30:00.000Z"
+    },
+    {
+      "id": "ri-6",
+      "routineId": "routine-1",
+      "date": "2026-05-06",
+      "slot": { "period": "morning", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T09:20:00.000Z"
+    },
+    {
+      "id": "ri-7",
+      "routineId": "routine-2",
+      "date": "2026-05-06",
+      "slot": { "period": "afternoon", "priority": 3 },
+      "deferCount": 0,
+      "completedAt": "2026-05-06T15:30:00.000Z"
+    }
+  ],
+  "notes": [
+    {
+      "id": "note-1",
+      "projectId": "proj-1",
+      "content": "Show token counter in UI during streaming. Helps users feel the cost.",
+      "createdAt": "2026-05-08T10:35:00.000Z"
+    },
+    {
+      "id": "note-2",
+      "projectId": "proj-1",
+      "content": "GPT-4o-mini is fast enough as default. Route complex queries to 4o.",
+      "createdAt": "2026-05-07T11:00:00.000Z"
+    },
+    {
+      "id": "note-3",
+      "projectId": "proj-2",
+      "content": "Add terminal typing animation in hero section. Dev vibes.",
+      "createdAt": "2026-05-06T14:30:00.000Z"
+    },
+    {
+      "id": "note-4",
+      "projectId": "proj-4",
+      "content": "EP.12 topic: How I manage side project time. Include 9todo walkthrough.",
+      "createdAt": "2026-05-07T20:30:00.000Z"
+    },
+    {
+      "id": "note-5",
+      "projectId": "proj-3",
+      "content": "Keep it simple: sets, reps, weight. Three fields max.",
+      "createdAt": "2026-05-05T18:00:00.000Z"
+    }
+  ],
+  "goalCompass": {
+    "identity": "I am a maker.",
+    "goals": {
+      "today": "Finish AI chatbot streaming responses",
+      "week": "Get chatbot MVP to deployable state",
+      "month": "Launch AI Chatbot on ProductHunt",
+      "quarter": "Ship 2 side projects",
+      "oneYear": "Hit $1,000 MRR",
+      "fiveYear": "Go indie — live off what I build"
+    },
+    "affirmation": "Ship a little every day."
+  },
+  "goalCompletedDates": ["2026-05-04", "2026-05-05", "2026-05-06", "2026-05-07"],
+  "lastUsedProjectId": "proj-1",
+  "activeProjectFilter": null,
+  "projectFirstMode": true,
+  "colorTheme": "vivid",
+  "retrospectives": [
+    {
+      "id": "retro-1",
+      "scope": "day",
+      "scopeKey": "2026-05-07",
+      "content": "Onboarding flow took longer than expected but quality is solid. Tomorrow: focus on streaming.",
+      "createdAt": "2026-05-07T22:00:00.000Z",
+      "updatedAt": "2026-05-07T22:00:00.000Z"
+    },
+    {
+      "id": "retro-2",
+      "scope": "week",
+      "scopeKey": "2026-W18",
+      "content": "AI chatbot core 80% done. Portfolio progressing. YouTube slightly behind but manageable.",
+      "createdAt": "2026-05-04T21:45:00.000Z",
+      "updatedAt": "2026-05-04T21:45:00.000Z"
+    }
+  ]
+}

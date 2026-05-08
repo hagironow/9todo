@@ -550,7 +550,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
           {onClose && (
             <button
               onClick={onClose}
-              className="lg:hidden text-[13px] font-medium shrink-0 ml-1"
+              className="text-[13px] font-medium shrink-0 ml-1"
               style={{ color: 'var(--timer-fg)' }}
             >
               닫기
