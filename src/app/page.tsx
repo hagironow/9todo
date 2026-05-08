@@ -21,7 +21,9 @@ import type {
   Routine,
   GoalCompass as GoalCompassType,
   Project,
+  AppState,
 } from '@/lib/types';
+import { UNCATEGORIZED_ID } from '@/lib/types';
 import { useAppData } from '@/hooks/useAppData';
 import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 // useNowFocus replaced by inline playItems memo
@@ -208,6 +210,7 @@ export default function Home() {
 
   // 프로젝트 이름 변경 모달
   const [renamingProject, setRenamingProject] = useState<Project | null>(null);
+  const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
 
   // 태스크 생성 후 프로젝트 선택 모달
   const [projectSelectOpen, setProjectSelectOpen] = useState(false);
@@ -750,9 +753,9 @@ export default function Home() {
 
   const handleDeleteProject = useCallback(
     (projectId: string) => {
-      removeProject(projectId);
+      setDeleteProjectId(projectId);
     },
-    [removeProject]
+    []
   );
 
   const handleArchiveProject = useCallback(
@@ -787,13 +790,20 @@ export default function Home() {
 
   const handleSaveGoal = useCallback(
     (key: keyof GoalCompassType['goals'], value: string) => {
-      batchUpdate((prev) => ({
-        ...prev,
-        goalCompass: {
-          ...prev.goalCompass,
-          goals: { ...prev.goalCompass.goals, [key]: value },
-        },
-      }));
+      batchUpdate((prev) => {
+        const updated = {
+          ...prev,
+          goalCompass: {
+            ...prev.goalCompass,
+            goals: { ...prev.goalCompass.goals, [key]: value },
+          },
+        };
+        // 오늘 목표 작성 시 날짜 기록 (리셋 판단용)
+        if (key === 'today') {
+          updated.goalTodayDate = value ? getToday() : undefined;
+        }
+        return updated;
+      });
     },
     [batchUpdate]
   );
@@ -1195,6 +1205,20 @@ export default function Home() {
               }
             }
             setDeleteTarget(null);
+          }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
+        </div>
+      </Dialog>
+
+      {/* 프로젝트 삭제 확인 */}
+      <Dialog open={!!deleteProjectId} onClose={() => setDeleteProjectId(null)} title="삭제할까요?" width="sm">
+        <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          프로젝트에 포함된 할 일과 루틴이 모두 삭제됩니다.<br />삭제한 항목은 복구할 수 없습니다.
+        </p>
+        <div className="flex items-center gap-2 pt-1">
+          <button onClick={() => setDeleteProjectId(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+          <button onClick={() => {
+            if (deleteProjectId) removeProject(deleteProjectId);
+            setDeleteProjectId(null);
           }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
         </div>
       </Dialog>

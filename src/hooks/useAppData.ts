@@ -159,13 +159,9 @@ export function useAppData() {
       update((prev) => ({
         ...prev,
         projects: prev.projects.filter((p) => p.id !== projectId),
-        // 해당 프로젝트에 속한 태스크/루틴의 projectId를 null로
-        tasks: prev.tasks.map((t) =>
-          t.projectId === projectId ? { ...t, projectId: null } : t,
-        ),
-        routines: prev.routines.map((r) =>
-          r.projectId === projectId ? { ...r, projectId: null } : r,
-        ),
+        // 해당 프로젝트에 속한 태스크/루틴도 함께 삭제
+        tasks: prev.tasks.filter((t) => t.projectId !== projectId),
+        routines: prev.routines.filter((r) => r.projectId !== projectId),
         lastUsedProjectId:
           prev.lastUsedProjectId === projectId ? null : prev.lastUsedProjectId,
         activeProjectFilter:

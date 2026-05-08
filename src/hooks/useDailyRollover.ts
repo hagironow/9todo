@@ -52,21 +52,22 @@ export function useDailyRollover({
         }
       }
 
-      // 3. goals.today 리셋 — 어제 완료했으면 오늘은 비우기 (어제만 체크, 과거 전체 X)
+      // 3. goals.today 리셋 — 목표를 작성한 날과 다른 날이 되었을 때만 리셋
+      // goalTodayDate: 오늘 목표가 마지막으로 작성/유지된 날짜
       let nextGoalCompass = prev.goalCompass;
-      if (today === realToday) {
-        const completedDates = prev.goalCompletedDates ?? [];
-        const yesterday = getPreviousDay(today);
-        // 어제 완료 기록이 있고, 오늘은 아직 완료 안 했으면 리셋
-        const hasYesterdayCompletion = completedDates.includes(yesterday);
-        const hasTodayCompletion = completedDates.includes(today);
-        if (hasYesterdayCompletion && !hasTodayCompletion && prev.goalCompass.goals.today) {
-          nextGoalCompass = {
-            ...prev.goalCompass,
-            goals: { ...prev.goalCompass.goals, today: '' },
-          };
-          changed = true;
-        }
+      const goalTodayDate = prev.goalTodayDate;
+      if (today === realToday && prev.goalCompass.goals.today && goalTodayDate && goalTodayDate < today) {
+        // 목표가 작성된 날짜가 오늘 이전이면 리셋
+        nextGoalCompass = {
+          ...prev.goalCompass,
+          goals: { ...prev.goalCompass.goals, today: '' },
+        };
+        changed = true;
+      }
+
+      // goalTodayDate가 없으면 현재 날짜로 설정 (마이그레이션)
+      if (prev.goalCompass.goals.today && !goalTodayDate) {
+        changed = true;
       }
 
       if (!changed) return prev;
@@ -75,6 +76,7 @@ export function useDailyRollover({
         tasks: nextTasks,
         routineInstances: nextRoutineInstances,
         goalCompass: nextGoalCompass,
+        goalTodayDate: nextGoalCompass.goals.today ? (goalTodayDate ?? today) : undefined,
       };
     });
   }, [loading, today, batchUpdate]);

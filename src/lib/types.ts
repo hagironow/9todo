@@ -55,6 +55,8 @@ export interface RoutineInstance {
   completedAt: string | null;
 }
 
+export const UNCATEGORIZED_ID = '__uncategorized__';
+
 export interface Note {
   id: string;
   projectId: string;
@@ -99,6 +101,7 @@ export interface AppState {
   projectFirstMode: boolean;
   colorTheme: string; // 'vivid' | 'pastel' | ...
   retrospectives: RetrospectiveEntry[];
+  goalTodayDate?: string; // 오늘 목표가 작성된 날짜 (리셋 판단용)
 }
 
 // 화면에서 사용하는 통합 타입
