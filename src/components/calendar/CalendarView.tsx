@@ -221,6 +221,7 @@ export default function CalendarView({
   const [weekAnchor, setWeekAnchor] = useState(todayStr);
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [inputDate, setInputDate] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(true);
 
   const activeRoutines = routines.filter((r) => r.isActive);
 
@@ -364,8 +365,9 @@ export default function CalendarView({
     if (todoItems.length === 0 && routineItems.length === 0) return null;
 
     const isExpanded = expandedDate === dateStr;
-    const maxTodos = compact ? (isExpanded ? todoItems.length : 2) : todoItems.length;
-    const maxRoutines = compact ? (isExpanded ? routineItems.length : 2) : routineItems.length;
+    const unlimitedCompact = compact && showAll;
+    const maxTodos = compact ? (unlimitedCompact || isExpanded ? todoItems.length : 2) : todoItems.length;
+    const maxRoutines = compact ? (unlimitedCompact || isExpanded ? routineItems.length : 2) : routineItems.length;
     const visibleTodos = todoItems.slice(0, maxTodos);
     const visibleRoutines = routineItems.slice(0, maxRoutines);
     const hiddenCount = compact
@@ -465,6 +467,24 @@ export default function CalendarView({
         <div className="flex items-center gap-2">
           {/* 필터 탭 */}
           <div className="flex items-center bg-[var(--card)] rounded-[var(--radius-sm)] p-0.5">
+            {/* 전체 보기 토글 (먼슬리만) */}
+            {viewMode === 'month' && (
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className={[
+                  'w-7 h-4 rounded-full transition-colors duration-200 relative shrink-0',
+                  showAll ? 'bg-[var(--accent)]' : 'bg-[var(--border)]',
+                ].join(' ')}
+                title={showAll ? '4개만 보기' : '전체 보기'}
+              >
+                <span
+                  className={[
+                    'absolute top-[3px] w-[10px] h-[10px] rounded-full bg-white shadow-sm transition-transform duration-200',
+                    showAll ? 'left-[14px]' : 'left-[3px]',
+                  ].join(' ')}
+                />
+              </button>
+            )}
             {([
               { key: 'all', label: '전체' },
               { key: 'todo', label: '투두' },

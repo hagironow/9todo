@@ -70,16 +70,18 @@ export default function ProjectDetailView({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [colorPickerOpen]);
 
+  const isUnassigned = project.id === '__unassigned__';
+
   // 이 프로젝트에 속한 태스크만
   const projectTasks = useMemo(
-    () => tasks.filter((t) => t.projectId === project.id),
-    [tasks, project.id],
+    () => tasks.filter((t) => isUnassigned ? !t.projectId : t.projectId === project.id),
+    [tasks, project.id, isUnassigned],
   );
 
   // 이 프로젝트에 속한 루틴/인스턴스
   const projectRoutines = useMemo(
-    () => routines.filter((r) => r.projectId === project.id),
-    [routines, project.id],
+    () => isUnassigned ? [] : routines.filter((r) => r.projectId === project.id),
+    [routines, project.id, isUnassigned],
   );
   const projectRoutineIds = useMemo(
     () => new Set(projectRoutines.map((r) => r.id)),
@@ -94,9 +96,9 @@ export default function ProjectDetailView({
   const projectNotes = useMemo(
     () =>
       (notes ?? [])
-        .filter((n) => n.projectId === project.id)
+        .filter((n) => isUnassigned ? n.projectId === '__unassigned__' : n.projectId === project.id)
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [notes, project.id],
+    [notes, project.id, isUnassigned],
   );
 
   // 통계
@@ -249,7 +251,7 @@ export default function ProjectDetailView({
           label="투입 시간"
           value={formatTime(stats.hours, stats.minutes)}
         />
-        <StatCard label="획득 XP" value={`${stats.xp}`} accent />
+        <StatCard label="획득 XP" value={`${stats.xp}`} color="var(--g-success)" />
       </div>
 
       {/* 태스크 목록 */}
@@ -290,12 +292,34 @@ export default function ProjectDetailView({
           </button>
         )}
 
-        {stats.routineCompletedCount > 0 && (
-          <p className="text-xs text-[var(--muted-foreground)] mt-1">
-            + 루틴 {stats.routineCompletedCount}회 완료
-          </p>
-        )}
       </div>
+
+      {/* 루틴 목록 */}
+      {projectRoutines.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
+            루틴 ({projectRoutines.length})
+          </h3>
+          <div className="flex flex-col gap-1">
+            {projectRoutines.map((routine) => {
+              const instanceCount = projectInstances.filter(
+                (ri) => ri.routineId === routine.id,
+              ).length;
+              const completedCount = projectInstances.filter(
+                (ri) => ri.routineId === routine.id && ri.completedAt,
+              ).length;
+              return (
+                <RoutineRow
+                  key={routine.id}
+                  routine={routine}
+                  instanceCount={instanceCount}
+                  completedCount={completedCount}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 노트 */}
       <div className="flex flex-col gap-2">
@@ -339,18 +363,19 @@ function StatCard({
   label,
   value,
   sub,
-  accent,
+  color,
 }: {
   label: string;
   value: string;
   sub?: string;
-  accent?: boolean;
+  color?: string;
 }) {
   return (
     <div className="rounded-[var(--radius)] bg-[var(--card)] border border-[var(--border)] p-4 flex flex-col gap-1">
       <span className="text-xs text-[var(--muted-foreground)]">{label}</span>
       <span
-        className={`text-xl font-bold ${accent ? 'text-[var(--accent)]' : 'text-[var(--foreground)]'}`}
+        className="text-xl font-bold"
+        style={color ? { color } : undefined}
       >
         {value}
       </span>
@@ -394,7 +419,10 @@ function TaskRow({
         done ? 'bg-[var(--card)] opacity-60' : 'bg-[var(--card)]'
       }`}
     >
-      <span className="text-sm w-5 text-center shrink-0">
+      <span
+        className="text-sm w-5 text-center shrink-0"
+        style={done ? { color: 'var(--g-success)' } : undefined}
+      >
         {done ? '✓' : '○'}
       </span>
       <span
@@ -483,6 +511,55 @@ function TaskRow({
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ── 루틴 행 ── */
+function RoutineRow({
+  routine,
+  instanceCount,
+  completedCount,
+}: {
+  routine: Routine;
+  instanceCount: number;
+  completedCount: number;
+}) {
+  const recurrenceLabel =
+    routine.recurrence === 'daily'
+      ? '매일'
+      : routine.recurrence === 'weekly'
+        ? routine.daysOfWeek?.length
+          ? `매주 ${routine.daysOfWeek.map((d) => ['일', '월', '화', '수', '목', '금', '토'][d]).join('·')}`
+          : '매주'
+        : routine.recurrence === 'biweekly'
+          ? '격주'
+          : '매월';
+
+  const slotLabel = `${routine.defaultSlot.period === 'morning' ? '오전' : routine.defaultSlot.period === 'afternoon' ? '오후' : '저녁'} P${routine.defaultSlot.priority}`;
+
+  return (
+    <div className="flex items-center gap-3 px-3 py-2 rounded-[var(--radius-sm)] bg-[var(--card)]">
+      <span
+        className="text-sm w-5 text-center shrink-0"
+        style={{ color: routine.isActive ? 'var(--g-success)' : 'var(--muted-foreground)' }}
+      >
+        {routine.isActive ? '↻' : '—'}
+      </span>
+      <span className="flex-1 text-sm text-[var(--foreground)] truncate">
+        {routine.title}
+      </span>
+      <span className="text-xs text-[var(--muted-foreground)] shrink-0">
+        {recurrenceLabel}
+      </span>
+      <span className="text-xs text-[var(--muted-foreground)] shrink-0 w-16 text-right">
+        {slotLabel}
+      </span>
+      {completedCount > 0 && (
+        <span className="text-xs shrink-0 w-10 text-right" style={{ color: 'var(--g-success)' }}>
+          {completedCount}회
+        </span>
+      )}
     </div>
   );
 }

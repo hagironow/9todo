@@ -51,9 +51,10 @@ export default function GoalCompass({
   return (
     <section className="rounded-[calc(var(--radius)*1.4)] overflow-hidden bg-[var(--card)]">
       {/* 헤더 — 프리뷰 목표 + 전체 XP */}
-      <button
+      <div
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex flex-col items-start px-5 py-3 hover:bg-[var(--muted)] transition-colors duration-100"
+        className="w-full flex flex-col items-start px-5 py-3 hover:bg-[var(--muted)] transition-colors duration-100 cursor-pointer"
+        role="button"
         aria-expanded={expanded}
         aria-controls="goal-compass-body"
       >
@@ -116,7 +117,7 @@ export default function GoalCompass({
           {totalXP}
           <span className="text-[14px] font-semibold text-[var(--muted-foreground)] ml-0.5">xp</span>
         </span>
-      </button>
+      </div>
 
       {/* 접힘/펼침 본문 */}
       <div

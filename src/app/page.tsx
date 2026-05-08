@@ -921,9 +921,8 @@ export default function Home() {
           {/* Goal Compass — 프로젝트 상세 뷰, 회고 뷰에서는 숨김 */}
           {!(state.activeProjectFilter
             && state.activeProjectFilter !== '__calendar__'
-            && state.activeProjectFilter !== '__unassigned__'
             && state.activeProjectFilter !== '__retrospective__'
-            && state.projects.some((p) => p.id === state.activeProjectFilter)
+            && (state.activeProjectFilter === '__unassigned__' || state.projects.some((p) => p.id === state.activeProjectFilter))
           ) && state.activeProjectFilter !== '__retrospective__' && (
             <GoalCompass
               data={state.goalCompass}
@@ -963,16 +962,27 @@ export default function Home() {
               onSaveRetro={upsertRetrospective}
             />
           ) : (() => {
-            // 실제 프로젝트 ID인지 확인 (null, __unassigned__ 제외)
+            // 실제 프로젝트 ID인지 확인
             const selectedProject = state.activeProjectFilter
               && state.activeProjectFilter !== '__unassigned__'
               ? state.projects.find((p) => p.id === state.activeProjectFilter)
               : null;
 
-            if (selectedProject) {
+            // 미분류 가상 프로젝트
+            const isUnassignedView = state.activeProjectFilter === '__unassigned__';
+
+            if (selectedProject || isUnassignedView) {
+              const proj = selectedProject ?? {
+                id: '__unassigned__' as string,
+                name: '미분류',
+                color: '#8A8A8A',
+                colorIndex: 0,
+                archived: false,
+                createdAt: '',
+              };
               return (
                 <ProjectDetailView
-                  project={selectedProject}
+                  project={proj}
                   tasks={state.tasks}
                   routines={state.routines}
                   routineInstances={state.routineInstances}
@@ -980,7 +990,7 @@ export default function Home() {
                   onAddNote={addNote}
                   onRemoveNote={removeNote}
                   colorTheme={state.colorTheme}
-                  onUpdateColor={(pid, idx) => updateProject(pid, { colorIndex: idx })}
+                  onUpdateColor={isUnassignedView ? undefined : (pid, idx) => updateProject(pid, { colorIndex: idx })}
                   onComplete={handleComplete}
                   onDefer={handleDefer}
                   onRepeat={handleRepeat}

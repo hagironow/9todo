@@ -87,6 +87,21 @@ function loadSession(): { data: SurveyData; step: Step } | null {
   }
 }
 
+/** 앱 상태에서 태스크/루틴 생성 수를 읽어옴 */
+function getUsageCounts() {
+  try {
+    const raw = localStorage.getItem('9todo_state');
+    if (!raw) return { taskCount: 0, routineCount: 0 };
+    const state = JSON.parse(raw);
+    return {
+      taskCount: Array.isArray(state.tasks) ? state.tasks.length : 0,
+      routineCount: Array.isArray(state.routines) ? state.routines.length : 0,
+    };
+  } catch {
+    return { taskCount: 0, routineCount: 0 };
+  }
+}
+
 /** 최종 제출 — 배열에 추가 + 세션 삭제 */
 function saveSurvey(data: Partial<SurveyData> & { interest: string }, completed: boolean) {
   const entry = {
@@ -94,6 +109,7 @@ function saveSurvey(data: Partial<SurveyData> & { interest: string }, completed:
     completed,
     submittedAt: new Date().toISOString(),
     daysSinceFirstUse: getDaysSinceFirstUse(),
+    ...getUsageCounts(),
   };
   const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   existing.push(entry);
