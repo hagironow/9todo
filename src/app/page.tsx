@@ -199,6 +199,8 @@ export default function Home() {
   const [slotPickerOpen, setSlotPickerOpen] = useState(false);
   const [slotPickerTarget, setSlotPickerTarget] = useState<string | null>(null);
   const [slotPickerIsRoutine, setSlotPickerIsRoutine] = useState(false);
+  const [slotPickerIsRepeat, setSlotPickerIsRepeat] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ScheduledItem | null>(null);
 
   // 프로젝트 이름 변경 모달
   const [renamingProject, setRenamingProject] = useState<Project | null>(null);
@@ -356,8 +358,30 @@ export default function Home() {
     });
   }, [backlogItems, state.activeProjectFilter]);
 
-  // 루틴은 프로젝트 필터와 무관하게 항상 표시
-  const filteredRoutineSlots = routineSlots;
+  // 루틴도 프로젝트 필터 적용
+  const filteredRoutineSlots = useMemo(() => {
+    if (!state.activeProjectFilter) return routineSlots;
+    const filter = state.activeProjectFilter;
+    if (filter === '__unassigned__' || filter === '__calendar__') return routineSlots;
+    const result: Record<TimePeriod, Record<Priority, ScheduledItem | null>> = {
+      morning: { 1: null, 2: null, 3: null },
+      afternoon: { 1: null, 2: null, 3: null },
+      evening: { 1: null, 2: null, 3: null },
+    };
+    for (const period of ['morning', 'afternoon', 'evening'] as TimePeriod[]) {
+      for (const p of [1, 2, 3] as Priority[]) {
+        const item = routineSlots[period][p];
+        if (!item) continue;
+        const pid = 'routineDetails' in item && item.routineDetails
+          ? (item.routineDetails as Routine).projectId
+          : null;
+        if (pid === filter) {
+          result[period][p] = item;
+        }
+      }
+    }
+    return result;
+  }, [routineSlots, state.activeProjectFilter]);
 
   // Handlers
   const handleComplete = useCallback(
@@ -422,23 +446,22 @@ export default function Home() {
   const handleRepeat = useCallback(
     (item: ScheduledItem) => {
       if ('type' in item && item.type === 'task') {
-        continueTask(item.id, today);
+        setSlotPickerTarget(item.id);
+        setSlotPickerIsRoutine(false);
+        setSlotPickerIsRepeat(true);
+        setSlotPickerOpen(true);
       } else {
         continueRoutineInstance(item.id);
       }
     },
-    [continueTask, continueRoutineInstance, today]
+    [continueRoutineInstance]
   );
 
   const handleDelete = useCallback(
     (item: ScheduledItem) => {
-      if ('type' in item && item.type === 'task') {
-        removeTask(item.id);
-      } else {
-        removeRoutineInstance(item.id);
-      }
+      setDeleteTarget(item);
     },
-    [removeTask, removeRoutineInstance]
+    []
   );
 
   const handleUpdateTitle = useCallback(
@@ -515,7 +538,7 @@ export default function Home() {
 
   // RoutineSetupModal 저장 핸들러 (생성 + 편집 겸용)
   const handleRoutineSetupSave = useCallback(
-    (data: { recurrence: import('@/lib/types').RecurrenceType; daysOfWeek?: number[]; defaultSlot: SlotCoord; startDate: string; scheduledTime?: string }) => {
+    (data: { recurrence: import('@/lib/types').RecurrenceType; daysOfWeek?: number[]; defaultSlot: SlotCoord; startDate: string; scheduledTime?: string; projectId: string | null }) => {
       if (editingRoutine) {
         updateRoutine(editingRoutine.id, {
           recurrence: data.recurrence,
@@ -523,12 +546,13 @@ export default function Home() {
           defaultSlot: data.defaultSlot,
           startDate: data.startDate,
           scheduledTime: data.scheduledTime,
+          projectId: data.projectId,
         });
       } else {
         if (!routineModalTitle.trim()) return;
         const routine = addRoutine({
           title: routineModalTitle.trim(),
-          projectId: null,
+          projectId: data.projectId,
           recurrence: data.recurrence,
           daysOfWeek: data.daysOfWeek,
           defaultSlot: routineModalCoord ?? data.defaultSlot,
@@ -614,6 +638,35 @@ export default function Home() {
       const itemData = active.data.current;
       const isRoutineInstance = !!itemData?.isRoutineInstance;
 
+      // 루틴 슬롯 드롭 처리
+      if (over.data.current?.isRoutineSlot) {
+        // 태스크를 루틴 슬롯에 드롭하면 무시
+        if (!isRoutineInstance) return;
+
+        const draggedCurrentSlot = itemData?.currentSlot as SlotCoord | null;
+        const targetRoutineItem = routineSlots[coord.period][coord.priority];
+
+        if (!targetRoutineItem) {
+          // 빈 루틴 슬롯 — 단순 이동
+          assignRoutineInstanceSlot(itemId, coord);
+        } else if (targetRoutineItem.id !== itemId) {
+          // 채워진 루틴 슬롯 — 교환 (batchUpdate로 원자적 처리)
+          batchUpdate((prev) => ({
+            ...prev,
+            routineInstances: prev.routineInstances.map((ri) => {
+              if (ri.id === itemId) return { ...ri, slot: coord };
+              if (ri.id === targetRoutineItem.id) return { ...ri, slot: draggedCurrentSlot };
+              return ri;
+            }),
+          }));
+        }
+        return;
+      }
+
+      // 태스크 슬롯 드롭 처리
+      // 루틴 인스턴스를 태스크 슬롯에 드롭하면 무시
+      if (isRoutineInstance) return;
+
       // 드래그된 아이템의 현재 슬롯을 data에서 직접 가져옴 (state 재탐색 불필요)
       const draggedItem = itemData?.item as ScheduledItem | undefined;
       const draggedCurrentSlot: SlotCoord | null =
@@ -623,11 +676,7 @@ export default function Home() {
 
       if (!targetItem) {
         // 빈 슬롯 — 단순 배정
-        if (isRoutineInstance) {
-          assignRoutineInstanceSlot(itemId, coord);
-        } else {
-          assignTaskSlot(itemId, coord, today);
-        }
+        assignTaskSlot(itemId, coord, today);
       } else if (targetItem.id !== itemId) {
         // 채워진 슬롯 — 두 아이템 슬롯 교환 (스왑)
         const targetIsRoutine =
@@ -642,27 +691,21 @@ export default function Home() {
           if (draggedCurrentSlot) {
             assignRoutineInstanceSlot(targetItem.id, draggedCurrentSlot);
           } else {
-            // 백로그에서 왔으면 타겟 루틴을 백로그로
             deferRoutineInstance(targetItem.id);
           }
         } else {
           if (draggedCurrentSlot) {
             assignTaskSlot(targetItem.id, draggedCurrentSlot, today);
           } else {
-            // 백로그에서 왔으면 타겟 태스크를 백로그로
             deferTask(targetItem.id);
           }
         }
 
         // 드래그된 아이템을 타겟 슬롯으로 이동
-        if (isRoutineInstance) {
-          assignRoutineInstanceSlot(itemId, coord);
-        } else {
-          assignTaskSlot(itemId, coord, today);
-        }
+        assignTaskSlot(itemId, coord, today);
       }
     },
-    [slots, assignTaskSlot, assignRoutineInstanceSlot, deferTask, deferRoutineInstance, today, handleSendToBacklog]
+    [slots, routineSlots, assignTaskSlot, assignRoutineInstanceSlot, deferTask, deferRoutineInstance, today, handleSendToBacklog, batchUpdate]
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -682,15 +725,18 @@ export default function Home() {
   const handleSlotPick = useCallback(
     (coord: SlotCoord) => {
       if (!slotPickerTarget) return;
-      if (slotPickerIsRoutine) {
+      if (slotPickerIsRepeat) {
+        continueTask(slotPickerTarget, today, coord);
+      } else if (slotPickerIsRoutine) {
         assignRoutineInstanceSlot(slotPickerTarget, coord);
       } else {
         assignTaskSlot(slotPickerTarget, coord, today);
       }
       setSlotPickerOpen(false);
       setSlotPickerTarget(null);
+      setSlotPickerIsRepeat(false);
     },
-    [slotPickerTarget, slotPickerIsRoutine, assignTaskSlot, assignRoutineInstanceSlot, today]
+    [slotPickerTarget, slotPickerIsRoutine, slotPickerIsRepeat, assignTaskSlot, assignRoutineInstanceSlot, continueTask, today]
   );
 
   // 프로젝트 편집/삭제/아카이브
@@ -1014,7 +1060,11 @@ export default function Home() {
       <DragOverlay>
         {activeItem && (
           <div className="px-3 py-2 rounded-[var(--radius)] bg-[var(--card)] border border-[var(--accent)] shadow-lg text-sm font-medium text-[var(--foreground)] max-w-[180px] truncate">
-            {'title' in activeItem ? activeItem.title : ''}
+            {'title' in activeItem
+              ? activeItem.title
+              : 'routineDetails' in activeItem && activeItem.routineDetails
+                ? (activeItem.routineDetails as Routine).title
+                : ''}
           </div>
         )}
       </DragOverlay>
@@ -1022,9 +1072,11 @@ export default function Home() {
       {/* Modals */}
       <SlotPickerModal
         open={slotPickerOpen}
-        onClose={() => setSlotPickerOpen(false)}
+        onClose={() => { setSlotPickerOpen(false); setSlotPickerIsRepeat(false); }}
         slots={slots}
         onSelect={handleSlotPick}
+        title={slotPickerIsRepeat ? '또하기' : undefined}
+        description={slotPickerIsRepeat ? '다 못 끝냈나요? 이어서 할 슬롯을 선택하세요.' : undefined}
       />
 
       <ProjectCreateModal
@@ -1067,6 +1119,15 @@ export default function Home() {
         occupiedSlots={occupiedRoutineSlots}
         onSave={handleRoutineSetupSave}
         onDelete={handleDeleteRoutine}
+        projects={state.projects}
+        colorTheme={state.colorTheme}
+        initialProjectId={
+          editingRoutine?.projectId ??
+          (state.activeProjectFilter && state.activeProjectFilter !== '__unassigned__' && state.activeProjectFilter !== '__calendar__'
+            ? state.activeProjectFilter
+            : null)
+        }
+        onCreateProject={(name, colorIndex) => addProject(name, colorIndex)}
       />
 
       <CalendarModal
@@ -1079,6 +1140,26 @@ export default function Home() {
         onGoToday={handleGoToday}
       />
       <StorageConsentBanner />
+
+      {/* 태스크/루틴 삭제 확인 */}
+      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="삭제할까요?" width="sm">
+        <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          삭제한 항목은 복구할 수 없습니다.
+        </p>
+        <div className="flex items-center gap-2 pt-1">
+          <button onClick={() => setDeleteTarget(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+          <button onClick={() => {
+            if (deleteTarget) {
+              if ('type' in deleteTarget && deleteTarget.type === 'task') {
+                removeTask(deleteTarget.id);
+              } else {
+                removeRoutineInstance(deleteTarget.id);
+              }
+            }
+            setDeleteTarget(null);
+          }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
+        </div>
+      </Dialog>
 
       {/* 데이터 삭제 확인 */}
       <Dialog open={resetConfirmOpen} onClose={() => setResetConfirmOpen(false)} title="모든 데이터를 삭제할까요?" width="sm">

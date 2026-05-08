@@ -134,19 +134,44 @@ export default function ProjectDetailView({
     };
   }, [projectTasks, projectInstances]);
 
-  // 최근순 정렬 (미완료 먼저, 날짜 역순)
-  const sortedTasks = useMemo(() => {
-    return [...projectTasks].sort((a, b) => {
-      if (!a.completedAt && b.completedAt) return -1;
-      if (a.completedAt && !b.completedAt) return 1;
-      return (b.date ?? '').localeCompare(a.date ?? '');
+  // 계보(lineageId) 기준 그룹핑 — 대표 1개만 표시 + 횟수
+  const groupedTasks = useMemo(() => {
+    const lineageMap = new Map<string, Task[]>();
+    const standalone: Task[] = [];
+    for (const t of projectTasks) {
+      if (t.lineageId) {
+        const arr = lineageMap.get(t.lineageId) ?? [];
+        arr.push(t);
+        lineageMap.set(t.lineageId, arr);
+      } else {
+        standalone.push(t);
+      }
+    }
+    const result: { task: Task; lineageCount: number }[] = [];
+    for (const t of standalone) {
+      result.push({ task: t, lineageCount: 0 });
+    }
+    for (const [, group] of lineageMap) {
+      // 대표: 미완료 우선, 없으면 가장 최근
+      const sorted = [...group].sort((a, b) => {
+        if (!a.completedAt && b.completedAt) return -1;
+        if (a.completedAt && !b.completedAt) return 1;
+        return b.createdAt.localeCompare(a.createdAt);
+      });
+      result.push({ task: sorted[0], lineageCount: group.length });
+    }
+    result.sort((a, b) => {
+      if (!a.task.completedAt && b.task.completedAt) return -1;
+      if (a.task.completedAt && !b.task.completedAt) return 1;
+      return (b.task.date ?? '').localeCompare(a.task.date ?? '');
     });
+    return result;
   }, [projectTasks]);
 
   const visibleTasks = expanded
-    ? sortedTasks
-    : sortedTasks.slice(0, TASK_PAGE_SIZE);
-  const hasMore = sortedTasks.length > TASK_PAGE_SIZE;
+    ? groupedTasks
+    : groupedTasks.slice(0, TASK_PAGE_SIZE);
+  const hasMore = groupedTasks.length > TASK_PAGE_SIZE;
 
   const formatTime = (h: number, m: number) => {
     if (h === 0 && m === 0) return '0m';
@@ -230,19 +255,20 @@ export default function ProjectDetailView({
       {/* 태스크 목록 */}
       <div className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-          태스크 ({sortedTasks.length})
+          태스크 ({groupedTasks.length})
         </h3>
 
-        {sortedTasks.length === 0 ? (
+        {groupedTasks.length === 0 ? (
           <p className="text-sm text-[var(--muted-foreground)] py-6 text-center">
             아직 태스크가 없습니다
           </p>
         ) : (
           <div className="flex flex-col gap-1">
-            {visibleTasks.map((task) => (
+            {visibleTasks.map(({ task, lineageCount }) => (
               <TaskRow
                 key={task.id}
                 task={task}
+                lineageCount={lineageCount}
                 onComplete={onComplete}
                 onDefer={onDefer}
                 onRepeat={onRepeat}
@@ -260,7 +286,7 @@ export default function ProjectDetailView({
           >
             {expanded
               ? '접기'
-              : `더보기 (+${sortedTasks.length - TASK_PAGE_SIZE})`}
+              : `더보기 (+${groupedTasks.length - TASK_PAGE_SIZE})`}
           </button>
         )}
 
@@ -338,6 +364,7 @@ function StatCard({
 /* ── 태스크 행 ── */
 function TaskRow({
   task,
+  lineageCount,
   onComplete,
   onDefer,
   onRepeat,
@@ -345,6 +372,7 @@ function TaskRow({
   onUncomplete,
 }: {
   task: Task;
+  lineageCount: number;
   onComplete?: (item: ScheduledItem) => void;
   onDefer?: (item: ScheduledItem) => void;
   onRepeat?: (item: ScheduledItem) => void;
@@ -377,6 +405,11 @@ function TaskRow({
         }`}
       >
         {task.title}
+        {lineageCount > 1 && (
+          <span className="ml-1.5 text-xs text-[var(--muted-foreground)] font-medium">
+            ({lineageCount})
+          </span>
+        )}
       </span>
       <span className="text-xs text-[var(--muted-foreground)] shrink-0">
         {task.date ?? '백로그'}

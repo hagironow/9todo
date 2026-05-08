@@ -139,6 +139,7 @@ export default function TimetableRow({
                   onCreateRoutine={onCreateRoutine}
                   onEditRoutine={onEditRoutine}
                   isReadOnly={isReadOnly}
+                  projects={projects}
                 />
               ))}
             </div>
