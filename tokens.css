@@ -37,7 +37,7 @@
 :root {
   /* ── Font Scale (Big Font — default) ── */
   --fs-step: 16px;
-  --fs-item: 15px;
+  --fs-item: 14px;
   --fs-tag: 14px;
   --fs-row-py: 16px;
 
