@@ -24,6 +24,7 @@ interface MobileTimetableListProps {
   projectFirstMode?: boolean;
   projects?: Project[];
   isReadOnly?: boolean;
+  isToday?: boolean;
   onItemSelect?: (item: ScheduledItem) => void;
   onSendToBacklog?: (item: ScheduledItem) => void;
 }
@@ -85,6 +86,7 @@ function MobileCard({
   onTap,
   onComplete,
   onDefer,
+  isToday,
   onRepeat,
   onDelete,
   onUncomplete,
@@ -102,6 +104,7 @@ function MobileCard({
   onDelete?: (item: ScheduledItem) => void;
   onUncomplete?: (item: ScheduledItem) => void;
   onSendToBacklog?: (item: ScheduledItem) => void;
+  isToday?: boolean;
 }) {
   const { item, period, priority, isRoutine } = card;
   const isCompleted = !!item.completedAt;
@@ -117,7 +120,7 @@ function MobileCard({
   const proj = itemProjectId ? (projects ?? []).find((p) => p.id === itemProjectId) ?? null : null;
 
   // Left bar color
-  const status = getStatus(period, currentPeriod);
+  const status = isToday !== false ? getStatus(period, currentPeriod) : 'future';
   const lineColor = isCompleted
     ? 'var(--g-success)'
     : status === 'active'
@@ -440,6 +443,7 @@ export default function MobileTimetableList({
   projects,
   isReadOnly,
   onSendToBacklog,
+  isToday = true,
 }: MobileTimetableListProps) {
   const [tappedId, setTappedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -498,6 +502,7 @@ export default function MobileTimetableList({
             onDelete={onDelete}
             onUncomplete={onUncomplete}
             onSendToBacklog={onSendToBacklog}
+            isToday={isToday}
           />
         ))
       )}

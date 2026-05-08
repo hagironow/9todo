@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Check, Plus, Pencil, Trash2 } from 'lucide-react';
-import { ScheduledItem, SlotCoord, Routine } from '@/lib/types';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+import { Check, Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
+import { ScheduledItem, SlotCoord, Routine, Project } from '@/lib/types';
+import ColorDot from '@/components/ui/ColorDot';
 
 interface RoutineSlotCellProps {
   coord: SlotCoord;
@@ -13,6 +16,7 @@ interface RoutineSlotCellProps {
   onCreateRoutine?: (title: string, coord: SlotCoord) => void;
   onEditRoutine?: (item: ScheduledItem) => void;
   isReadOnly?: boolean;
+  projects?: Project[];
 }
 
 function getTitleForItem(item: ScheduledItem): string {
@@ -37,11 +41,33 @@ export default function RoutineSlotCell({
   onCreateRoutine,
   onEditRoutine,
   isReadOnly,
+  projects,
 }: RoutineSlotCellProps) {
   const [inputting, setInputting] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const isCompleted = item ? item.completedAt !== null : false;
+
+  // Droppable — both empty and filled slots accept routine drops
+  const droppableId = `routine-${coord.period}-${coord.priority}`;
+  const { isOver, setNodeRef: setDropRef } = useDroppable({
+    id: droppableId,
+    data: { coord, isRoutineSlot: true },
+    disabled: isReadOnly,
+  });
+
+  // Draggable — only when item exists, not completed, not read-only
+  const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({
+    id: item?.id ?? `empty-routine-${coord.period}-${coord.priority}`,
+    data: { item, isRoutineInstance: true, currentSlot: coord },
+    disabled: !item || isReadOnly || isCompleted,
+  });
+
+  const dragStyle = transform
+    ? { transform: CSS.Translate.toString(transform) }
+    : undefined;
 
   const openInput = () => {
     if (item || isReadOnly) return;
@@ -64,7 +90,7 @@ export default function RoutineSlotCell({
     setInputValue('');
   };
 
-  // 외부 클릭 시 commit
+  // Click outside commits
   useEffect(() => {
     if (!inputting) return;
     const handleClick = (e: MouseEvent) => {
@@ -82,12 +108,35 @@ export default function RoutineSlotCell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputting, inputValue]);
 
-  // 빈 슬롯
+  // Combine refs for drag + drop
+  const setRefs = (node: HTMLDivElement | null) => {
+    setDropRef(node);
+    if (item) setDragRef(node);
+  };
+
+  // Get project color for dot
+  const routine: Routine | undefined =
+    item && 'routineDetails' in item ? (item.routineDetails as Routine | undefined) : undefined;
+  const projectColor = (() => {
+    const pid = routine?.projectId;
+    if (!pid || !projects) return null;
+    const p = projects.find((pr) => pr.id === pid);
+    return p?.color ?? null;
+  })();
+
+  // Empty slot
   if (!item) {
     return (
-      <div ref={containerRef} className="min-h-[40px] rounded-lg" style={{ border: '1px dashed var(--border-subtle)' }}>
+      <div
+        ref={setDropRef}
+        className={[
+          'min-h-[40px] rounded-lg',
+          isOver ? 'ring-2 ring-[var(--foreground)] bg-[var(--foreground)]/8' : '',
+        ].join(' ')}
+        style={{ border: '1px dashed var(--border-subtle)' }}
+      >
         {inputting ? (
-          <div className="flex items-center gap-1.5 px-2 min-h-[40px]">
+          <div ref={containerRef} className="flex items-center gap-1.5 px-2 min-h-[40px]">
             <input
               ref={inputRef}
               value={inputValue}
@@ -116,22 +165,29 @@ export default function RoutineSlotCell({
   }
 
   const title = getTitleForItem(item);
-  const isCompleted = item.completedAt !== null;
-  const routine: Routine | undefined =
-    'routineDetails' in item ? (item.routineDetails as Routine | undefined) : undefined;
 
   return (
     <div
+      ref={setRefs}
+      {...attributes}
       className={[
         'group relative flex items-center gap-1.5 px-2 min-h-[40px]',
         'rounded-lg bg-[var(--surface-inset)]',
         'transition-colors duration-100',
         isCompleted ? 'opacity-50' : '',
+        isDragging ? 'opacity-35' : '',
+        isOver ? 'ring-2 ring-[var(--foreground)] bg-[var(--foreground)]/8' : '',
       ].join(' ')}
-      style={{ border: '1px dashed var(--border-subtle)' }}
+      style={{
+        border: '1px dashed var(--border-subtle)',
+        ...dragStyle,
+      }}
     >
-      {/* 콘텐츠 */}
-      <div className="flex-1 min-w-0 flex items-center gap-2 py-1">
+      {/* Content */}
+      <div className="flex-1 min-w-0 flex items-center gap-1.5 py-1">
+        {projectColor && (
+          <ColorDot color={projectColor} size="sm" />
+        )}
         <span
           className={[
             'flex-1 text-[var(--fs-item)] text-[var(--foreground)] truncate leading-tight',
@@ -147,7 +203,7 @@ export default function RoutineSlotCell({
         )}
       </div>
 
-      {/* 완료 상태: 호버 시 완료 취소 */}
+      {/* Completed: hover to uncomplete */}
       {!isReadOnly && isCompleted && onUncomplete && (
         <div
           className={[
@@ -166,7 +222,7 @@ export default function RoutineSlotCell({
         </div>
       )}
 
-      {/* 미완료: 호버 시 수정/완료/삭제 오버레이 */}
+      {/* Not completed: hover overlay with grip + edit/complete/delete */}
       {!isReadOnly && !isCompleted && (
         <div
           className={[
@@ -177,6 +233,14 @@ export default function RoutineSlotCell({
             'pointer-events-none',
           ].join(' ')}
         >
+          {/* Grip handle for dragging */}
+          <div
+            {...listeners}
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)] hover:text-[var(--foreground)] transition-colors pointer-events-auto cursor-grab active:cursor-grabbing"
+            title="드래그하여 이동"
+          >
+            <GripVertical size={11} />
+          </div>
           {onEditRoutine && (
             <button
               onClick={(e) => { e.stopPropagation(); onEditRoutine(item); }}

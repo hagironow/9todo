@@ -33,10 +33,10 @@ interface TimetableRowProps {
 const PRIORITIES: Priority[] = [1, 2, 3];
 
 function getLineColor(status: RowStatus, firstSlot: ScheduledItem | null): string {
-  // 현재 = 노랑, 완료 = 그린, 미완료(아이템 있음) = 프라이머리, 없음 = 그레이
+  // 1st 완료 = 항상 그린 (현재 시간대여도), 현재 = 노랑, 미완료(아이템 있음) = 프라이머리, 없음 = 그레이
+  if (firstSlot?.completedAt) return 'var(--g-success)'; // 완료 — 그린 (최우선)
   if (status === 'active') return '#F59E0B'; // 노랑 — 진행 중 시간대
   if (!firstSlot) return 'var(--border-subtle)'; // 없음 — 그레이
-  if (firstSlot.completedAt) return 'var(--g-success)'; // 완료 — 그린
   return 'var(--accent)'; // 미완료 — 프라이머리
 }
 
@@ -139,6 +139,7 @@ export default function TimetableRow({
                   onCreateRoutine={onCreateRoutine}
                   onEditRoutine={onEditRoutine}
                   isReadOnly={isReadOnly}
+                  projects={projects}
                 />
               ))}
             </div>
