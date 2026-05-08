@@ -30,9 +30,10 @@ export interface Task extends ItemBase {
   deferCount: number;
   completedAt: string | null;
   date: string | null; // "YYYY-MM-DD" — 슬롯 배치 시 날짜 지정, 백로그는 null
-  origin?: 'deferred' | 'repeated'; // 미루기/진행하기로 백로그에 온 경우
+  origin?: 'deferred' | 'repeated' | 'continued'; // 미루기/또하기 복제/또하기 원본 완료
   timerSeconds?: number; // 완료 시점의 타이머 기록 (초)
   continueCount: number; // 진행하기 횟수
+  lineageId?: string; // 또하기 계보 ID (같은 계보끼리 공유)
 }
 
 export interface Routine extends ItemBase {
@@ -74,6 +75,17 @@ export interface GoalCompass {
   affirmation: string;
 }
 
+export type RetroScope = 'day' | 'week' | 'month';
+
+export interface RetrospectiveEntry {
+  id: string;
+  scope: RetroScope;
+  scopeKey: string; // 'day': "YYYY-MM-DD", 'week': "YYYY-Www", 'month': "YYYY-MM"
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AppState {
   projects: Project[];
   tasks: Task[];
@@ -86,6 +98,7 @@ export interface AppState {
   activeProjectFilter: string | null;
   projectFirstMode: boolean;
   colorTheme: string; // 'vivid' | 'pastel' | ...
+  retrospectives: RetrospectiveEntry[];
 }
 
 // 화면에서 사용하는 통합 타입

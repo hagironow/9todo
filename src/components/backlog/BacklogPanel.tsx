@@ -17,6 +17,8 @@ interface BacklogPanelProps {
   getTitleForItem: (item: BacklogEntry) => string;
   isRoutineInstance: (item: BacklogEntry) => boolean;
   onPlaceInSlot: (item: BacklogEntry) => void;
+  onUpdateTitle?: (item: BacklogEntry, title: string) => void;
+  onDelete?: (item: BacklogEntry) => void;
   onAdd?: (title: string, projectId: string | null) => void;
   lastUsedProjectId?: string | null;
   isReadOnly?: boolean;
@@ -48,6 +50,8 @@ export default function BacklogPanel({
   getTitleForItem,
   isRoutineInstance,
   onPlaceInSlot,
+  onUpdateTitle,
+  onDelete,
   onAdd,
   lastUsedProjectId,
   isReadOnly,
@@ -165,6 +169,8 @@ export default function BacklogPanel({
                           isRoutine={isRoutineInstance(item)}
                           project={project}
                           onPlaceInSlot={onPlaceInSlot}
+                          onUpdateTitle={onUpdateTitle}
+                          onDelete={onDelete}
                           isReadOnly={isReadOnly}
                         />
                       );

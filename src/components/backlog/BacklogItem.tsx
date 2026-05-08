@@ -1,8 +1,9 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Repeat, GripVertical } from 'lucide-react';
+import { Repeat, GripVertical, Pencil, Trash2 } from 'lucide-react';
 import { Task, RoutineInstance, Project } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
@@ -17,6 +18,8 @@ interface BacklogItemProps {
   isRoutine?: boolean;
   project?: Project | null;
   onPlaceInSlot: (item: BacklogEntry) => void;
+  onUpdateTitle?: (item: BacklogEntry, title: string) => void;
+  onDelete?: (item: BacklogEntry) => void;
   isReadOnly?: boolean;
 }
 
@@ -27,8 +30,18 @@ export default function BacklogItem({
   isRoutine = false,
   project,
   onPlaceInSlot,
+  onUpdateTitle,
+  onDelete,
   isReadOnly,
 }: BacklogItemProps) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(title);
+  const editRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) editRef.current?.focus();
+  }, [editing]);
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
     data: { item, isRoutineInstance: isRoutine, fromBacklog: true },
@@ -41,6 +54,14 @@ export default function BacklogItem({
   };
 
   const origin = 'origin' in item ? (item as { origin?: string }).origin as 'deferred' | 'repeated' | undefined : undefined;
+
+  const commitEdit = () => {
+    const trimmed = editValue.trim();
+    if (trimmed && trimmed !== title && onUpdateTitle) {
+      onUpdateTitle(item, trimmed);
+    }
+    setEditing(false);
+  };
 
   return (
     <div
@@ -80,24 +101,58 @@ export default function BacklogItem({
             <span className="max-w-[60px] truncate">{project?.name ?? '미분류'}</span>
           </span>
         )}
-        <span className="text-[var(--fs-item)] text-[var(--foreground)] truncate">
-          {title}
-        </span>
+        {editing ? (
+          <input
+            ref={editRef}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit();
+              if (e.key === 'Escape') { setEditValue(title); setEditing(false); }
+            }}
+            className="flex-1 text-[var(--fs-item)] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--accent)]"
+          />
+        ) : (
+          <span className="text-[var(--fs-item)] text-[var(--foreground)] truncate">
+            {title}
+          </span>
+        )}
         {(deferCount > 0 || origin) && (
           <Badge count={deferCount} origin={origin} />
         )}
       </div>
 
-      {/* 슬롯 배치 버튼 — 호버 시 프로젝트 레이블 위에 겹침 */}
+      {/* 호버 액션 버튼 */}
       {!isReadOnly && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onPlaceInSlot(item)}
-          className="absolute right-2 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-[var(--fs-tag)] bg-[var(--muted)]"
-        >
-          슬롯 배치
-        </Button>
+        <div className="absolute right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onPlaceInSlot(item)}
+            className="flex-shrink-0 text-[var(--fs-tag)] bg-[var(--muted)]"
+          >
+            슬롯 배치
+          </Button>
+          {onUpdateTitle && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setEditValue(title); setEditing(true); }}
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--border)] transition-colors"
+              title="수정"
+            >
+              <Pencil size={12} />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(item); }}
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-100 transition-colors"
+              title="삭제"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

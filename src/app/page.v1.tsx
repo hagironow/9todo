@@ -395,7 +395,7 @@ export default function Home() {
   const handleRepeat = useCallback(
     (item: ScheduledItem) => {
       if ('type' in item && item.type === 'task') {
-        continueTask(item.id, today);
+        continueTask(item.id, today, item.slot ?? { period: 'morning', priority: 1 });
       } else {
         continueRoutineInstance(item.id);
       }

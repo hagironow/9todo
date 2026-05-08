@@ -27,6 +27,7 @@ const DEFAULT_STATE: AppState = {
   activeProjectFilter: null,
   projectFirstMode: true,
   colorTheme: 'vivid',
+  retrospectives: [],
 };
 
 export function readData(): AppState {

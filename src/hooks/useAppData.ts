@@ -10,6 +10,8 @@ import type {
   Project,
   Note,
   SlotCoord,
+  RetrospectiveEntry,
+  RetroScope,
 } from '@/lib/types';
 import { resolveColor, hexToColorIndex, DEFAULT_THEME } from '@/lib/colors';
 
@@ -39,6 +41,7 @@ export const EMPTY_STATE: AppState = {
   activeProjectFilter: null,
   projectFirstMode: true,
   colorTheme: DEFAULT_THEME,
+  retrospectives: [],
 };
 
 export function hasStorageConsent(): boolean {
@@ -286,24 +289,33 @@ export function useAppData() {
     [update],
   );
 
-  // 진행하기: 원본의 슬롯을 해제하고 백로그로 (continueCount 증가)
+  // 또하기: 원본 완료 처리 + 슬롯 잔류, 복제본을 새 슬롯에 배치 (lineageId로 계보 연결)
   const continueTask = useCallback(
-    (taskId: string, _today: string) => {
-      update((prev) => ({
-        ...prev,
-        tasks: prev.tasks.map((t) =>
-          t.id === taskId
-            ? {
-                ...t,
-                slot: null,
-                date: null,
-                completedAt: null,
-                continueCount: Math.min((t.continueCount ?? 0) + 1, 9),
-                origin: 'repeated' as const,
-              }
-            : t,
-        ),
-      }));
+    (taskId: string, date: string, slot: SlotCoord) => {
+      update((prev) => {
+        const original = prev.tasks.find((t) => t.id === taskId);
+        if (!original) return prev;
+        const lineage = original.lineageId ?? original.id;
+        const clone: Task = {
+          ...original,
+          id: `item_${nanoid()}`,
+          slot,
+          date,
+          completedAt: null,
+          continueCount: Math.min((original.continueCount ?? 0) + 1, 9),
+          origin: 'repeated' as const,
+          lineageId: lineage,
+          createdAt: new Date().toISOString(),
+        };
+        return {
+          ...prev,
+          tasks: prev.tasks.map((t) =>
+            t.id === taskId
+              ? { ...t, completedAt: t.completedAt ?? new Date().toISOString(), lineageId: lineage, origin: 'continued' as const }
+              : t,
+          ).concat(clone),
+        };
+      });
     },
     [update],
   );
@@ -567,6 +579,46 @@ export function useAppData() {
     [update],
   );
 
+  // ── Retrospective ─────────────────────────────────────────────
+  const upsertRetrospective = useCallback(
+    (scope: RetroScope, scopeKey: string, content: string) => {
+      update((prev) => {
+        const retros = prev.retrospectives ?? [];
+        const existing = retros.find((r) => r.scope === scope && r.scopeKey === scopeKey);
+        if (existing) {
+          return {
+            ...prev,
+            retrospectives: retros.map((r) =>
+              r.id === existing.id
+                ? { ...r, content, updatedAt: new Date().toISOString() }
+                : r,
+            ),
+          };
+        }
+        const newEntry: RetrospectiveEntry = {
+          id: `retro_${nanoid()}`,
+          scope,
+          scopeKey,
+          content,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        return { ...prev, retrospectives: [...retros, newEntry] };
+      });
+    },
+    [update],
+  );
+
+  const removeRetrospective = useCallback(
+    (retroId: string) => {
+      update((prev) => ({
+        ...prev,
+        retrospectives: (prev.retrospectives ?? []).filter((r) => r.id !== retroId),
+      }));
+    },
+    [update],
+  );
+
   return {
     state,
     loading,
@@ -604,6 +656,9 @@ export function useAppData() {
     updateNoteContent,
     // goal
     completeGoal,
+    // retrospective
+    upsertRetrospective,
+    removeRetrospective,
     // misc
     batchUpdate,
     setActiveProjectFilter,
