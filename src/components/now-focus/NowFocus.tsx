@@ -286,7 +286,7 @@ function QuickNotePanel({
   timerDark: boolean;
 }) {
   const [content, setContent] = useState('');
-  const [projectId, setProjectId] = useState(lastUsedProjectId ?? '');
+  const [projectId, setProjectId] = useState(lastUsedProjectId || '__unassigned__');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -297,14 +297,14 @@ function QuickNotePanel({
 
   const handleSubmit = () => {
     const trimmed = content.trim();
-    if (!trimmed || !projectId) return;
+    if (!trimmed) return;
     onAdd(projectId, trimmed);
     setContent('');
   };
 
   const getProject = (pid: string) => projects.find((p) => p.id === pid);
   const selectedProject = getProject(projectId);
-  const canSubmit = content.trim() && projectId;
+  const canSubmit = !!content.trim();
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -406,36 +406,41 @@ function QuickNotePanel({
           }}
         >
           <textarea
+            ref={(el) => {
+              if (el) {
+                el.style.height = 'auto';
+                el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+              }
+            }}
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
             placeholder="메모를 남겨보세요..."
             rows={1}
-            className="flex-1 bg-transparent text-[14px] outline-none min-w-0 resize-none"
-            style={{ color: 'var(--timer-fg)', maxHeight: '160px', overflow: content.includes('\n') || content.length > 40 ? 'auto' : 'hidden' }}
-            onInput={(e) => {
-              const el = e.currentTarget;
-              el.style.height = 'auto';
-              el.style.height = Math.min(el.scrollHeight, 160) + 'px';
-            }}
+            className="w-full bg-transparent text-[14px] outline-none resize-none"
+            style={{ color: 'var(--timer-fg)', maxHeight: '160px', overflowY: content.split('\n').length > 5 ? 'auto' : 'hidden' }}
           />
           <div className="flex items-center gap-2">
-            <div className="relative shrink-0">
-              <span
-                className="block w-3 h-3 rounded-full absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ backgroundColor: selectedProject?.color ?? (timerDark ? '#444' : '#ccc') }}
-              />
-              <select
-                value={projectId}
-                onChange={(e) => setProjectId(e.target.value)}
-                className="appearance-none bg-transparent text-xs pl-6 pr-1 py-1 outline-none cursor-pointer"
-                style={{ color: 'var(--timer-muted)', width: '24px', fontSize: '16px' }}
-              >
-                <option value=""></option>
-                {activeProjects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
+            <span
+              className="w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: selectedProject?.color ?? '#8A8A8A' }}
+            />
+            <select
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="appearance-none bg-transparent text-[12px] outline-none cursor-pointer min-w-0"
+              style={{ color: 'var(--timer-muted)', fontSize: '14px' }}
+            >
+              <option value="__unassigned__">미분류</option>
+              {activeProjects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
             <span className="flex-1" />
             <button
               onClick={handleSubmit}

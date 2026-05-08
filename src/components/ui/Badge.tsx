@@ -1,6 +1,6 @@
 'use client';
 
-import { Square } from 'lucide-react';
+import { SkipForward } from 'lucide-react';
 import RepeatCountIcon from './RepeatCountIcon';
 
 interface BadgeProps {
@@ -19,13 +19,13 @@ export default function Badge({ count, continueCount = 0, variant = 'default', o
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      {/* 미룬 횟수: 네모(정지) 아이콘 */}
+      {/* 미룬 횟수: 스킵 아이콘 */}
       {showDefer && (
         <span
           className="inline-flex items-center gap-0.5 h-[18px] px-1.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
           title={`${count}번 미룸`}
         >
-          <Square size={8} fill="currentColor" />
+          <SkipForward size={8} />
           {count > 0 && <span>{count > 99 ? '99+' : count}</span>}
         </span>
       )}
