@@ -28,16 +28,17 @@ interface TimetableRowProps {
   projects?: Project[];
   isReadOnly?: boolean;
   onItemSelect?: (item: ScheduledItem) => void;
+  onEditRecurrence?: (item: ScheduledItem) => void;
 }
 
 const PRIORITIES: Priority[] = [1, 2, 3];
 
 function getLineColor(status: RowStatus, firstSlot: ScheduledItem | null): string {
-  // 1st 완료 = 항상 그린 (현재 시간대여도), 현재 = 노랑, 미완료(아이템 있음) = 프라이머리, 없음 = 그레이
-  if (firstSlot?.completedAt) return 'var(--g-success)'; // 완료 — 그린 (최우선)
-  if (status === 'active') return '#F59E0B'; // 노랑 — 진행 중 시간대
-  if (!firstSlot) return 'var(--border-subtle)'; // 없음 — 그레이
-  return 'var(--accent)'; // 미완료 — 프라이머리
+  // 1st 완료 → 그린, 그 외(현재/과거 미완료) → 코랄, 미래/빈칸 → 그레이
+  if (firstSlot?.completedAt) return 'var(--g-success)';
+  if (status === 'active') return 'var(--accent)';
+  if (status === 'past') return 'var(--accent)';
+  return 'var(--border-subtle)';
 }
 
 export default function TimetableRow({
@@ -61,6 +62,7 @@ export default function TimetableRow({
   projects,
   isReadOnly,
   onItemSelect,
+  onEditRecurrence,
 }: TimetableRowProps) {
 
   const isActive = status === 'active';
@@ -121,29 +123,14 @@ export default function TimetableRow({
                 projects={projects}
                 isReadOnly={isReadOnly}
                 onItemSelect={onItemSelect}
+                onEditRecurrence={onEditRecurrence}
+                onCreateRoutine={onCreateRoutine}
+                isHighlighted={isActive && priority === 1}
               />
             ))}
           </div>
 
-          {/* Routine row — 항상 표시 */}
-          <div className="mt-2">
-            <div className="grid grid-cols-3 gap-2">
-              {PRIORITIES.map((priority) => (
-                <RoutineSlotCell
-                  key={priority}
-                  coord={{ period, priority }}
-                  item={routineSlots?.[priority] ?? null}
-                  onComplete={onComplete}
-                  onDelete={onDelete}
-                  onUncomplete={onUncomplete}
-                  onCreateRoutine={onCreateRoutine}
-                  onEditRoutine={onEditRoutine}
-                  isReadOnly={isReadOnly}
-                  projects={projects}
-                />
-              ))}
-            </div>
-          </div>
+          {/* Routine row 제거 — 반복 투두는 일반 슬롯에 통합 */}
         </div>
       </div>
     </div>

@@ -142,7 +142,8 @@ function AnalogTimer({
   const eY = cy + pieR * Math.sin(endRad);
   const large = remainingAngle > 180 ? 1 : 0;
 
-  const slicePath = remainingAngle > 0.3
+  const isFull = remainingAngle >= 359.9;
+  const slicePath = !isFull && remainingAngle > 0.3
     ? `M ${cx} ${cy} L ${sX} ${sY} A ${pieR} ${pieR} 0 ${large} 1 ${eX} ${eY} Z`
     : '';
 
@@ -168,9 +169,11 @@ function AnalogTimer({
       onClick={enabled ? onToggle : undefined}>
       <svg width="100%" viewBox={`0 0 ${vb} ${vb}`} className="block">
         {/* 파이 — 플랫 */}
-        {slicePath && (
+        {isFull ? (
+          <circle cx={cx} cy={cy} r={pieR} fill={accentColor} />
+        ) : slicePath ? (
           <path d={slicePath} fill={accentColor} />
-        )}
+        ) : null}
 
         {/* 눈금 */}
         {ticks.map((t, i) => (
@@ -186,13 +189,23 @@ function AnalogTimer({
         ))}
       </svg>
 
-      {/* 호버 재생/정지 */}
+      {/* 호버 재생/정지 — frosted glass */}
       {enabled && (
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          {playing
-            ? <CirclePause size={40} style={{ color: 'var(--timer-fg)' }} />
-            : <Play size={40} fill="currentColor" style={{ color: 'var(--timer-fg)' }} />
-          }
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.25)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,0.35)',
+            }}
+          >
+            {playing
+              ? <Pause size={24} fill="white" style={{ color: 'white' }} />
+              : <Play size={24} fill="white" style={{ color: 'white', marginLeft: 2 }} />
+            }
+          </div>
         </div>
       )}
     </div>

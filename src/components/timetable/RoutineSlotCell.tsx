@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Check, Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
-import { ScheduledItem, SlotCoord, Routine, Project } from '@/lib/types';
+import { ScheduledItem, SlotCoord, Project } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 
 interface RoutineSlotCellProps {
@@ -20,9 +20,7 @@ interface RoutineSlotCellProps {
 }
 
 function getTitleForItem(item: ScheduledItem): string {
-  if ('title' in item) return item.title;
-  if ('routineDetails' in item && item.routineDetails) return item.routineDetails.title;
-  return '';
+  return item.title;
 }
 
 function formatTime(time: string): string {
@@ -114,11 +112,8 @@ export default function RoutineSlotCell({
     if (item) setDragRef(node);
   };
 
-  // Get project color for dot
-  const routine: Routine | undefined =
-    item && 'routineDetails' in item ? (item.routineDetails as Routine | undefined) : undefined;
   const projectColor = (() => {
-    const pid = routine?.projectId;
+    const pid = item?.projectId;
     if (!pid || !projects) return null;
     const p = projects.find((pr) => pr.id === pid);
     return p?.color ?? null;
@@ -196,9 +191,9 @@ export default function RoutineSlotCell({
         >
           {title}
         </span>
-        {routine?.scheduledTime && (
+        {item?.scheduledStartTime && (
           <span className="text-[10px] text-[var(--muted-foreground)] leading-tight flex-shrink-0">
-            {formatTime(routine.scheduledTime)}
+            {formatTime(item.scheduledStartTime)}
           </span>
         )}
       </div>

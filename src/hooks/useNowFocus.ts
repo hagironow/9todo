@@ -11,7 +11,6 @@ interface UseNowFocusOptions {
 
 export function useNowFocus({ state, period, date }: UseNowFocusOptions): ScheduledItem | null {
   return useMemo(() => {
-    // 현재 시간대의 슬롯 배정 항목 수집
     const tasks = state.tasks.filter(
       (t) =>
         t.slot !== null &&
@@ -19,28 +18,13 @@ export function useNowFocus({ state, period, date }: UseNowFocusOptions): Schedu
         t.date === date &&
         t.completedAt === null,
     );
-    const routineInstances = state.routineInstances.filter(
-      (ri) =>
-        ri.slot !== null &&
-        ri.slot.period === period &&
-        ri.date === date &&
-        ri.completedAt === null,
-    );
 
-    const allItems: ScheduledItem[] = [
-      ...tasks,
-      ...routineInstances.map((ri) => {
-        const routineDetails = state.routines.find((r) => r.id === ri.routineId);
-        return { ...ri, routineDetails };
-      }),
-    ];
-
-    if (allItems.length === 0) return null;
+    if (tasks.length === 0) return null;
 
     // priority 1 → 2 → 3 폴백
     const priorities: Priority[] = [1, 2, 3];
     for (const priority of priorities) {
-      const found = allItems.find((item) => item.slot?.priority === priority);
+      const found = tasks.find((item) => item.slot?.priority === priority);
       if (found) return found;
     }
 

@@ -3,27 +3,27 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Check, Plus } from 'lucide-react';
-import type { Task, Routine, RoutineInstance, Project, RecurrenceType, RetrospectiveEntry, RetroScope } from '@/lib/types';
+import type { Task, Project, RetrospectiveEntry, RetroScope } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import RetroInput from '@/components/retrospective/RetroInput';
-import { shouldCreateInstance } from '@/lib/routine';
+import WeeklyTimelineView from './WeeklyTimelineView';
 import { calculateDailyXP } from '@/lib/xp';
 import { getToday } from '@/lib/date';
 
 interface CalendarViewProps {
   tasks: Task[];
-  routines: Routine[];
-  routineInstances: RoutineInstance[];
+  routines?: never[];
+  routineInstances?: never[];
   projects: Project[];
-  onEditRoutine?: (routine: Routine) => void;
+  onEditRoutine?: () => void;
   onViewModeChange?: (mode: ViewMode) => void;
   onCreateTask?: (title: string, date: string, projectId: string | null) => void;
+  onUpdateTask?: (taskId: string, updates: { scheduledStartTime?: string; scheduledEndTime?: string; date?: string }) => void;
   retrospectives?: RetrospectiveEntry[];
   onSaveRetro?: (scope: RetroScope, scopeKey: string, content: string) => void;
 }
 
 type ViewMode = 'week' | 'month';
-type FilterMode = 'all' | 'todo' | 'routine';
 
 const KO_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -70,7 +70,7 @@ const PERIOD_ORDER = { morning: 0, afternoon: 1, evening: 2 } as const;
 
 interface DayData {
   todos: Task[];
-  routineList: { routine: Routine; completed: boolean }[];
+  routineList: never[];
   xp: number;
 }
 
@@ -202,12 +202,10 @@ function DayCellInput({
 
 export default function CalendarView({
   tasks,
-  routines,
-  routineInstances,
   projects,
-  onEditRoutine,
   onViewModeChange,
   onCreateTask,
+  onUpdateTask,
   retrospectives = [],
   onSaveRetro,
 }: CalendarViewProps) {
@@ -215,7 +213,6 @@ export default function CalendarView({
   const [todayY, todayM] = todayStr.split('-').map(Number);
 
   const [viewMode, setViewMode] = useState<ViewMode>('week');
-  const [filter, setFilter] = useState<FilterMode>('all');
   const [viewYear, setViewYear] = useState(todayY);
   const [viewMonth, setViewMonth] = useState(todayM - 1);
   const [weekAnchor, setWeekAnchor] = useState(todayStr);
@@ -223,33 +220,16 @@ export default function CalendarView({
   const [inputDate, setInputDate] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(true);
 
-  const activeRoutines = routines.filter((r) => r.isActive);
-
   function buildDayData(dateStr: string): DayData {
     const todos = tasks
-      .filter((t) => t.date === dateStr)
+      .filter((t) => t.date === dateStr && !t.recurrence) // 반복 부모 제외
       .sort((a, b) => {
         const pa = a.slot ? PERIOD_ORDER[a.slot.period] * 10 + a.slot.priority : 99;
         const pb = b.slot ? PERIOD_ORDER[b.slot.period] * 10 + b.slot.priority : 99;
         return pa - pb;
       });
-    const rList: { routine: Routine; completed: boolean }[] = [];
-    for (const routine of activeRoutines) {
-      if (shouldCreateInstance(routine, [], dateStr)) {
-        const instance = routineInstances.find(
-          (ri) => ri.routineId === routine.id && ri.date === dateStr
-        );
-        rList.push({ routine, completed: !!instance?.completedAt });
-      }
-    }
-    // 루틴도 시간대 순 정렬
-    rList.sort((a, b) => {
-      const pa = PERIOD_ORDER[a.routine.defaultSlot.period] * 10 + a.routine.defaultSlot.priority;
-      const pb = PERIOD_ORDER[b.routine.defaultSlot.period] * 10 + b.routine.defaultSlot.priority;
-      return pa - pb;
-    });
-    const xp = calculateDailyXP(tasks, routineInstances, dateStr);
-    return { todos, routineList: rList, xp };
+    const xp = calculateDailyXP(tasks, [], dateStr);
+    return { todos, routineList: [], xp };
   }
 
   const weekDates = useMemo(() => getWeekDates(weekAnchor), [weekAnchor]);
@@ -258,7 +238,7 @@ export default function CalendarView({
     for (const d of weekDates) map[d] = buildDayData(d);
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekDates, tasks, activeRoutines, routineInstances]);
+  }, [weekDates, tasks]);
 
   const monthData = useMemo(() => {
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -269,7 +249,7 @@ export default function CalendarView({
     }
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewYear, viewMonth, tasks, activeRoutines, routineInstances]);
+  }, [viewYear, viewMonth, tasks]);
 
   // 네비게이션
   const prevWeek = () => {
@@ -334,68 +314,25 @@ export default function CalendarView({
     );
   }
 
-  // 루틴 아이템 렌더
-  function renderRoutineItem(r: { routine: Routine; completed: boolean }) {
-    return (
-      <button
-        key={`r-${r.routine.id}`}
-        onClick={() => onEditRoutine?.(r.routine)}
-        className={[
-          'flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[14px] leading-tight truncate w-full text-left transition-colors',
-          r.completed
-            ? 'text-[var(--g-success)]'
-            : 'bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]',
-        ].join(' ')}
-        title={r.routine.title}
-      >
-        {r.completed && <Check size={8} strokeWidth={3} className="flex-shrink-0" />}
-        <span className="truncate">{r.routine.title}</span>
-      </button>
-    );
-  }
-
-  // 투두+루틴 분리 렌더 (compact = 먼슬리에서 자르기)
+  // 투두 렌더 (compact = 먼슬리에서 자르기)
   function renderDaySections(data: DayData, dateStr: string, compact: boolean) {
-    const showTodos = filter === 'all' || filter === 'todo';
-    const showRoutines = filter === 'all' || filter === 'routine';
-
-    const todoItems = showTodos ? data.todos : [];
-    const routineItems = showRoutines ? data.routineList : [];
-
-    if (todoItems.length === 0 && routineItems.length === 0) return null;
+    const todoItems = data.todos;
+    if (todoItems.length === 0) return null;
 
     const isExpanded = expandedDate === dateStr;
     const unlimitedCompact = compact && showAll;
     const maxTodos = compact ? (unlimitedCompact || isExpanded ? todoItems.length : 2) : todoItems.length;
-    const maxRoutines = compact ? (unlimitedCompact || isExpanded ? routineItems.length : 2) : routineItems.length;
     const visibleTodos = todoItems.slice(0, maxTodos);
-    const visibleRoutines = routineItems.slice(0, maxRoutines);
-    const hiddenCount = compact
-      ? Math.max(0, todoItems.length - 2) + Math.max(0, routineItems.length - 2)
-      : 0;
+    const hiddenCount = compact ? Math.max(0, todoItems.length - 2) : 0;
 
     return (
       <div className="flex flex-col gap-0 flex-1">
-        {/* 투두 섹션 */}
         {visibleTodos.length > 0 && (
           <div className="flex flex-col gap-0.5">
             {visibleTodos.map((t) => renderTodoItem(t))}
           </div>
         )}
 
-        {/* 구분선 — 투두와 루틴 모두 있을 때만 */}
-        {visibleTodos.length > 0 && visibleRoutines.length > 0 && (
-          <div className="my-1 border-t border-[var(--muted-foreground)]/25" />
-        )}
-
-        {/* 루틴 섹션 */}
-        {visibleRoutines.length > 0 && (
-          <div className="flex flex-col gap-0.5">
-            {visibleRoutines.map((r) => renderRoutineItem(r))}
-          </div>
-        )}
-
-        {/* +N 접기/펼치기 (먼슬리만) */}
         {compact && hiddenCount > 0 && !isExpanded && (
           <button
             onClick={() => setExpandedDate(dateStr)}
@@ -465,10 +402,9 @@ export default function CalendarView({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* 필터 탭 */}
-          <div className="flex items-center bg-[var(--card)] rounded-[var(--radius-sm)] p-0.5">
-            {/* 전체 보기 토글 (먼슬리만) */}
-            {viewMode === 'month' && (
+          {/* 전체 보기 토글 (먼슬리만) */}
+          {viewMode === 'month' && (
+            <div className="flex items-center bg-[var(--card)] rounded-[var(--radius-sm)] p-0.5">
               <button
                 onClick={() => setShowAll(!showAll)}
                 className={[
@@ -484,26 +420,8 @@ export default function CalendarView({
                   ].join(' ')}
                 />
               </button>
-            )}
-            {([
-              { key: 'all', label: '전체' },
-              { key: 'todo', label: '투두' },
-              { key: 'routine', label: '루틴' },
-            ] as { key: FilterMode; label: string }[]).map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setFilter(key)}
-                className={[
-                  'px-2.5 py-1 rounded-[var(--radius-sm)] text-[12px] font-medium transition-colors',
-                  filter === key
-                    ? 'bg-[var(--surface-hover)] text-[var(--foreground)]'
-                    : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]',
-                ].join(' ')}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+            </div>
+          )}
 
           {/* 뷰 토글 */}
           <div className="flex items-center bg-[var(--card)] rounded-[var(--radius-sm)] p-0.5">
@@ -533,78 +451,21 @@ export default function CalendarView({
         </div>
       </div>
 
-      {/* 위클리 뷰 */}
+      {/* 위클리 타임라인 뷰 */}
       {viewMode === 'week' && (
-        <div className="bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden">
-          {/* 요일 + 날짜 헤더 */}
-          <div className="grid grid-cols-7 border-b border-[var(--border)]">
-            {weekDates.map((dateStr, i) => {
-              const d = new Date(dateStr + 'T00:00:00');
-              const isToday = dateStr === todayStr;
-              const dayData = weekData[dateStr];
-              return (
-                <div
-                  key={dateStr}
-                  className="flex flex-col items-center py-2.5 gap-1"
-                >
-                  <span className="text-[11px] font-medium text-[var(--muted-foreground)]">
-                    {KO_WEEKDAYS[i]}
-                  </span>
-                  <span
-                    className={[
-                      'text-[14px] leading-none',
-                      isToday
-                        ? 'w-6 h-6 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] font-bold'
-                        : 'text-[var(--muted-foreground)]',
-                    ].join(' ')}
-                  >
-                    {d.getDate()}
-                  </span>
-                  {dayData && renderXP(dayData.xp)}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* 각 날짜의 아이템 — 전부 보이기 */}
-          <div className="grid grid-cols-7">
-            {weekDates.map((dateStr, i) => {
-              const data = weekData[dateStr];
-              return (
-                <div
-                  key={dateStr}
-                  className={[
-                    'group/cell relative min-h-[120px] p-2 flex flex-col',
-                    i < 6 ? 'border-r border-[var(--border)]' : '',
-                  ].join(' ')}
-                >
-                  {data && renderDaySections(data, dateStr, false)}
-                  {inputDate === dateStr && onCreateTask ? (
-                    <DayCellInput
-                      date={dateStr}
-                      projects={projects}
-                      onSubmit={onCreateTask}
-                      onClose={() => setInputDate(null)}
-                    />
-                  ) : onCreateTask && (
-                    <button
-                      onClick={() => setInputDate(dateStr)}
-                      className="mt-auto pt-1 self-center text-[var(--muted-foreground)] opacity-0 group-hover/cell:opacity-100 transition-opacity duration-150 hover:text-[var(--foreground)]"
-                    >
-                      <Plus size={14} strokeWidth={1.5} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
+        <>
+          <WeeklyTimelineView
+            tasks={tasks}
+            projects={projects}
+            weekDates={weekDates}
+            onUpdateTask={onUpdateTask}
+          />
           {/* 주간 회고 */}
           {onSaveRetro && (() => {
             const weekKey = getWeekScopeKey(weekAnchor);
             const existing = retrospectives.find((r) => r.scope === 'week' && r.scopeKey === weekKey);
             return (
-              <div className="border-t border-[var(--border)] p-4">
+              <div className="bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)] p-4">
                 <RetroInput
                   scope="week"
                   scopeKey={weekKey}
@@ -617,7 +478,7 @@ export default function CalendarView({
               </div>
             );
           })()}
-        </div>
+        </>
       )}
 
       {/* 먼슬리 뷰 */}

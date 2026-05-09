@@ -57,9 +57,7 @@ function getPriorityLabel(priority: Priority): string {
 }
 
 function getItemTitle(item: ScheduledItem): string {
-  if ('title' in item) return item.title;
-  if ('routineDetails' in item && item.routineDetails) return item.routineDetails.title;
-  return '';
+  return item.title;
 }
 
 function getPeriodLabel(period: TimePeriod): string {
@@ -114,7 +112,7 @@ function MobileCard({
 
   const deferCount = 'deferCount' in item ? item.deferCount : 0;
   const continueCount = 'continueCount' in item ? (item as { continueCount?: number }).continueCount ?? 0 : 0;
-  const origin = 'origin' in item ? (item as { origin?: string }).origin as 'deferred' | 'repeated' | undefined : undefined;
+  const origin = item.origin;
 
   const itemProjectId = 'projectId' in item ? (item as { projectId?: string | null }).projectId : null;
   const proj = itemProjectId ? (projects ?? []).find((p) => p.id === itemProjectId) ?? null : null;
@@ -123,9 +121,9 @@ function MobileCard({
   const status = isToday !== false ? getStatus(period, currentPeriod) : 'future';
   const lineColor = isCompleted
     ? 'var(--g-success)'
-    : status === 'active'
-    ? '#F59E0B'
-    : 'var(--accent)';
+    : status === 'active' || status === 'past'
+    ? 'var(--accent)'
+    : 'var(--border-subtle)';
 
   const handleTap = () => {
     if (isReadOnly || isCompleted) return;
@@ -136,7 +134,8 @@ function MobileCard({
     <div
       className={[
         'relative rounded-[var(--radius)] overflow-hidden transition-all duration-150 flex',
-        isCompleted ? 'bg-[var(--surface-inset)]/60' : 'bg-[var(--card)]',
+        isCompleted ? 'bg-[var(--grid-bg)]' : 'bg-[var(--card)]',
+        isToday !== false && period === currentPeriod && priority === 1 && !isCompleted ? 'animate-highlight' : '',
       ].join(' ')}
       style={isRoutine ? { border: '1px dashed var(--border-subtle)' } : undefined}
       onClick={handleTap}
@@ -150,7 +149,7 @@ function MobileCard({
       </div>
 
       {/* Main content */}
-      <div className="flex-1 px-3.5 py-3.5 flex items-center gap-3">
+      <div className={['flex-1 px-3.5 py-3.5 flex items-center gap-3', isCompleted ? 'opacity-60' : ''].join(' ')}>
         {/* Left: period + priority — vertically centered */}
         <div className="flex flex-col items-center justify-center gap-0.5 flex-shrink-0 w-8">
           <span className="text-[10px] text-[var(--muted-foreground)] leading-none text-center">
@@ -213,7 +212,7 @@ function MobileCard({
           {(deferCount > 0 || continueCount > 0 || origin) && (
             <Badge count={deferCount} continueCount={continueCount} origin={origin} />
           )}
-          {isCompleted ? (
+          {origin === 'continued' ? null : isCompleted ? (
             <span className="text-[11px] font-bold" style={{ color: 'var(--g-success)' }}>+{xp}xp</span>
           ) : !isRoutine ? (
             <span className="text-[11px] font-medium opacity-40" style={{ color: 'var(--primary)' }}>{xp}xp</span>

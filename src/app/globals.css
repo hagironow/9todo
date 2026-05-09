@@ -8,3 +8,18 @@
 .animate-slide-in-right {
   animation: slide-in-right 0.2s ease-out forwards;
 }
+
+@keyframes highlight-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.015); }
+}
+
+@keyframes highlight-border {
+  0%, 100% { border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
+  50% { border-color: var(--accent); }
+}
+
+.animate-highlight {
+  animation: highlight-pulse 2s ease-in-out 2, highlight-border 2s ease-in-out 2;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+}

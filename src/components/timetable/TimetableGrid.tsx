@@ -25,6 +25,7 @@ interface TimetableGridProps {
   isReadOnly?: boolean;
   isToday?: boolean;
   onItemSelect?: (item: ScheduledItem) => void;
+  onEditRecurrence?: (item: ScheduledItem) => void;
 }
 
 const PERIODS: { period: TimePeriod; label: string; time: string }[] = [
@@ -63,6 +64,7 @@ export default function TimetableGrid({
   isReadOnly,
   isToday = true,
   onItemSelect,
+  onEditRecurrence,
 }: TimetableGridProps) {
   return (
     <div className="rounded-[var(--radius)] bg-[var(--grid-bg)]">
@@ -112,6 +114,7 @@ export default function TimetableGrid({
             projects={projects}
             isReadOnly={isReadOnly}
             onItemSelect={onItemSelect}
+            onEditRecurrence={onEditRecurrence}
           />
         ))}
       </div>

@@ -1,0 +1,490 @@
+'use client';
+
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import { Check, Settings, X } from 'lucide-react';
+import type { Task, Project, TimePeriod, Priority } from '@/lib/types';
+import ColorDot from '@/components/ui/ColorDot';
+import { getToday } from '@/lib/date';
+import { getDefaultStartTime, getDefaultEndTime } from '@/components/modals/RecurrenceSetupModal';
+
+interface WeeklyTimelineViewProps {
+  tasks: Task[];
+  projects: Project[];
+  weekDates: string[];
+  onUpdateTask?: (taskId: string, updates: { scheduledStartTime?: string; scheduledEndTime?: string; date?: string }) => void;
+}
+
+const KO_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+const STORAGE_KEY = '9todo_timeline_range';
+const HOUR_HEIGHT = 60;
+const SNAP_MINUTES = 15;
+
+function getStoredRange(): { startHour: number; endHour: number } {
+  if (typeof window === 'undefined') return { startHour: 6, endHour: 24 };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { startHour: 6, endHour: 24 };
+}
+
+function timeToHours(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h + m / 60;
+}
+
+function hoursToTime(hours: number): string {
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function snapHour(hour: number): number {
+  const step = SNAP_MINUTES / 60;
+  return Math.round(hour / step) * step;
+}
+
+function getTaskTimeBlock(task: Task): { startHour: number; durationHours: number } | null {
+  if (task.scheduledStartTime) {
+    const start = timeToHours(task.scheduledStartTime);
+    if (task.scheduledEndTime) {
+      const end = timeToHours(task.scheduledEndTime);
+      return { startHour: start, durationHours: Math.max(end - start, 0.25) };
+    }
+    if (task.timerSeconds && task.timerSeconds > 0) {
+      return { startHour: start, durationHours: Math.max(task.timerSeconds / 3600, 0.25) };
+    }
+    return { startHour: start, durationHours: 1 };
+  }
+  if (task.slot) {
+    const defaultStart = getDefaultStartTime(task.slot.period, task.slot.priority);
+    const defaultEnd = getDefaultEndTime(task.slot.period, task.slot.priority);
+    const start = timeToHours(defaultStart);
+    const end = timeToHours(defaultEnd);
+    const duration = task.timerSeconds && task.timerSeconds > 0
+      ? Math.max(task.timerSeconds / 3600, 0.25)
+      : end - start;
+    return { startHour: start, durationHours: duration };
+  }
+  return null;
+}
+
+type DragMode = 'move' | 'resize';
+
+export default function WeeklyTimelineView({
+  tasks,
+  projects,
+  weekDates,
+  onUpdateTask,
+}: WeeklyTimelineViewProps) {
+  const todayStr = getToday();
+  const [range, setRange] = useState(getStoredRange);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(range));
+  }, [range]);
+
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const { startHour, endHour } = range;
+  const totalHours = endHour - startHour;
+
+  const hourLabels = useMemo(() => {
+    const labels: number[] = [];
+    for (let h = startHour; h < endHour; h++) labels.push(h);
+    return labels;
+  }, [startHour, endHour]);
+
+  const tasksByDate = useMemo(() => {
+    const map: Record<string, Task[]> = {};
+    for (const d of weekDates) {
+      map[d] = tasks.filter((t) => t.date === d && t.slot !== null);
+    }
+    return map;
+  }, [tasks, weekDates]);
+
+  const nowHour = now.getHours() + now.getMinutes() / 60;
+  const nowInRange = nowHour >= startHour && nowHour < endHour;
+  const nowTop = ((nowHour - startHour) / totalHours) * 100;
+
+  const getProject = (projectId: string | null) =>
+    projectId ? projects.find((p) => p.id === projectId) : null;
+
+  // ── Drag state ──
+  const [dragState, setDragState] = useState<{
+    taskId: string;
+    mode: DragMode;
+    origStartHour: number;
+    origDuration: number;
+    origDateIdx: number;
+    currentStartHour: number;
+    currentDuration: number;
+    currentDateIdx: number;
+  } | null>(null);
+
+  const dragStartY = useRef(0);
+  const dragStartX = useRef(0);
+
+  const yToHour = useCallback((clientY: number): number => {
+    if (!gridRef.current) return 0;
+    const rect = gridRef.current.getBoundingClientRect();
+    const relY = clientY - rect.top + gridRef.current.scrollTop;
+    const hour = startHour + (relY / (totalHours * HOUR_HEIGHT)) * totalHours;
+    return snapHour(Math.max(startHour, Math.min(hour, endHour)));
+  }, [startHour, endHour, totalHours]);
+
+  const xToDateIdx = useCallback((clientX: number): number => {
+    if (!gridRef.current) return 0;
+    const rect = gridRef.current.getBoundingClientRect();
+    const colWidth = (rect.width - 48) / 7; // 48px = time label column
+    const relX = clientX - rect.left - 48;
+    const idx = Math.floor(relX / colWidth);
+    return Math.max(0, Math.min(idx, 6));
+  }, []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent, taskId: string, mode: DragMode) => {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const block = getTaskTimeBlock(task);
+    if (!block) return;
+
+    const dateIdx = weekDates.indexOf(task.date ?? '');
+    if (dateIdx === -1) return;
+
+    dragStartY.current = e.clientY;
+    dragStartX.current = e.clientX;
+
+    setDragState({
+      taskId,
+      mode,
+      origStartHour: block.startHour,
+      origDuration: block.durationHours,
+      origDateIdx: dateIdx,
+      currentStartHour: block.startHour,
+      currentDuration: block.durationHours,
+      currentDateIdx: dateIdx,
+    });
+  }, [tasks, weekDates]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragState) return;
+
+    if (dragState.mode === 'move') {
+      const hourAtCursor = yToHour(e.clientY);
+      const dateIdx = xToDateIdx(e.clientX);
+      // 블록 시작 = 커서 위치 - 원래 커서와 블록 시작의 차이
+      const hourOffset = yToHour(dragStartY.current) - dragState.origStartHour;
+      let newStart = snapHour(hourAtCursor - hourOffset);
+      newStart = Math.max(startHour, Math.min(newStart, endHour - dragState.origDuration));
+
+      setDragState((prev) => prev ? { ...prev, currentStartHour: newStart, currentDateIdx: dateIdx } : null);
+    } else {
+      // resize
+      const hourAtCursor = yToHour(e.clientY);
+      const newDuration = snapHour(Math.max(0.25, hourAtCursor - dragState.origStartHour));
+
+      setDragState((prev) => prev ? { ...prev, currentDuration: newDuration } : null);
+    }
+  }, [dragState, yToHour, xToDateIdx, startHour, endHour]);
+
+  const handlePointerUp = useCallback(() => {
+    if (!dragState || !onUpdateTask) return;
+
+    const updates: { scheduledStartTime?: string; scheduledEndTime?: string; date?: string } = {};
+
+    if (dragState.mode === 'move') {
+      if (dragState.currentStartHour !== dragState.origStartHour || dragState.currentDateIdx !== dragState.origDateIdx) {
+        updates.scheduledStartTime = hoursToTime(dragState.currentStartHour);
+        updates.scheduledEndTime = hoursToTime(dragState.currentStartHour + dragState.currentDuration);
+        if (dragState.currentDateIdx !== dragState.origDateIdx) {
+          updates.date = weekDates[dragState.currentDateIdx];
+        }
+      }
+    } else {
+      if (dragState.currentDuration !== dragState.origDuration) {
+        updates.scheduledEndTime = hoursToTime(dragState.origStartHour + dragState.currentDuration);
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      onUpdateTask(dragState.taskId, updates);
+    }
+
+    setDragState(null);
+  }, [dragState, onUpdateTask, weekDates]);
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* 시간 범위 설정 */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          className="flex items-center gap-1 px-2 py-1 rounded-[var(--radius-sm)] text-[11px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
+        >
+          <Settings size={12} />
+          {startHour}:00 ~ {endHour}:00
+        </button>
+      </div>
+
+      {settingsOpen && (
+        <div className="flex items-center gap-3 px-3 py-2 bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)]">
+          <span className="text-[12px] text-[var(--muted-foreground)]">표시 범위</span>
+          <select
+            value={startHour}
+            onChange={(e) => setRange((r) => ({ ...r, startHour: Number(e.target.value) }))}
+            className="text-[12px] bg-[var(--surface-btn)] text-[var(--foreground)] rounded px-2 py-1 border-none outline-none"
+          >
+            {Array.from({ length: 24 }, (_, i) => (
+              <option key={i} value={i} disabled={i >= endHour}>
+                {String(i).padStart(2, '0')}:00
+              </option>
+            ))}
+          </select>
+          <span className="text-[12px] text-[var(--muted-foreground)]">~</span>
+          <select
+            value={endHour}
+            onChange={(e) => setRange((r) => ({ ...r, endHour: Number(e.target.value) }))}
+            className="text-[12px] bg-[var(--surface-btn)] text-[var(--foreground)] rounded px-2 py-1 border-none outline-none"
+          >
+            {Array.from({ length: 25 }, (_, i) => (
+              <option key={i} value={i} disabled={i <= startHour}>
+                {String(i).padStart(2, '0')}:00
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => setSettingsOpen(false)}
+            className="ml-auto text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      <div className="bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden">
+        {/* 요일 + 날짜 헤더 */}
+        <div className="grid border-b border-[var(--border)]" style={{ gridTemplateColumns: '48px repeat(7, 1fr)' }}>
+          <div />
+          {weekDates.map((dateStr, i) => {
+            const d = new Date(dateStr + 'T00:00:00');
+            const isToday = dateStr === todayStr;
+            return (
+              <div key={dateStr} className="flex flex-col items-center py-2.5 gap-1">
+                <span className="text-[11px] font-medium text-[var(--muted-foreground)]">
+                  {KO_WEEKDAYS[i]}
+                </span>
+                <span
+                  className={[
+                    'text-[14px] leading-none',
+                    isToday
+                      ? 'w-6 h-6 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] font-bold'
+                      : 'text-[var(--muted-foreground)]',
+                  ].join(' ')}
+                >
+                  {d.getDate()}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 타임라인 본체 */}
+        <div
+          ref={gridRef}
+          className="relative overflow-y-auto select-none"
+          style={{ maxHeight: '500px' }}
+          onPointerMove={dragState ? handlePointerMove : undefined}
+          onPointerUp={dragState ? handlePointerUp : undefined}
+        >
+          <div
+            className="grid relative"
+            style={{
+              gridTemplateColumns: '48px repeat(7, 1fr)',
+              height: `${totalHours * HOUR_HEIGHT}px`,
+            }}
+          >
+            {/* 시간 라벨 열 */}
+            <div className="relative border-r border-[var(--border)]">
+              {hourLabels.map((h) => (
+                <div
+                  key={h}
+                  className="absolute right-2 text-[10px] text-[var(--muted-foreground)] leading-none"
+                  style={{ top: `${((h - startHour) / totalHours) * 100}%`, transform: 'translateY(-50%)' }}
+                >
+                  {String(h).padStart(2, '0')}
+                </div>
+              ))}
+            </div>
+
+            {/* 시간 그리드 라인 */}
+            {hourLabels.map((h) => (
+              <div
+                key={`line-${h}`}
+                className="absolute left-[48px] right-0 border-t border-[var(--border)]"
+                style={{ top: `${((h - startHour) / totalHours) * 100}%`, opacity: 0.5 }}
+              />
+            ))}
+
+            {/* 요일별 칼럼 */}
+            {weekDates.map((dateStr, colIdx) => {
+              const dayTasks = tasksByDate[dateStr] ?? [];
+              const isToday = dateStr === todayStr;
+
+              return (
+                <div
+                  key={dateStr}
+                  className={[
+                    'relative',
+                    colIdx < 6 ? 'border-r border-[var(--border)]' : '',
+                    isToday ? 'bg-[var(--accent)]/3' : '',
+                  ].join(' ')}
+                >
+                  {/* 현재 시간선 */}
+                  {isToday && nowInRange && (
+                    <div
+                      className="absolute left-0 right-0 z-20 pointer-events-none"
+                      style={{ top: `${nowTop}%` }}
+                    >
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 rounded-full bg-[var(--g-error)] -ml-1" />
+                        <div className="flex-1 h-[1.5px] bg-[var(--g-error)]" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Task 블록들 */}
+                  {dayTasks.map((task) => {
+                    // 드래그 중인 태스크는 드래그 상태 기반으로 렌더
+                    const isDragging = dragState?.taskId === task.id;
+                    const block = getTaskTimeBlock(task);
+                    if (!block) return null;
+
+                    let renderStart = block.startHour;
+                    let renderDuration = block.durationHours;
+                    let renderColIdx = colIdx;
+
+                    if (isDragging) {
+                      renderStart = dragState!.currentStartHour;
+                      renderDuration = dragState!.currentDuration;
+                      renderColIdx = dragState!.currentDateIdx;
+                    }
+
+                    // 드래그로 다른 날짜로 이동한 경우, 원래 열에서는 안 보이게
+                    if (isDragging && renderColIdx !== colIdx) return null;
+                    // 드래그로 이 열에 들어온 경우는 아래에서 처리
+                    if (!isDragging && dragState?.taskId === task.id) return null;
+
+                    if (renderStart >= endHour || renderStart + renderDuration <= startHour) return null;
+
+                    const clampedStart = Math.max(renderStart, startHour);
+                    const clampedEnd = Math.min(renderStart + renderDuration, endHour);
+                    const topPct = ((clampedStart - startHour) / totalHours) * 100;
+                    const heightPct = ((clampedEnd - clampedStart) / totalHours) * 100;
+
+                    const project = getProject(task.projectId);
+                    const isDone = !!task.completedAt;
+                    const canDrag = !!onUpdateTask && !isDone;
+
+                    return (
+                      <div
+                        key={task.id}
+                        className={[
+                          'absolute left-0.5 right-0.5 z-10 rounded-[4px] px-1.5 py-0.5 overflow-hidden',
+                          'border-l-[3px] transition-opacity group/block',
+                          isDone ? 'opacity-50' : 'opacity-100',
+                          isDragging ? 'opacity-75 ring-1 ring-[var(--accent)]' : '',
+                          canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default',
+                        ].join(' ')}
+                        style={{
+                          top: `${topPct}%`,
+                          height: `${Math.max(heightPct, 2)}%`,
+                          minHeight: '18px',
+                          backgroundColor: project?.color ? `${project.color}18` : 'var(--muted)',
+                          borderLeftColor: project?.color ?? 'var(--muted-foreground)',
+                        }}
+                        title={`${task.title}${task.scheduledStartTime ? ` (${task.scheduledStartTime}${task.scheduledEndTime ? `~${task.scheduledEndTime}` : ''})` : ''}`}
+                        onPointerDown={canDrag ? (e) => handlePointerDown(e, task.id, 'move') : undefined}
+                      >
+                        <div className="flex items-center gap-1 min-w-0">
+                          {isDone && <Check size={8} strokeWidth={3} className="flex-shrink-0 text-[var(--g-success)]" />}
+                          {project && <ColorDot color={project.color} size="sm" />}
+                          <span className={[
+                            'text-[10px] leading-tight truncate',
+                            isDone ? 'line-through text-[var(--muted-foreground)]' : 'text-[var(--foreground)]',
+                          ].join(' ')}>
+                            {task.title}
+                          </span>
+                        </div>
+                        {heightPct > 5 && (
+                          <span className="text-[9px] text-[var(--muted-foreground)] leading-none">
+                            {hoursToTime(renderStart)}~{hoursToTime(renderStart + renderDuration)}
+                          </span>
+                        )}
+                        {/* 하단 리사이즈 핸들 */}
+                        {canDrag && (
+                          <div
+                            className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize opacity-0 group-hover/block:opacity-100 transition-opacity"
+                            style={{ background: 'linear-gradient(transparent, rgba(128,128,128,0.3))' }}
+                            onPointerDown={(e) => { e.stopPropagation(); handlePointerDown(e, task.id, 'resize'); }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* 드래그로 이 열에 들어온 태스크 (다른 날짜에서 이동) */}
+                  {dragState && dragState.currentDateIdx === colIdx && dragState.origDateIdx !== colIdx && (() => {
+                    const task = tasks.find((t) => t.id === dragState.taskId);
+                    if (!task) return null;
+                    const project = getProject(task.projectId);
+
+                    const clampedStart = Math.max(dragState.currentStartHour, startHour);
+                    const clampedEnd = Math.min(dragState.currentStartHour + dragState.currentDuration, endHour);
+                    if (clampedStart >= endHour || clampedEnd <= startHour) return null;
+                    const topPct = ((clampedStart - startHour) / totalHours) * 100;
+                    const heightPct = ((clampedEnd - clampedStart) / totalHours) * 100;
+
+                    return (
+                      <div
+                        key={`ghost-${task.id}`}
+                        className="absolute left-0.5 right-0.5 z-10 rounded-[4px] px-1.5 py-0.5 overflow-hidden border-l-[3px] opacity-60 ring-1 ring-[var(--accent)]"
+                        style={{
+                          top: `${topPct}%`,
+                          height: `${Math.max(heightPct, 2)}%`,
+                          minHeight: '18px',
+                          backgroundColor: project?.color ? `${project.color}18` : 'var(--muted)',
+                          borderLeftColor: project?.color ?? 'var(--muted-foreground)',
+                        }}
+                      >
+                        <div className="flex items-center gap-1 min-w-0">
+                          {project && <ColorDot color={project.color} size="sm" />}
+                          <span className="text-[10px] leading-tight truncate text-[var(--foreground)]">
+                            {task.title}
+                          </span>
+                        </div>
+                        <span className="text-[9px] text-[var(--muted-foreground)] leading-none">
+                          {hoursToTime(dragState.currentStartHour)}~{hoursToTime(dragState.currentStartHour + dragState.currentDuration)}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

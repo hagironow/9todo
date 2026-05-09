@@ -86,7 +86,7 @@ export default function GoalCompass({
                   title={`완료 (+${GOAL_COMPLETE_XP}xp)`}
                 >
                   <span className="text-[12px] font-semibold">{GOAL_COMPLETE_XP}xp</span>
-                  <CheckCircle2 size={32} strokeWidth={1.5} fill="white" />
+                  <CheckCircle2 size={32} strokeWidth={0} fill="white" />
                 </button>
               )}
               {previewKey === 'today' && isGoalCompleted && (

@@ -7,7 +7,7 @@ interface BadgeProps {
   count: number;
   continueCount?: number;
   variant?: 'default' | 'warning' | 'danger';
-  origin?: 'deferred' | 'repeated';
+  origin?: string;
   className?: string;
 }
 

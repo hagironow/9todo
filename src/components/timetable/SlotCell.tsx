@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Repeat } from 'lucide-react';
 import { useDroppable } from '@dnd-kit/core';
 import { SlotCoord, ScheduledItem, Project } from '@/lib/types';
 import ItemCard from './ItemCard';
@@ -23,6 +23,9 @@ interface SlotCellProps {
   projects?: Project[];
   isReadOnly?: boolean;
   onItemSelect?: (item: ScheduledItem) => void;
+  onEditRecurrence?: (item: ScheduledItem) => void;
+  onCreateRoutine?: (title: string, coord: SlotCoord) => void;
+  isHighlighted?: boolean;
 }
 
 export default function SlotCell({
@@ -40,6 +43,9 @@ export default function SlotCell({
   projects,
   isReadOnly,
   onItemSelect,
+  onEditRecurrence,
+  onCreateRoutine,
+  isHighlighted,
 }: SlotCellProps) {
   const droppableId = `${coord.period}-${coord.priority}`;
   const { isOver, setNodeRef } = useDroppable({ id: droppableId, data: { coord }, disabled: isReadOnly });
@@ -148,7 +154,7 @@ export default function SlotCell({
         'relative min-h-[80px] rounded-lg transition-all duration-150',
         isOver
           ? 'ring-2 ring-[var(--foreground)] bg-[var(--foreground)]/8 scale-[1.02]'
-          : 'bg-[var(--surface-inset)]',
+          : item?.completedAt ? 'bg-transparent' : 'bg-[var(--surface-inset)]',
       ].join(' ')}
     >
       {item ? (
@@ -165,6 +171,8 @@ export default function SlotCell({
           onUncomplete={onUncomplete}
           isReadOnly={isReadOnly}
           onItemSelect={onItemSelect}
+          onEditRecurrence={onEditRecurrence}
+          isHighlighted={isHighlighted}
         />
       ) : inputting ? (
         /* 통합 입력 모드: 상단 프로젝트 태그 + 하단 텍스트 입력 */
@@ -250,18 +258,33 @@ export default function SlotCell({
             )}
           </div>
 
-          {/* 하단: 텍스트 입력 */}
-          <input
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitInput();
-              if (e.key === 'Escape') cancelInput();
-            }}
-            placeholder="할 일 입력..."
-            className="w-full text-[var(--fs-item)] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--accent)] placeholder:text-[var(--muted-foreground)] py-1"
-          />
+          {/* 하단: 텍스트 입력 + 반복 아이콘 */}
+          <div className="flex items-center gap-1">
+            <input
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitInput();
+                if (e.key === 'Escape') cancelInput();
+              }}
+              placeholder="할 일 입력..."
+              className="flex-1 text-[var(--fs-item)] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--accent)] placeholder:text-[var(--muted-foreground)] py-1"
+            />
+            {onCreateRoutine && (
+              <button
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCreateRoutine(inputValue.trim(), coord);
+                }}
+                className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-[var(--radius)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                title="반복 설정"
+              >
+                <Repeat size={13} strokeWidth={2} />
+              </button>
+            )}
+          </div>
         </div>
       ) : isReadOnly ? (
         <div className="w-full h-full min-h-[80px]" />
