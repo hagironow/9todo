@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { AppState } from '@/lib/types';
-import { createRoutineInstance, shouldCreateInstance } from '@/lib/routine';
+import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
 import { formatLocalDate } from '@/lib/date';
 
 interface UseDailyRolloverOptions {
@@ -29,13 +29,13 @@ export function useDailyRollover({
     batchUpdate((prev) => {
       let changed = false;
       let nextTasks = prev.tasks;
-      let nextRoutineInstances = prev.routineInstances;
 
       // 1. 어제 이전 미완료 태스크 → slot=null, date=null (백로그 이동) — 실제 오늘일 때만
+      // 단, 반복 인스턴스(recurrenceParentId 있음)는 백로그로 보내지 않고 그대로 둠
       const realToday = formatLocalDate(new Date());
       if (today === realToday) {
         nextTasks = nextTasks.map((t) => {
-          if (t.date && t.date < today && t.completedAt === null && t.slot !== null) {
+          if (t.date && t.date < today && t.completedAt === null && t.slot !== null && !t.recurrenceParentId) {
             changed = true;
             return { ...t, slot: null, date: null };
           }
@@ -43,11 +43,12 @@ export function useDailyRollover({
         });
       }
 
-      // 2. 해당 날짜의 루틴 인스턴스 자동 생성
-      for (const routine of prev.routines) {
-        if (shouldCreateInstance(routine, nextRoutineInstances, today)) {
-          const instance = createRoutineInstance(routine, today);
-          nextRoutineInstances = [...nextRoutineInstances, instance];
+      // 2. 반복 투두 인스턴스 자동 생성 (슬롯 자동 배치)
+      const recurringParents = nextTasks.filter((t) => t.recurrence && t.isRecurrenceActive !== false);
+      for (const parent of recurringParents) {
+        if (shouldCreateRecurringInstance(parent, nextTasks, today)) {
+          const instance = createRecurringInstance(parent, today);
+          nextTasks = [...nextTasks, instance];
           changed = true;
         }
       }
@@ -74,7 +75,6 @@ export function useDailyRollover({
       return {
         ...prev,
         tasks: nextTasks,
-        routineInstances: nextRoutineInstances,
         goalCompass: nextGoalCompass,
         goalTodayDate: nextGoalCompass.goals.today ? (goalTodayDate ?? today) : undefined,
       };

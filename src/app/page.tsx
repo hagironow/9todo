@@ -17,11 +17,8 @@ import type {
   SlotCoord,
   ScheduledItem,
   Task,
-  RoutineInstance,
-  Routine,
   GoalCompass as GoalCompassType,
   Project,
-  AppState,
 } from '@/lib/types';
 import { UNCATEGORIZED_ID } from '@/lib/types';
 import { useAppData } from '@/hooks/useAppData';
@@ -40,14 +37,14 @@ import ProjectCreateModal from '@/components/modals/ProjectCreateModal';
 import ProjectSelectModal from '@/components/modals/ProjectSelectModal';
 import LoginModal from '@/components/modals/LoginModal';
 import CalendarModal from '@/components/modals/CalendarModal';
-import RoutineSetupModal from '@/components/modals/RoutineSetupModal';
+import RecurrenceSetupModal from '@/components/modals/RecurrenceSetupModal';
+import type { RecurrenceSetupData } from '@/components/modals/RecurrenceSetupModal';
 import CalendarView from '@/components/calendar/CalendarView';
 import DailyRetro from '@/components/retrospective/DailyRetro';
 import RetrospectiveListView from '@/components/retrospective/RetrospectiveListView';
 import ReadOnlyBanner from '@/components/date-nav/ReadOnlyBanner';
 import { triggerConfetti } from '@/components/effects/ParticleBurst';
-import { createRoutineInstance } from '@/lib/routine';
-import { exportToMarkdown, exportToJSON, downloadFile } from '@/lib/export';
+import { exportToJSON, downloadFile } from '@/lib/export';
 import { calculateDailyXP, calculateTotalXP } from '@/lib/xp';
 import { getToday, formatLocalDate } from '@/lib/date';
 import StorageConsentBanner from '@/components/modals/StorageConsentBanner';
@@ -117,15 +114,6 @@ export default function Home() {
     assignTaskSlot,
     removeTask,
     updateTaskTitle,
-    addRoutine,
-    updateRoutine,
-    removeRoutine,
-    completeRoutineInstance,
-    uncompleteRoutineInstance,
-    deferRoutineInstance,
-    continueRoutineInstance,
-    assignRoutineInstanceSlot,
-    removeRoutineInstance,
     setActiveProjectFilter,
     setColorTheme,
     batchUpdate,
@@ -204,7 +192,6 @@ export default function Home() {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [slotPickerOpen, setSlotPickerOpen] = useState(false);
   const [slotPickerTarget, setSlotPickerTarget] = useState<string | null>(null);
-  const [slotPickerIsRoutine, setSlotPickerIsRoutine] = useState(false);
   const [slotPickerIsRepeat, setSlotPickerIsRepeat] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ScheduledItem | null>(null);
 
@@ -223,11 +210,11 @@ export default function Home() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarViewMode, setCalendarViewMode] = useState<'week' | 'month'>('week');
 
-  // 루틴 생성 모달
+  // 반복 투두 생성 모달
   const [routineModalOpen, setRoutineModalOpen] = useState(false);
   const [routineModalTitle, setRoutineModalTitle] = useState('');
   const [routineModalCoord, setRoutineModalCoord] = useState<SlotCoord | null>(null);
-  const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
+  const [editingRecurrenceTask, setEditingRecurrenceTask] = useState<Task | null>(null);
 
   // DnD
   const [activeItem, setActiveItem] = useState<ScheduledItem | null>(null);
@@ -257,80 +244,31 @@ export default function Home() {
     return map;
   }, [state.tasks, today]);
 
-  // 루틴 인스턴스 목록 (오늘 날짜)
-  const routineItems = useMemo((): ScheduledItem[] => {
-    return state.routineInstances
-      .filter((ri) => ri.date === today)
-      .map((ri) => {
-        const routineDetails = state.routines.find((r) => r.id === ri.routineId);
-        return { ...ri, routineDetails } as ScheduledItem;
-      });
-  }, [state.routineInstances, state.routines, today]);
 
-  // 루틴 슬롯 맵 — 시간대별 × 우선순위별
-  // 위치 결정: ri.slot이 있으면 그것, 없으면 routineDetails.defaultSlot
-  const routineSlots = useMemo((): Record<TimePeriod, Record<Priority, ScheduledItem | null>> => {
-    const map: Record<TimePeriod, Record<Priority, ScheduledItem | null>> = {
-      morning:   { 1: null, 2: null, 3: null },
-      afternoon: { 1: null, 2: null, 3: null },
-      evening:   { 1: null, 2: null, 3: null },
-    };
-    for (const item of routineItems) {
-      const ri = item as RoutineInstance & { routineDetails?: Routine };
-      const coord = ri.slot ?? ri.routineDetails?.defaultSlot;
-      if (!coord) continue;
-      // 슬롯이 비어 있으면 배치 (먼저 온 루틴이 우선)
-      if (!map[coord.period][coord.priority]) {
-        map[coord.period][coord.priority] = item;
-      }
-    }
-    return map;
-  }, [routineItems]);
-
-  // 루틴 슬롯 점유 여부 맵 (RoutineSetupModal에 전달)
-  const occupiedRoutineSlots = useMemo((): Record<TimePeriod, Record<Priority, boolean>> => {
-    const map: Record<TimePeriod, Record<Priority, boolean>> = {
-      morning: { 1: false, 2: false, 3: false },
-      afternoon: { 1: false, 2: false, 3: false },
-      evening: { 1: false, 2: false, 3: false },
-    };
-    for (const p of (['morning', 'afternoon', 'evening'] as TimePeriod[])) {
-      for (const pr of ([1, 2, 3] as Priority[])) {
-        map[p][pr] = !!routineSlots[p][pr];
-      }
-    }
-    return map;
-  }, [routineSlots]);
-
-  // Backlog items (태스크만 — 슬롯 없거나 null, 미완료, 날짜 무관)
+  // Backlog items (태스크만 — 슬롯 없거나 null, 미완료, 날짜 무관, 반복 부모 제외)
   const backlogItems = useMemo(() => {
-    const tasks = state.tasks.filter(
-      (t) => t.slot === null && t.completedAt === null
+    return state.tasks.filter(
+      (t) => t.slot === null && t.completedAt === null && !t.recurrence
     );
-    const instances = state.routineInstances.filter(
-      (ri) => ri.slot === null && ri.completedAt === null && ri.date === today
-    );
-    return [...tasks, ...instances] as (Task | RoutineInstance)[];
-  }, [state.tasks, state.routineInstances, today]);
+  }, [state.tasks]);
 
   // XP 계산
   const dailyXP = useMemo(
-    () => calculateDailyXP(state.tasks, state.routineInstances, today, state.goalCompletedDates),
-    [state.tasks, state.routineInstances, today, state.goalCompletedDates]
+    () => calculateDailyXP(state.tasks, [], today, state.goalCompletedDates),
+    [state.tasks, today, state.goalCompletedDates]
   );
 
   const totalXP = useMemo(
-    () => calculateTotalXP(state.tasks, state.routineInstances, state.goalCompletedDates),
-    [state.tasks, state.routineInstances, state.goalCompletedDates]
+    () => calculateTotalXP(state.tasks, [], state.goalCompletedDates),
+    [state.tasks, state.goalCompletedDates]
   );
 
   // 캘린더 dot indicator — 데이터 있는 날짜들
   const datesWithData = useMemo(() => {
     const set = new Set<string>();
     for (const t of state.tasks) if (t.date) set.add(t.date);
-    for (const ri of state.routineInstances) if (ri.date) set.add(ri.date);
     return set;
-  }, [state.tasks, state.routineInstances]);
+  }, [state.tasks]);
 
   // Filter
   const filteredSlots = useMemo(() => {
@@ -365,103 +303,52 @@ export default function Home() {
     });
   }, [backlogItems, state.activeProjectFilter]);
 
-  // 루틴도 프로젝트 필터 적용
-  const filteredRoutineSlots = useMemo(() => {
-    if (!state.activeProjectFilter) return routineSlots;
-    const filter = state.activeProjectFilter;
-    if (filter === '__unassigned__' || filter === '__calendar__' || filter === '__retrospective__') return routineSlots;
-    const result: Record<TimePeriod, Record<Priority, ScheduledItem | null>> = {
-      morning: { 1: null, 2: null, 3: null },
-      afternoon: { 1: null, 2: null, 3: null },
-      evening: { 1: null, 2: null, 3: null },
-    };
-    for (const period of ['morning', 'afternoon', 'evening'] as TimePeriod[]) {
-      for (const p of [1, 2, 3] as Priority[]) {
-        const item = routineSlots[period][p];
-        if (!item) continue;
-        const pid = 'routineDetails' in item && item.routineDetails
-          ? (item.routineDetails as Routine).projectId
-          : null;
-        if (pid === filter) {
-          result[period][p] = item;
-        }
-      }
-    }
-    return result;
-  }, [routineSlots, state.activeProjectFilter]);
 
   // Handlers
   const handleComplete = useCallback(
     (item: ScheduledItem, timerSeconds?: number) => {
-      if ('type' in item && item.type === 'task') {
-        completeTask(item.id, timerSeconds);
-      } else {
-        completeRoutineInstance(item.id);
-      }
-      const color =
-        'projectId' in item && item.projectId
-          ? state.projects.find((p) => p.id === item.projectId)?.color
-          : undefined;
+      completeTask(item.id, timerSeconds);
+      const color = item.projectId
+        ? state.projects.find((p) => p.id === item.projectId)?.color
+        : undefined;
       triggerConfetti({ color });
     },
-    [completeTask, completeRoutineInstance, state.projects]
+    [completeTask, state.projects]
   );
 
   const handleUncomplete = useCallback(
     (item: ScheduledItem) => {
-      if ('type' in item && item.type === 'task') {
-        uncompleteTask(item.id);
-      } else {
-        uncompleteRoutineInstance(item.id);
-      }
+      uncompleteTask(item.id);
     },
-    [uncompleteTask, uncompleteRoutineInstance]
+    [uncompleteTask]
   );
 
   const handleDefer = useCallback(
     (item: ScheduledItem) => {
-      if ('type' in item && item.type === 'task') {
-        deferTask(item.id);
-      } else {
-        deferRoutineInstance(item.id);
-      }
+      deferTask(item.id);
     },
-    [deferTask, deferRoutineInstance]
+    [deferTask]
   );
 
   const handleSendToBacklog = useCallback(
     (item: ScheduledItem) => {
-      if ('type' in item && item.type === 'task') {
-        batchUpdate((prev) => ({
-          ...prev,
-          tasks: prev.tasks.map((t) =>
-            t.id === item.id ? { ...t, slot: null, date: null } : t,
-          ),
-        }));
-      } else {
-        batchUpdate((prev) => ({
-          ...prev,
-          routineInstances: prev.routineInstances.map((ri) =>
-            ri.id === item.id ? { ...ri, slot: null } : ri,
-          ),
-        }));
-      }
+      batchUpdate((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === item.id ? { ...t, slot: null, date: null } : t,
+        ),
+      }));
     },
     [batchUpdate]
   );
 
   const handleRepeat = useCallback(
     (item: ScheduledItem) => {
-      if ('type' in item && item.type === 'task') {
-        setSlotPickerTarget(item.id);
-        setSlotPickerIsRoutine(false);
-        setSlotPickerIsRepeat(true);
-        setSlotPickerOpen(true);
-      } else {
-        continueRoutineInstance(item.id);
-      }
+      setSlotPickerTarget(item.id);
+      setSlotPickerIsRepeat(true);
+      setSlotPickerOpen(true);
     },
-    [continueRoutineInstance]
+    []
   );
 
   const handleDelete = useCallback(
@@ -473,10 +360,7 @@ export default function Home() {
 
   const handleUpdateTitle = useCallback(
     (item: ScheduledItem, title: string) => {
-      if ('type' in item && item.type === 'task') {
-        updateTaskTitle(item.id, title);
-      }
-      // 루틴 인스턴스는 제목 변경 미지원 (루틴 원본을 수정해야 함)
+      updateTaskTitle(item.id, title);
     },
     [updateTaskTitle]
   );
@@ -514,10 +398,10 @@ export default function Home() {
     [addTask, today, state.activeProjectFilter, slots]
   );
 
-  // 루틴 생성 — 슬롯에서 제목 입력 후 RoutineSetupModal 열기
+  // 반복 투두 생성 — 슬롯에서 제목 입력 후 RecurrenceSetupModal 열기
   const handleCreateRoutine = useCallback(
     (title: string, coord: SlotCoord) => {
-      setEditingRoutine(null);
+      setEditingRecurrenceTask(null);
       setRoutineModalTitle(title);
       setRoutineModalCoord(coord);
       setRoutineModalOpen(true);
@@ -525,72 +409,82 @@ export default function Home() {
     []
   );
 
-  // 루틴 편집 — 기존 루틴 클릭 시 (ScheduledItem → routineId로 Routine 조회)
+  // 반복 투두 편집 — recurrence가 있는 Task의 부모를 찾아 RecurrenceSetupModal 열기
   const handleEditRoutine = useCallback(
     (item: ScheduledItem) => {
-      // routineId로 state에서 최신 Routine 조회, 없으면 routineDetails fallback
-      const routineId = 'routineId' in item ? (item as RoutineInstance).routineId : null;
-      const routine = routineId
-        ? state.routines.find((r) => r.id === routineId) ?? null
+      // 반복 인스턴스(recurrenceParentId 있음)이면 부모 Task 조회
+      const parentTask = item.recurrenceParentId
+        ? state.tasks.find((t) => t.id === item.recurrenceParentId) ?? null
+        : item.recurrence
+        ? item
         : null;
-      const resolved = routine ?? ('routineDetails' in item ? item.routineDetails : undefined) ?? null;
-      if (!resolved) return;
-      setEditingRoutine(resolved);
+      if (!parentTask) return;
+      setEditingRecurrenceTask(parentTask);
       setRoutineModalTitle('');
       setRoutineModalCoord(null);
       setRoutineModalOpen(true);
     },
-    [state.routines]
+    [state.tasks]
   );
 
-  // RoutineSetupModal 저장 핸들러 (생성 + 편집 겸용)
+  // RecurrenceSetupModal 저장 핸들러 (생성 + 편집 겸용)
   const handleRoutineSetupSave = useCallback(
-    (data: { recurrence: import('@/lib/types').RecurrenceType; daysOfWeek?: number[]; defaultSlot: SlotCoord; startDate: string; scheduledTime?: string; projectId: string | null }) => {
-      if (editingRoutine) {
-        updateRoutine(editingRoutine.id, {
-          recurrence: data.recurrence,
-          daysOfWeek: data.daysOfWeek,
-          defaultSlot: data.defaultSlot,
-          startDate: data.startDate,
-          scheduledTime: data.scheduledTime,
-          projectId: data.projectId,
-        });
+    (data: RecurrenceSetupData) => {
+      if (editingRecurrenceTask) {
+        // 편집: 기존 반복 부모 Task 업데이트
+        batchUpdate((prev) => ({
+          ...prev,
+          tasks: prev.tasks.map((t) =>
+            t.id === editingRecurrenceTask.id
+              ? {
+                  ...t,
+                  title: data.title,
+                  recurrence: data.recurrence,
+                  daysOfWeek: data.daysOfWeek,
+                  defaultSlot: data.defaultSlot,
+                  startDate: data.startDate,
+                  scheduledStartTime: data.scheduledStartTime,
+                  scheduledEndTime: data.scheduledEndTime,
+                  projectId: data.projectId,
+                }
+              : t
+          ),
+        }));
       } else {
-        if (!routineModalTitle.trim()) return;
-        const routine = addRoutine({
-          title: routineModalTitle.trim(),
-          projectId: data.projectId,
+        // 신규: addTask에 recurrence 옵션 전달
+        addTask(data.title, today, {
           recurrence: data.recurrence,
           daysOfWeek: data.daysOfWeek,
-          defaultSlot: routineModalCoord ?? data.defaultSlot,
           startDate: data.startDate,
-          isActive: true,
-          scheduledTime: data.scheduledTime,
+          scheduledStartTime: data.scheduledStartTime,
+          scheduledEndTime: data.scheduledEndTime,
+          defaultSlot: routineModalCoord ?? data.defaultSlot,
+          projectId: data.projectId ?? undefined,
         });
-        if (today >= data.startDate) {
-          const instance = createRoutineInstance(routine, today);
-          batchUpdate((prev) => ({
-            ...prev,
-            routineInstances: [...prev.routineInstances, instance],
-          }));
-        }
       }
       setRoutineModalOpen(false);
       setRoutineModalTitle('');
       setRoutineModalCoord(null);
-      setEditingRoutine(null);
+      setEditingRecurrenceTask(null);
     },
-    [editingRoutine, routineModalTitle, routineModalCoord, addRoutine, updateRoutine, today, batchUpdate]
+    [editingRecurrenceTask, routineModalTitle, routineModalCoord, addTask, today, batchUpdate]
   );
 
-  // 루틴 삭제 핸들러
+  // 반복 투두 비활성화 핸들러
   const handleDeleteRoutine = useCallback(() => {
-    if (editingRoutine) {
-      removeRoutine(editingRoutine.id);
+    if (editingRecurrenceTask) {
+      batchUpdate((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === editingRecurrenceTask.id
+            ? { ...t, isRecurrenceActive: false }
+            : t
+        ),
+      }));
       setRoutineModalOpen(false);
-      setEditingRoutine(null);
+      setEditingRecurrenceTask(null);
     }
-  }, [editingRoutine, removeRoutine]);
+  }, [editingRecurrenceTask, batchUpdate]);
 
   const handleProjectSelectDone = useCallback(
     (projectId: string) => {
@@ -643,36 +537,6 @@ export default function Home() {
 
       const itemId = String(active.id);
       const itemData = active.data.current;
-      const isRoutineInstance = !!itemData?.isRoutineInstance;
-
-      // 루틴 슬롯 드롭 처리
-      if (over.data.current?.isRoutineSlot) {
-        // 태스크를 루틴 슬롯에 드롭하면 무시
-        if (!isRoutineInstance) return;
-
-        const draggedCurrentSlot = itemData?.currentSlot as SlotCoord | null;
-        const targetRoutineItem = routineSlots[coord.period][coord.priority];
-
-        if (!targetRoutineItem) {
-          // 빈 루틴 슬롯 — 단순 이동
-          assignRoutineInstanceSlot(itemId, coord);
-        } else if (targetRoutineItem.id !== itemId) {
-          // 채워진 루틴 슬롯 — 교환 (batchUpdate로 원자적 처리)
-          batchUpdate((prev) => ({
-            ...prev,
-            routineInstances: prev.routineInstances.map((ri) => {
-              if (ri.id === itemId) return { ...ri, slot: coord };
-              if (ri.id === targetRoutineItem.id) return { ...ri, slot: draggedCurrentSlot };
-              return ri;
-            }),
-          }));
-        }
-        return;
-      }
-
-      // 태스크 슬롯 드롭 처리
-      // 루틴 인스턴스를 태스크 슬롯에 드롭하면 무시
-      if (isRoutineInstance) return;
 
       // 드래그된 아이템의 현재 슬롯을 data에서 직접 가져옴 (state 재탐색 불필요)
       const draggedItem = itemData?.item as ScheduledItem | undefined;
@@ -686,33 +550,16 @@ export default function Home() {
         assignTaskSlot(itemId, coord, today);
       } else if (targetItem.id !== itemId) {
         // 채워진 슬롯 — 두 아이템 슬롯 교환 (스왑)
-        const targetIsRoutine =
-          'routineDetails' in targetItem && targetItem.routineDetails !== undefined
-            ? true
-            : 'type' in targetItem
-            ? targetItem.type !== 'task'
-            : false;
-
-        // targetItem을 드래그된 아이템의 이전 슬롯으로 이동
-        if (targetIsRoutine) {
-          if (draggedCurrentSlot) {
-            assignRoutineInstanceSlot(targetItem.id, draggedCurrentSlot);
-          } else {
-            deferRoutineInstance(targetItem.id);
-          }
+        if (draggedCurrentSlot) {
+          assignTaskSlot(targetItem.id, draggedCurrentSlot, today);
         } else {
-          if (draggedCurrentSlot) {
-            assignTaskSlot(targetItem.id, draggedCurrentSlot, today);
-          } else {
-            deferTask(targetItem.id);
-          }
+          deferTask(targetItem.id);
         }
-
         // 드래그된 아이템을 타겟 슬롯으로 이동
         assignTaskSlot(itemId, coord, today);
       }
     },
-    [slots, routineSlots, assignTaskSlot, assignRoutineInstanceSlot, deferTask, deferRoutineInstance, today, handleSendToBacklog, batchUpdate]
+    [slots, assignTaskSlot, deferTask, today, handleSendToBacklog]
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -721,9 +568,8 @@ export default function Home() {
   }, []);
 
   const handlePlaceInSlot = useCallback(
-    (item: Task | RoutineInstance) => {
+    (item: Task) => {
       setSlotPickerTarget(item.id);
-      setSlotPickerIsRoutine(!('type' in item) || item.type !== 'task');
       setSlotPickerOpen(true);
     },
     []
@@ -734,8 +580,6 @@ export default function Home() {
       if (!slotPickerTarget) return;
       if (slotPickerIsRepeat) {
         continueTask(slotPickerTarget, today, coord);
-      } else if (slotPickerIsRoutine) {
-        assignRoutineInstanceSlot(slotPickerTarget, coord);
       } else {
         assignTaskSlot(slotPickerTarget, coord, today);
       }
@@ -743,7 +587,7 @@ export default function Home() {
       setSlotPickerTarget(null);
       setSlotPickerIsRepeat(false);
     },
-    [slotPickerTarget, slotPickerIsRoutine, slotPickerIsRepeat, assignTaskSlot, assignRoutineInstanceSlot, continueTask, today]
+    [slotPickerTarget, slotPickerIsRepeat, assignTaskSlot, continueTask, today]
   );
 
   // 프로젝트 편집/삭제/아카이브
@@ -820,18 +664,12 @@ export default function Home() {
 
   // Title helper for backlog
   const getTitleForItem = useCallback(
-    (item: Task | RoutineInstance) => {
-      if ('title' in item) return item.title;
-      const routine = state.routines.find((r) => r.id === (item as RoutineInstance).routineId);
-      return routine?.title ?? '';
-    },
-    [state.routines]
+    (item: Task) => item.title,
+    []
   );
 
   const isRoutineInstanceFn = useCallback(
-    (item: Task | RoutineInstance) => {
-      return !('type' in item) || item.type !== 'task';
-    },
+    (_item: Task) => false,
     []
   );
 
@@ -957,17 +795,20 @@ export default function Home() {
             /* 캘린더 뷰 */
             <CalendarView
               tasks={state.tasks}
-              routines={state.routines}
-              routineInstances={state.routineInstances}
+              routines={[]}
+              routineInstances={[]}
               projects={state.projects}
-              onEditRoutine={(routine) => {
-                setEditingRoutine(routine);
-                setRoutineModalTitle('');
-                setRoutineModalCoord(null);
-                setRoutineModalOpen(true);
-              }}
+              onEditRoutine={() => {}}
               onViewModeChange={setCalendarViewMode}
               onCreateTask={(title, date, projectId) => addTask(title, date, { projectId })}
+              onUpdateTask={(taskId, updates) => {
+                batchUpdate((prev) => ({
+                  ...prev,
+                  tasks: prev.tasks.map((t) =>
+                    t.id === taskId ? { ...t, ...updates } : t
+                  ),
+                }));
+              }}
               retrospectives={state.retrospectives ?? []}
               onSaveRetro={upsertRetrospective}
             />
@@ -994,8 +835,8 @@ export default function Home() {
                 <ProjectDetailView
                   project={proj}
                   tasks={state.tasks}
-                  routines={state.routines}
-                  routineInstances={state.routineInstances}
+                  routines={[]}
+                  routineInstances={[]}
                   notes={state.notes ?? []}
                   onAddNote={addNote}
                   onRemoveNote={removeNote}
@@ -1033,7 +874,6 @@ export default function Home() {
                   <TimetableGrid
                     currentPeriod={currentPeriod}
                     slots={filteredSlots}
-                    routineSlots={filteredRoutineSlots}
                     onComplete={handleComplete}
                     onDefer={handleDefer}
                     onRepeat={handleRepeat}
@@ -1044,12 +884,12 @@ export default function Home() {
                     onCreateInSlot={handleCreateInSlot}
                     onUncomplete={handleUncomplete}
                     onCreateRoutine={handleCreateRoutine}
-                    onEditRoutine={handleEditRoutine}
                     projectFirstMode={state.projectFirstMode}
                     projects={state.projects}
                     isReadOnly={isReadOnly}
                     isToday={isToday}
                     onItemSelect={() => {}}
+                    onEditRecurrence={handleEditRoutine}
                   />
                 </div>
 
@@ -1057,7 +897,6 @@ export default function Home() {
                 <MobileTimetableList
                   currentPeriod={currentPeriod}
                   slots={filteredSlots}
-                  routineSlots={filteredRoutineSlots}
                   onComplete={handleComplete}
                   onDefer={handleDefer}
                   onRepeat={handleRepeat}
@@ -1067,8 +906,6 @@ export default function Home() {
                   onUpdateProject={handleUpdateProject}
                   onCreateInSlot={handleCreateInSlot}
                   onUncomplete={handleUncomplete}
-                  onCreateRoutine={handleCreateRoutine}
-                  onEditRoutine={handleEditRoutine}
                   projects={state.projects}
                   isReadOnly={isReadOnly}
                   isToday={isToday}
@@ -1077,14 +914,15 @@ export default function Home() {
                 />
 
                 {/* Backlog */}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <BacklogPanel
-                  items={filteredBacklog}
+                  items={filteredBacklog as any}
                   projects={state.projects}
-                  getTitleForItem={getTitleForItem}
-                  isRoutineInstance={isRoutineInstanceFn}
-                  onPlaceInSlot={handlePlaceInSlot}
-                  onUpdateTitle={handleUpdateTitle}
-                  onDelete={handleDelete}
+                  getTitleForItem={getTitleForItem as any}
+                  isRoutineInstance={isRoutineInstanceFn as any}
+                  onPlaceInSlot={handlePlaceInSlot as any}
+                  onUpdateTitle={handleUpdateTitle as any}
+                  onDelete={handleDelete as any}
                   onAdd={(title, projectId) => addTask(title, today, { projectId })}
                   lastUsedProjectId={state.lastUsedProjectId}
                   isReadOnly={isReadOnly}
@@ -1108,11 +946,7 @@ export default function Home() {
       <DragOverlay>
         {activeItem && (
           <div className="px-3 py-2 rounded-[var(--radius)] bg-[var(--card)] border border-[var(--accent)] shadow-lg text-sm font-medium text-[var(--foreground)] max-w-[180px] truncate">
-            {'title' in activeItem
-              ? activeItem.title
-              : 'routineDetails' in activeItem && activeItem.routineDetails
-                ? (activeItem.routineDetails as Routine).title
-                : ''}
+            {activeItem.title}
           </div>
         )}
       </DragOverlay>
@@ -1158,19 +992,18 @@ export default function Home() {
         onClose={() => setLoginModalOpen(false)}
       />
 
-      <RoutineSetupModal
+      <RecurrenceSetupModal
         open={routineModalOpen}
-        onClose={() => { setRoutineModalOpen(false); setRoutineModalTitle(''); setRoutineModalCoord(null); setEditingRoutine(null); }}
+        onClose={() => { setRoutineModalOpen(false); setRoutineModalTitle(''); setRoutineModalCoord(null); setEditingRecurrenceTask(null); }}
         initialTitle={routineModalTitle}
         initialCoord={routineModalCoord}
-        editingRoutine={editingRoutine}
-        occupiedSlots={occupiedRoutineSlots}
+        editingTask={editingRecurrenceTask}
         onSave={handleRoutineSetupSave}
         onDelete={handleDeleteRoutine}
         projects={state.projects}
         colorTheme={state.colorTheme}
         initialProjectId={
-          editingRoutine?.projectId ??
+          editingRecurrenceTask?.projectId ??
           (state.activeProjectFilter && state.activeProjectFilter !== '__unassigned__' && state.activeProjectFilter !== '__calendar__'
             ? state.activeProjectFilter
             : null)
@@ -1189,7 +1022,7 @@ export default function Home() {
       />
       <StorageConsentBanner />
 
-      {/* 태스크/루틴 삭제 확인 */}
+      {/* 태스크 삭제 확인 */}
       <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="삭제할까요?" width="sm">
         <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
           삭제한 항목은 복구할 수 없습니다.
@@ -1198,11 +1031,7 @@ export default function Home() {
           <button onClick={() => setDeleteTarget(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
           <button onClick={() => {
             if (deleteTarget) {
-              if ('type' in deleteTarget && deleteTarget.type === 'task') {
-                removeTask(deleteTarget.id);
-              } else {
-                removeRoutineInstance(deleteTarget.id);
-              }
+              removeTask(deleteTarget.id);
             }
             setDeleteTarget(null);
           }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>

@@ -10,6 +10,7 @@ import type {
   Project,
   Note,
   SlotCoord,
+  RecurrenceType,
   RetrospectiveEntry,
   RetroScope,
 } from '@/lib/types';
@@ -51,6 +52,63 @@ export function hasStorageConsent(): boolean {
 
 export function grantStorageConsent(): void {
   localStorage.setItem(CONSENT_KEY, 'true');
+}
+
+/** 마이그레이션: Routine → Task 반복 투두로 변환 */
+function migrateRoutinesToTasks(state: AppState): AppState {
+  if (!state.routines?.length && !state.routineInstances?.length) return state;
+
+  const newTasks: Task[] = [];
+
+  // Routine → Task (반복 부모)
+  for (const r of (state.routines ?? [])) {
+    const task: Task = {
+      id: r.id, // 기존 ID 유지 (인스턴스 참조 보존)
+      type: 'task',
+      title: r.title,
+      projectId: r.projectId,
+      slot: null, // 부모는 슬롯 없음 (인스턴스가 슬롯 차지)
+      deferCount: 0,
+      continueCount: 0,
+      completedAt: null,
+      date: null,
+      createdAt: r.createdAt,
+      recurrence: r.recurrence,
+      daysOfWeek: r.daysOfWeek,
+      startDate: r.startDate,
+      isRecurrenceActive: r.isActive,
+      scheduledStartTime: r.scheduledTime,
+      defaultSlot: r.defaultSlot,
+    };
+    newTasks.push(task);
+  }
+
+  // RoutineInstance → Task (반복 인스턴스)
+  for (const ri of (state.routineInstances ?? [])) {
+    const parent = (state.routines ?? []).find((r) => r.id === ri.routineId);
+    const task: Task = {
+      id: ri.id,
+      type: 'task',
+      title: parent?.title ?? '(마이그레이션)',
+      projectId: parent?.projectId ?? null,
+      slot: ri.slot,
+      deferCount: ri.deferCount,
+      continueCount: 0,
+      completedAt: ri.completedAt,
+      date: ri.date,
+      createdAt: ri.date + 'T00:00:00.000Z',
+      recurrenceParentId: ri.routineId,
+      scheduledStartTime: parent?.scheduledTime,
+    };
+    newTasks.push(task);
+  }
+
+  return {
+    ...state,
+    tasks: [...state.tasks, ...newTasks],
+    routines: [],
+    routineInstances: [],
+  };
 }
 
 /** 마이그레이션: 백로그 태스크(slot=null)의 date를 null로 변환 */
@@ -95,7 +153,7 @@ export function useAppData() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = resolveProjectColors(JSON.parse(raw) as AppState);
-        setState(migrateBacklogDates(parsed));
+        setState(migrateBacklogDates(migrateRoutinesToTasks(parsed)));
       }
     } catch (err) {
       console.error('[useAppData] localStorage read error', err);
@@ -217,19 +275,38 @@ export function useAppData() {
     (
       title: string,
       date: string | null,
-      options?: { slot?: SlotCoord; projectId?: string | null },
+      options?: {
+        slot?: SlotCoord;
+        projectId?: string | null;
+        recurrence?: RecurrenceType;
+        daysOfWeek?: number[];
+        startDate?: string;
+        scheduledStartTime?: string;
+        scheduledEndTime?: string;
+        defaultSlot?: SlotCoord;
+      },
     ) => {
+      const isRecurring = !!options?.recurrence;
       const task: Task = {
         id: `item_${nanoid()}`,
         type: 'task',
         title,
         projectId: options?.projectId ?? null,
-        slot: options?.slot ?? null,
+        slot: isRecurring ? null : (options?.slot ?? null), // 반복 부모는 슬롯 없음
         deferCount: 0,
         continueCount: 0,
         completedAt: null,
-        date: options?.slot ? date : null, // 슬롯 있으면 날짜 지정, 백로그는 null
+        date: isRecurring ? null : (options?.slot ? date : null),
         createdAt: new Date().toISOString(),
+        ...(isRecurring ? {
+          recurrence: options!.recurrence,
+          daysOfWeek: options!.daysOfWeek,
+          startDate: options!.startDate ?? date ?? undefined,
+          isRecurrenceActive: true,
+          scheduledStartTime: options!.scheduledStartTime,
+          scheduledEndTime: options!.scheduledEndTime,
+          defaultSlot: options!.defaultSlot,
+        } : {}),
       };
       update((prev) => ({
         ...prev,

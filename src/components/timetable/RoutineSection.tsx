@@ -18,18 +18,13 @@ const PERIOD_LABELS: Record<TimePeriod, string> = {
 const PERIOD_ORDER: TimePeriod[] = ['morning', 'afternoon', 'evening'];
 
 function getPeriodForItem(item: ScheduledItem): TimePeriod | null {
-  if ('slot' in item && item.slot) return item.slot.period;
-  // routineDetails의 defaultSlot 사용
-  if ('routineDetails' in item && item.routineDetails) {
-    return item.routineDetails.defaultSlot.period;
-  }
+  if (item.slot) return item.slot.period;
+  if (item.defaultSlot) return item.defaultSlot.period;
   return null;
 }
 
 function getTitleForItem(item: ScheduledItem): string {
-  if ('title' in item) return item.title;
-  if ('routineDetails' in item && item.routineDetails) return item.routineDetails.title;
-  return '';
+  return item.title;
 }
 
 export default function RoutineSection({

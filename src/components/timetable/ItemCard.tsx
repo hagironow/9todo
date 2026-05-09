@@ -23,6 +23,8 @@ interface ItemCardProps {
   onUncomplete?: (item: ScheduledItem) => void;
   isReadOnly?: boolean;
   onItemSelect?: (item: ScheduledItem) => void;
+  onEditRecurrence?: (item: ScheduledItem) => void;
+  isHighlighted?: boolean;
 }
 
 function getXpForPriority(priority: number): number {
@@ -43,13 +45,15 @@ export default function ItemCard({
   onUncomplete,
   isReadOnly,
   onItemSelect,
+  onEditRecurrence,
+  isHighlighted,
 }: ItemCardProps) {
-  const isRoutineInstance = 'routineDetails' in item && item.routineDetails !== undefined;
+  const isRecurring = !!item.recurrenceParentId || !!item.recurrence;
   const isCompleted = !!item.completedAt;
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
-    data: { item, isRoutineInstance },
+    data: { item, isRoutineInstance: false },
     disabled: isReadOnly || isCompleted,
   });
 
@@ -61,7 +65,7 @@ export default function ItemCard({
 
   const title = 'title' in item ? item.title : '';
   const deferCount = 'deferCount' in item ? item.deferCount : 0;
-  const origin = 'origin' in item ? (item as { origin?: string }).origin as 'deferred' | 'repeated' | undefined : undefined;
+  const origin = item.origin;
   const slotPriority = item.slot?.priority ?? 3;
   const xp = getXpForPriority(slotPriority);
   const continueCount = 'continueCount' in item ? (item as { continueCount?: number }).continueCount ?? 0 : 0;
@@ -135,12 +139,13 @@ export default function ItemCard({
       style={style}
       className={[
         'group relative p-2.5 rounded-lg h-full',
-        isCompleted ? 'bg-[var(--surface-inset)]/60' : 'bg-[var(--surface-inset)]',
+        isCompleted ? 'bg-transparent' : 'bg-[var(--surface-inset)]',
+        isHighlighted && !isCompleted ? 'animate-highlight' : '',
       ].join(' ')}
     >
 
       {/* Content */}
-      <div className="relative flex flex-col gap-1.5">
+      <div className={['relative flex flex-col gap-1.5', isCompleted ? 'opacity-60' : ''].join(' ')}>
         {/* 상단: 프로젝트 태그 */}
         <div className="flex items-center gap-1.5" style={{ pointerEvents: editing ? 'auto' : 'none' }}>
           {editing ? (
@@ -239,19 +244,36 @@ export default function ItemCard({
 
         {/* 제목 */}
         <div className="flex items-start gap-2" style={{ pointerEvents: editing ? 'auto' : 'none' }}>
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex items-center gap-1">
             {editing ? (
-              <input
-                ref={inputRef}
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onBlur={() => { if (!projectDropdownOpen) commitEdit(); }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit();
-                  if (e.key === 'Escape') cancelEdit();
-                }}
-                className="w-full text-[var(--fs-item)] font-medium text-[var(--card-foreground)] leading-snug bg-transparent border-b border-[var(--accent)] outline-none"
-              />
+              <>
+                <input
+                  ref={inputRef}
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={() => { if (!projectDropdownOpen) commitEdit(); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit();
+                    if (e.key === 'Escape') cancelEdit();
+                  }}
+                  className="flex-1 text-[var(--fs-item)] font-medium text-[var(--card-foreground)] leading-snug bg-transparent border-b border-[var(--accent)] outline-none"
+                />
+                {onEditRecurrence && (
+                  <button
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    onClick={(e) => { e.stopPropagation(); commitEdit(); onEditRecurrence(item); }}
+                    className={[
+                      'flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-[var(--radius)] transition-colors',
+                      isRecurring
+                        ? 'text-[var(--accent)] bg-[var(--accent)]/10'
+                        : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]',
+                    ].join(' ')}
+                    title="반복 설정"
+                  >
+                    <Repeat size={13} strokeWidth={2} />
+                  </button>
+                )}
+              </>
             ) : (
               <p
                 className={[
@@ -276,8 +298,8 @@ export default function ItemCard({
             {(deferCount > 0 || continueCount > 0 || origin) && (
               <Badge count={deferCount} continueCount={continueCount} origin={origin} />
             )}
-            {isRoutineInstance && (
-              <span title="루틴"><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
+            {isRecurring && (
+              <span title="반복"><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
             )}
           </div>
           <div className="flex items-center gap-1.5">
@@ -287,11 +309,11 @@ export default function ItemCard({
                 {Math.floor(timerSeconds / 60)}m
               </span>
             )}
-            {isCompleted ? (
+            {isCompleted && origin !== 'continued' ? (
               <span className="text-[11px] font-bold" style={{ color: 'var(--g-success)' }}>+{xp}xp</span>
-            ) : (
+            ) : origin !== 'continued' ? (
               <span className="text-[11px] font-medium opacity-50" style={{ color: 'var(--primary)' }}>{xp}xp</span>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

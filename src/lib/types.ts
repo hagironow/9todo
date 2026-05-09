@@ -30,10 +30,19 @@ export interface Task extends ItemBase {
   deferCount: number;
   completedAt: string | null;
   date: string | null; // "YYYY-MM-DD" — 슬롯 배치 시 날짜 지정, 백로그는 null
-  origin?: 'deferred' | 'repeated' | 'continued'; // 미루기/또하기 복제/또하기 원본 완료
+  origin?: 'deferred' | 'repeated' | 'continued' | string; // 미루기/또하기 복제/또하기 원본 완료
   timerSeconds?: number; // 완료 시점의 타이머 기록 (초)
   continueCount: number; // 진행하기 횟수
   lineageId?: string; // 또하기 계보 ID (같은 계보끼리 공유)
+  // 반복 투두 필드 (선택)
+  recurrence?: RecurrenceType;
+  daysOfWeek?: number[]; // 0=일 ~ 6=토
+  startDate?: string; // 반복 시작일 "YYYY-MM-DD"
+  isRecurrenceActive?: boolean; // false면 반복 비활성화
+  scheduledStartTime?: string; // "HH:mm"
+  scheduledEndTime?: string; // "HH:mm"
+  recurrenceParentId?: string; // 반복 원본 Task ID
+  defaultSlot?: SlotCoord; // 반복 투두의 기본 슬롯
 }
 
 export interface Routine extends ItemBase {
@@ -104,5 +113,5 @@ export interface AppState {
   goalTodayDate?: string; // 오늘 목표가 작성된 날짜 (리셋 판단용)
 }
 
-// 화면에서 사용하는 통합 타입
-export type ScheduledItem = (Task | RoutineInstance) & { routineDetails?: Routine };
+// 화면에서 사용하는 통합 타입 (Task로 통합)
+export type ScheduledItem = Task;
