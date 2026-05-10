@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, Check, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Plus, Settings } from 'lucide-react';
 import type { Task, Project, RetrospectiveEntry, RetroScope, EnergyLevel } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import RetroInput from '@/components/retrospective/RetroInput';
@@ -52,15 +52,17 @@ function getWeekScopeKey(dateStr: string): string {
   return `${year}-W${String(week).padStart(2, '0')}`;
 }
 
-function getWeekDates(dateStr: string): string[] {
+/** weekStartDay: 0=일요일, 1=월요일 */
+function getWeekDates(dateStr: string, weekStartDay: 0 | 1 = 1): string[] {
   const d = new Date(dateStr + 'T00:00:00');
   const dayOfWeek = d.getDay();
-  const sunday = new Date(d);
-  sunday.setDate(d.getDate() - dayOfWeek);
+  const diff = (dayOfWeek - weekStartDay + 7) % 7;
+  const start = new Date(d);
+  start.setDate(d.getDate() - diff);
   const dates: string[] = [];
   for (let i = 0; i < 7; i++) {
-    const cur = new Date(sunday);
-    cur.setDate(sunday.getDate() + i);
+    const cur = new Date(start);
+    cur.setDate(start.getDate() + i);
     dates.push(toDateString(cur));
   }
   return dates;
@@ -220,6 +222,20 @@ export default function CalendarView({
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [inputDate, setInputDate] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(true);
+  const [weekStartDay, setWeekStartDay] = useState<0 | 1>(() => {
+    if (typeof window === 'undefined') return 1;
+    const stored = localStorage.getItem('9todo_week_start');
+    return stored === '0' ? 0 : 1;
+  });
+  const [timeRange, setTimeRange] = useState(() => {
+    if (typeof window === 'undefined') return { startHour: 6, endHour: 24 };
+    try {
+      const raw = localStorage.getItem('9todo_timeline_range');
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return { startHour: 6, endHour: 24 };
+  });
+  const [calSettingsOpen, setCalSettingsOpen] = useState(false);
 
   function buildDayData(dateStr: string): DayData {
     const todos = tasks
@@ -233,7 +249,7 @@ export default function CalendarView({
     return { todos, routineList: [], xp };
   }
 
-  const weekDates = useMemo(() => getWeekDates(weekAnchor), [weekAnchor]);
+  const weekDates = useMemo(() => getWeekDates(weekAnchor, weekStartDay), [weekAnchor, weekStartDay]);
   const weekData = useMemo(() => {
     const map: Record<string, DayData> = {};
     for (const d of weekDates) map[d] = buildDayData(d);
@@ -389,10 +405,16 @@ export default function CalendarView({
     );
   }
 
-  // 먼슬리 그리드 계산
-  const firstDayOfMonth = new Date(viewYear, viewMonth, 1).getDay();
+  // 먼슬리 그리드 계산 (weekStartDay 반영)
+  const rawFirstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const firstDayOfMonth = (rawFirstDay - weekStartDay + 7) % 7;
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const trailingBlanks = (7 - ((firstDayOfMonth + daysInMonth) % 7)) % 7;
+
+  // 요일 라벨 순서 (weekStartDay 반영)
+  const orderedWeekdays = weekStartDay === 1
+    ? ['월', '화', '수', '목', '금', '토', '일']
+    : KO_WEEKDAYS;
 
   return (
     <div className="flex flex-col gap-4">
@@ -436,26 +458,100 @@ export default function CalendarView({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* 전체 보기 토글 (먼슬리만) */}
-          {viewMode === 'month' && (
-            <div className="flex items-center bg-[var(--card)] rounded-[var(--radius-sm)] p-0.5">
-              <button
-                onClick={() => setShowAll(!showAll)}
-                className={[
-                  'w-7 h-4 rounded-full transition-colors duration-200 relative shrink-0',
-                  showAll ? 'bg-[var(--accent)]' : 'bg-[var(--border)]',
-                ].join(' ')}
-                title={showAll ? '4개만 보기' : '전체 보기'}
-              >
-                <span
-                  className={[
-                    'absolute top-[3px] w-[10px] h-[10px] rounded-full bg-white shadow-sm transition-transform duration-200',
-                    showAll ? 'left-[14px]' : 'left-[3px]',
-                  ].join(' ')}
-                />
-              </button>
-            </div>
-          )}
+          {/* 캘린더 설정 */}
+          <div className="relative">
+            <button
+              onClick={() => setCalSettingsOpen((v) => !v)}
+              className={[
+                'flex items-center gap-1 px-2 py-1 rounded-[var(--radius-sm)] text-[11px] transition-colors',
+                calSettingsOpen
+                  ? 'text-[var(--foreground)] bg-[var(--surface-hover)]'
+                  : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)]',
+              ].join(' ')}
+              title="캘린더 설정"
+            >
+              <Settings size={12} />
+              <span>{timeRange.startHour}:00~{timeRange.endHour}:00 · {weekStartDay === 1 ? '월' : '일'}요일 시작</span>
+            </button>
+
+            {calSettingsOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--popover)] shadow-lg p-3 flex flex-col gap-3 animate-[status-appear_0.1s_ease_forwards]">
+                {/* 표시 범위 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] text-[var(--muted-foreground)]">표시 범위</span>
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={timeRange.startHour}
+                      onChange={(e) => {
+                        const v = { ...timeRange, startHour: Number(e.target.value) };
+                        setTimeRange(v);
+                        localStorage.setItem('9todo_timeline_range', JSON.stringify(v));
+                      }}
+                      className="text-[12px] bg-[var(--muted)] text-[var(--foreground)] rounded px-1.5 py-0.5 border-none outline-none"
+                    >
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <option key={i} value={i} disabled={i >= timeRange.endHour}>{String(i).padStart(2, '0')}:00</option>
+                      ))}
+                    </select>
+                    <span className="text-[11px] text-[var(--muted-foreground)]">~</span>
+                    <select
+                      value={timeRange.endHour}
+                      onChange={(e) => {
+                        const v = { ...timeRange, endHour: Number(e.target.value) };
+                        setTimeRange(v);
+                        localStorage.setItem('9todo_timeline_range', JSON.stringify(v));
+                      }}
+                      className="text-[12px] bg-[var(--muted)] text-[var(--foreground)] rounded px-1.5 py-0.5 border-none outline-none"
+                    >
+                      {Array.from({ length: 25 }, (_, i) => (
+                        <option key={i} value={i} disabled={i <= timeRange.startHour}>{String(i).padStart(2, '0')}:00</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* 주 시작일 */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] text-[var(--muted-foreground)]">주 시작일</span>
+                  <div className="flex items-center bg-[var(--muted)] rounded-full p-0.5">
+                    <button
+                      onClick={() => { setWeekStartDay(1); localStorage.setItem('9todo_week_start', '1'); }}
+                      className={[
+                        'px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-colors',
+                        weekStartDay === 1 ? 'bg-[var(--foreground)] text-[var(--background)]' : 'text-[var(--muted-foreground)]',
+                      ].join(' ')}
+                    >월</button>
+                    <button
+                      onClick={() => { setWeekStartDay(0); localStorage.setItem('9todo_week_start', '0'); }}
+                      className={[
+                        'px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-colors',
+                        weekStartDay === 0 ? 'bg-[var(--foreground)] text-[var(--background)]' : 'text-[var(--muted-foreground)]',
+                      ].join(' ')}
+                    >일</button>
+                  </div>
+                </div>
+
+                {/* 전체 보기 (먼슬리) */}
+                {viewMode === 'month' && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] text-[var(--muted-foreground)]">전체 보기</span>
+                    <button
+                      onClick={() => setShowAll(!showAll)}
+                      className={[
+                        'w-7 h-4 rounded-full transition-colors duration-200 relative shrink-0',
+                        showAll ? 'bg-[var(--accent)]' : 'bg-[var(--border)]',
+                      ].join(' ')}
+                    >
+                      <span className={[
+                        'absolute top-[3px] w-[10px] h-[10px] rounded-full bg-white shadow-sm transition-transform duration-200',
+                        showAll ? 'left-[14px]' : 'left-[3px]',
+                      ].join(' ')} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* 뷰 토글 */}
           <div className="flex items-center bg-[var(--card)] rounded-[var(--radius-sm)] p-0.5">
@@ -492,6 +588,7 @@ export default function CalendarView({
             tasks={tasks}
             projects={projects}
             weekDates={weekDates}
+            timeRange={timeRange}
             onUpdateTask={onUpdateTask}
           />
           {/* 주간 회고 */}
@@ -521,7 +618,7 @@ export default function CalendarView({
         <div className="bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden">
           {/* 요일 헤더 */}
           <div className="grid grid-cols-7 border-b border-[var(--border)]">
-            {KO_WEEKDAYS.map((day) => (
+            {orderedWeekdays.map((day) => (
               <div
                 key={day}
                 className="flex items-center justify-center py-2.5 text-[14px] font-semibold text-[var(--muted-foreground)]"
