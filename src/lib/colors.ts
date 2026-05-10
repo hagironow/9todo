@@ -14,9 +14,9 @@ export const COLOR_THEMES: ColorTheme[] = [
       '#8B5CF6', // Violet
       '#10B981', // Emerald
       '#F59E0B', // Amber
-      '#EF4444', // Red
+      '#FF6E6E', // Coral
       '#FF66B2', // Hot Pink
-      '#FF5C65', // Coral
+      '#3B82F6', // Blue
       '#6B7280', // Gray
     ],
   },
@@ -24,13 +24,13 @@ export const COLOR_THEMES: ColorTheme[] = [
     id: 'pastel',
     label: '파스텔',
     colors: [
-      '#9B97F2', // Indigo
-      '#B5A3F7', // Violet
+      '#7B8FF2', // Indigo (블루톤)
+      '#C4B5FD', // Violet (연보라)
       '#7DD3B4', // Emerald
       '#F7CC7D', // Amber
       '#F7A0A0', // Red
       '#F7A0D0', // Hot Pink
-      '#F7A8AB', // Coral
+      '#93C5FD', // Blue
       '#A8B0BA', // Gray
     ],
   },

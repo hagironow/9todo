@@ -288,7 +288,7 @@ export default function RoutineSetupModal({
             ))}
           </div>
           {isSlotOccupied && (
-            <span className="text-[11px] text-[#ef4444]">
+            <span className="text-[11px] text-[var(--g-error)]">
               이 슬롯은 이미 사용 중이에요
             </span>
           )}
@@ -329,7 +329,7 @@ export default function RoutineSetupModal({
           {isEditing && onDelete && (
             <button
               onClick={() => { onDelete(); onClose(); }}
-              className="w-full py-2.5 text-[var(--fs-item)] font-medium text-[#ef4444] hover:opacity-80 transition-opacity cursor-pointer"
+              className="w-full py-2.5 text-[var(--fs-item)] font-medium text-[var(--g-error)] hover:opacity-80 transition-opacity cursor-pointer"
             >
               루틴 삭제
             </button>

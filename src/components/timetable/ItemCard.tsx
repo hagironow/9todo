@@ -378,7 +378,7 @@ export default function ItemCard({
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(item); }}
-              className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-red-100 hover:text-red-500 transition-colors pointer-events-auto"
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--g-error)]/10 hover:text-[var(--g-error)] transition-colors pointer-events-auto"
               title="삭제"
             >
               <Trash2 size={13} />

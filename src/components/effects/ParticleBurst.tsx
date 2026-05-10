@@ -20,8 +20,8 @@ export function triggerConfetti({ color, origin }: TriggerOptions = {}) {
     gravity: 1,
     origin: origin ?? { x: 0.5, y: 0.6 },
     colors: color
-      ? [color, '#FFB0B5', '#FF5C65', '#ffffff']
-      : ['#FF5C65', '#FFB0B5', '#ffffff', '#1A1A1A'],
+      ? [color, '#FFB0B5', '#FF6E6E', '#ffffff']
+      : ['#FF6E6E', '#FFB0B5', '#ffffff', '#1A1A1A'],
     scalar: 0.9,
     ticks: 200,
   });

@@ -146,7 +146,7 @@ export default function BacklogItem({
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(item); }}
-              className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-100 transition-colors"
+              className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--g-error)] hover:bg-[var(--g-error)]/10 transition-colors"
               title="삭제"
             >
               <Trash2 size={12} />

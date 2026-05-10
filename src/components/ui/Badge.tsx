@@ -22,7 +22,7 @@ export default function Badge({ count, continueCount = 0, variant = 'default', o
       {/* 미룬 횟수: 스킵 아이콘 */}
       {showDefer && (
         <span
-          className="inline-flex items-center gap-0.5 h-[18px] px-1.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+          className="inline-flex items-center gap-0.5 h-[18px] px-1.5 rounded-full text-[10px] font-semibold bg-[var(--g-error)]/10 text-[var(--g-error)] dark:bg-[var(--g-error)]/15 dark:text-[var(--g-error)]"
           title={`${count}번 미룸`}
         >
           <SkipForward size={8} />

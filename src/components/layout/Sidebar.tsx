@@ -84,7 +84,7 @@ function ProjectMenu({
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(project.id); }}
-            className="w-full text-left px-3 py-1.5 text-[var(--fs-item)] text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+            className="w-full text-left px-3 py-1.5 text-[var(--fs-item)] text-[var(--g-error)] hover:bg-[var(--g-error)]/5 dark:hover:bg-[var(--g-error)]/10 transition-colors"
           >
             삭제
           </button>

@@ -237,8 +237,20 @@ export default function CalendarView({
   });
   const [calSettingsOpen, setCalSettingsOpen] = useState(false);
 
+  // 캘린더 내부 프로젝트 필터
+  const [calProjectFilter, setCalProjectFilter] = useState<string | null>(null);
+  const [calProjectDropOpen, setCalProjectDropOpen] = useState(false);
+
+  const filteredTasks = useMemo(() => {
+    if (!calProjectFilter) return tasks;
+    return tasks.filter((t) => t.projectId === calProjectFilter);
+  }, [tasks, calProjectFilter]);
+
+  const activeProjects = projects.filter((p) => !p.archived);
+  const calFilterProject = calProjectFilter ? projects.find((p) => p.id === calProjectFilter) : null;
+
   function buildDayData(dateStr: string): DayData {
-    const todos = tasks
+    const todos = filteredTasks
       .filter((t) => t.date === dateStr && !t.recurrence) // 반복 부모 제외
       .sort((a, b) => {
         const pa = a.slot ? PERIOD_ORDER[a.slot.period] * 10 + a.slot.priority : 99;
@@ -334,13 +346,18 @@ export default function CalendarView({
   // 투두 아이템 렌더
   function renderTodoItem(t: Task) {
     const isDone = !!t.completedAt;
+    const isPastIncomplete = !isDone && t.date && t.date < todayStr;
     const project = t.projectId ? projects.find((p) => p.id === t.projectId) : null;
     return (
       <div
         key={`t-${t.id}`}
         className={[
           'flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[14px] leading-tight truncate',
-          isDone ? 'text-[var(--g-success)]' : 'bg-[var(--muted)] text-[var(--foreground)]',
+          isDone
+            ? 'text-[var(--g-success)]'
+            : isPastIncomplete
+            ? 'text-[var(--g-error)] bg-[var(--g-error)]/8'
+            : 'bg-[var(--muted)] text-[var(--foreground)]',
         ].join(' ')}
         title={t.title}
       >
@@ -359,10 +376,10 @@ export default function CalendarView({
     if (todoItems.length === 0) return null;
 
     const isExpanded = expandedDate === dateStr;
-    const unlimitedCompact = compact && showAll;
-    const maxTodos = compact ? (unlimitedCompact || isExpanded ? todoItems.length : 2) : todoItems.length;
+    const shouldLimit = compact && !showAll; // showAll이면 제한 없음
+    const maxTodos = shouldLimit ? (isExpanded ? todoItems.length : 2) : todoItems.length;
     const visibleTodos = todoItems.slice(0, maxTodos);
-    const hiddenCount = compact ? Math.max(0, todoItems.length - 2) : 0;
+    const hiddenCount = shouldLimit ? Math.max(0, todoItems.length - 2) : 0;
 
     return (
       <div className="flex flex-col gap-0 flex-1">
@@ -372,7 +389,7 @@ export default function CalendarView({
           </div>
         )}
 
-        {compact && hiddenCount > 0 && !isExpanded && (
+        {shouldLimit && hiddenCount > 0 && !isExpanded && (
           <button
             onClick={() => setExpandedDate(dateStr)}
             className="text-[12px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-1 text-left transition-colors mt-0.5"
@@ -380,7 +397,7 @@ export default function CalendarView({
             +{hiddenCount}
           </button>
         )}
-        {compact && isExpanded && hiddenCount > 0 && (
+        {shouldLimit && isExpanded && hiddenCount > 0 && (
           <button
             onClick={() => setExpandedDate(null)}
             className="text-[12px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-1 text-left transition-colors mt-0.5"
@@ -458,6 +475,56 @@ export default function CalendarView({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* 프로젝트 필터 */}
+          <div className="relative">
+            <button
+              onClick={() => setCalProjectDropOpen((v) => !v)}
+              className={[
+                'flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-sm)] text-[12px] font-medium transition-colors',
+                calProjectFilter
+                  ? 'text-[var(--foreground)] bg-[var(--surface-hover)]'
+                  : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)]',
+              ].join(' ')}
+            >
+              {calFilterProject ? (
+                <>
+                  <ColorDot color={calFilterProject.color} size="sm" />
+                  <span className="max-w-[60px] truncate">{calFilterProject.name}</span>
+                </>
+              ) : (
+                <span>전체</span>
+              )}
+            </button>
+            {calProjectDropOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 w-40 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--popover)] shadow-lg overflow-hidden animate-[status-appear_0.1s_ease_forwards]">
+                <button
+                  onClick={() => { setCalProjectFilter(null); setCalProjectDropOpen(false); }}
+                  className={[
+                    'w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left transition-colors',
+                    !calProjectFilter ? 'bg-[var(--muted)] font-semibold' : 'hover:bg-[var(--muted)]',
+                    'text-[var(--foreground)]',
+                  ].join(' ')}
+                >
+                  전체
+                </button>
+                {activeProjects.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => { setCalProjectFilter(p.id); setCalProjectDropOpen(false); }}
+                    className={[
+                      'w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left transition-colors',
+                      calProjectFilter === p.id ? 'bg-[var(--muted)] font-semibold' : 'hover:bg-[var(--muted)]',
+                      'text-[var(--foreground)]',
+                    ].join(' ')}
+                  >
+                    <ColorDot color={p.color} size="sm" />
+                    <span className="truncate">{p.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* 캘린더 설정 */}
           <div className="relative">
             <button
@@ -585,11 +652,12 @@ export default function CalendarView({
       {viewMode === 'week' && (
         <>
           <WeeklyTimelineView
-            tasks={tasks}
+            tasks={filteredTasks}
             projects={projects}
             weekDates={weekDates}
             timeRange={timeRange}
             onUpdateTask={onUpdateTask}
+            onCreateTask={onCreateTask}
           />
           {/* 주간 회고 */}
           {onSaveRetro && (() => {
