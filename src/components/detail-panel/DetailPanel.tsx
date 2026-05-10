@@ -111,7 +111,7 @@ export default function DetailPanel({
             <button
               onClick={() => { onDelete(item); onClose(); }}
               disabled={isReadOnly}
-              className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted-foreground)] hover:bg-red-100 hover:text-red-500 transition-colors disabled:opacity-40"
+              className="w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] text-[var(--muted-foreground)] hover:bg-[var(--g-error)]/10 hover:text-[var(--g-error)] transition-colors disabled:opacity-40"
             >
               <Trash2 size={13} />
             </button>

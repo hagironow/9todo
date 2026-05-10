@@ -25,7 +25,7 @@ interface ProjectDetailViewProps {
   onUncomplete?: (item: ScheduledItem) => void;
 }
 
-/** 프로젝트 상세 — 태스크 목록 + 투입 시간 + XP + 노트 */
+/** 프로젝트 상세 — 태스크 목록 + 포커스 타임 + XP + 노트 */
 export default function ProjectDetailView({
   project,
   tasks,
@@ -248,7 +248,7 @@ export default function ProjectDetailView({
           }
         />
         <StatCard
-          label="투입 시간"
+          label="포커스 타임"
           value={formatTime(stats.hours, stats.minutes)}
         />
         <StatCard label="획득 XP" value={`${stats.xp}`} color="var(--g-success)" />
@@ -502,7 +502,7 @@ function TaskRow({
             {onDelete && (
               <button
                 onClick={() => onDelete(task)}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-red-100 hover:text-red-500 transition-colors pointer-events-auto"
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--g-error)]/10 hover:text-[var(--g-error)] transition-colors pointer-events-auto"
                 title="삭제"
               >
                 <Trash2 size={13} />
