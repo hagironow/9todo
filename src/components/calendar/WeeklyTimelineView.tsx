@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { Check, Settings, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 import type { Task, Project, TimePeriod, Priority } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import { getToday } from '@/lib/date';
@@ -11,6 +11,7 @@ interface WeeklyTimelineViewProps {
   tasks: Task[];
   projects: Project[];
   weekDates: string[];
+  timeRange?: { startHour: number; endHour: number };
   onUpdateTask?: (taskId: string, updates: { scheduledStartTime?: string; scheduledEndTime?: string; date?: string }) => void;
 }
 
@@ -75,16 +76,13 @@ export default function WeeklyTimelineView({
   tasks,
   projects,
   weekDates,
+  timeRange,
   onUpdateTask,
 }: WeeklyTimelineViewProps) {
   const todayStr = getToday();
-  const [range, setRange] = useState(getStoredRange);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(range));
-  }, [range]);
+  const range = timeRange ?? getStoredRange();
 
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -235,52 +233,6 @@ export default function WeeklyTimelineView({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* 시간 범위 설정 */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setSettingsOpen(!settingsOpen)}
-          className="flex items-center gap-1 px-2 py-1 rounded-[var(--radius-sm)] text-[11px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
-        >
-          <Settings size={12} />
-          {startHour}:00 ~ {endHour}:00
-        </button>
-      </div>
-
-      {settingsOpen && (
-        <div className="flex items-center gap-3 px-3 py-2 bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)]">
-          <span className="text-[12px] text-[var(--muted-foreground)]">표시 범위</span>
-          <select
-            value={startHour}
-            onChange={(e) => setRange((r) => ({ ...r, startHour: Number(e.target.value) }))}
-            className="text-[12px] bg-[var(--surface-btn)] text-[var(--foreground)] rounded px-2 py-1 border-none outline-none"
-          >
-            {Array.from({ length: 24 }, (_, i) => (
-              <option key={i} value={i} disabled={i >= endHour}>
-                {String(i).padStart(2, '0')}:00
-              </option>
-            ))}
-          </select>
-          <span className="text-[12px] text-[var(--muted-foreground)]">~</span>
-          <select
-            value={endHour}
-            onChange={(e) => setRange((r) => ({ ...r, endHour: Number(e.target.value) }))}
-            className="text-[12px] bg-[var(--surface-btn)] text-[var(--foreground)] rounded px-2 py-1 border-none outline-none"
-          >
-            {Array.from({ length: 25 }, (_, i) => (
-              <option key={i} value={i} disabled={i <= startHour}>
-                {String(i).padStart(2, '0')}:00
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => setSettingsOpen(false)}
-            className="ml-auto text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
-
       <div className="bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)] overflow-hidden">
         {/* 요일 + 날짜 헤더 */}
         <div className="grid border-b border-[var(--border)]" style={{ gridTemplateColumns: '48px repeat(7, 1fr)' }}>
