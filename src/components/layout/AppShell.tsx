@@ -164,7 +164,9 @@ export default function AppShell({
       {/* 플로팅 타이머 — 데스크탑 (xl 이상: 항상 표시 / lg~xl: FAB + 오버레이) */}
       {rightPanel && !timerCollapsed && (
         <div className="hidden lg:block fixed bottom-5 right-5 z-50 w-[360px] max-h-[calc(100vh-40px)] rounded-[40px] shadow-2xl overflow-hidden">
-          {rightPanel}
+          {isValidElement(rightPanel)
+            ? cloneElement(rightPanel as ReactElement<{ onClose?: () => void }>, { onClose: () => setTimerCollapsed(true) })
+            : rightPanel}
         </div>
       )}
 

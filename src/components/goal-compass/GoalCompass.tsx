@@ -128,7 +128,10 @@ export default function GoalCompass({
                   title={`완료 (+${GOAL_COMPLETE_XP}xp)`}
                 >
                   <span className="text-[12px] font-semibold">{GOAL_COMPLETE_XP}xp</span>
-                  <CheckCircle2 size={32} strokeWidth={0} fill="var(--muted-foreground)" />
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" fill="white" />
+                    <path d="m9 12 2 2 4-4" stroke="#888" strokeWidth="2" />
+                  </svg>
                 </button>
               )}
               {isTaskBased && previewIsCompleted && (
