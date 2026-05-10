@@ -199,12 +199,19 @@ export default function WeeklyTimelineView({
   }, [dragState, yToHour, xToDateIdx, startHour, endHour]);
 
   const handlePointerUp = useCallback(() => {
-    if (!dragState || !onUpdateTask) return;
+    if (!dragState || !onUpdateTask) { setDragState(null); return; }
+
+    const task = tasks.find((t) => t.id === dragState.taskId);
+    const hadExplicitTime = !!task?.scheduledStartTime;
 
     const updates: { scheduledStartTime?: string; scheduledEndTime?: string; date?: string } = {};
 
     if (dragState.mode === 'move') {
-      if (dragState.currentStartHour !== dragState.origStartHour || dragState.currentDateIdx !== dragState.origDateIdx) {
+      const moved = Math.abs(dragState.currentStartHour - dragState.origStartHour) > 0.01
+        || dragState.currentDateIdx !== dragState.origDateIdx;
+
+      if (moved || !hadExplicitTime) {
+        // 항상 시간 저장 (기존에 시간 없던 태스크도 드래그하면 시간 확정)
         updates.scheduledStartTime = hoursToTime(dragState.currentStartHour);
         updates.scheduledEndTime = hoursToTime(dragState.currentStartHour + dragState.currentDuration);
         if (dragState.currentDateIdx !== dragState.origDateIdx) {
@@ -212,7 +219,9 @@ export default function WeeklyTimelineView({
         }
       }
     } else {
-      if (dragState.currentDuration !== dragState.origDuration) {
+      const resized = Math.abs(dragState.currentDuration - dragState.origDuration) > 0.01;
+      if (resized || !hadExplicitTime) {
+        updates.scheduledStartTime = hoursToTime(dragState.origStartHour);
         updates.scheduledEndTime = hoursToTime(dragState.origStartHour + dragState.currentDuration);
       }
     }
@@ -222,7 +231,7 @@ export default function WeeklyTimelineView({
     }
 
     setDragState(null);
-  }, [dragState, onUpdateTask, weekDates]);
+  }, [dragState, onUpdateTask, weekDates, tasks]);
 
   return (
     <div className="flex flex-col gap-2">

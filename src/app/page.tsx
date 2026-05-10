@@ -39,6 +39,7 @@ import LoginModal from '@/components/modals/LoginModal';
 import CalendarModal from '@/components/modals/CalendarModal';
 import RecurrenceSetupModal from '@/components/modals/RecurrenceSetupModal';
 import type { RecurrenceSetupData } from '@/components/modals/RecurrenceSetupModal';
+import { timeToPeriod } from '@/components/modals/RecurrenceSetupModal';
 import CalendarView from '@/components/calendar/CalendarView';
 import DailyRetro from '@/components/retrospective/DailyRetro';
 import RetrospectiveListView from '@/components/retrospective/RetrospectiveListView';
@@ -46,7 +47,7 @@ import ReadOnlyBanner from '@/components/date-nav/ReadOnlyBanner';
 import { triggerConfetti } from '@/components/effects/ParticleBurst';
 import { exportToJSON, downloadFile } from '@/lib/export';
 import { calculateDailyXP, calculateTotalXP } from '@/lib/xp';
-import { getToday, formatLocalDate } from '@/lib/date';
+import { getToday, formatLocalDate, getWeekKey, getMonthKey } from '@/lib/date';
 import StorageConsentBanner from '@/components/modals/StorageConsentBanner';
 import ProjectDetailView from '@/components/project-detail/ProjectDetailView';
 import SearchView from '@/components/search/SearchView';
@@ -113,7 +114,9 @@ export default function Home() {
     continueTask,
     assignTaskSlot,
     removeTask,
+    removeTaskWithRecurrence,
     updateTaskTitle,
+    updateTaskTitleWithRecurrence,
     setActiveProjectFilter,
     setColorTheme,
     batchUpdate,
@@ -123,6 +126,11 @@ export default function Home() {
     removeNote,
     updateNoteContent,
     completeGoal,
+    addGoalTask,
+    completeGoalTask,
+    uncompleteGoalTask,
+    updateGoalTaskTitle,
+    removeGoalTask,
     upsertRetrospective,
     removeRetrospective,
   } = useAppData();
@@ -155,7 +163,7 @@ export default function Home() {
 
   const isToday = today === getToday();
   const isPast = today < getToday();
-  const isReadOnly = isPast;
+  const isReadOnly = false; // 과거 데이터도 수정 가능
 
   // Daily rollover
   useDailyRollover({ state, batchUpdate, today, loading });
@@ -171,6 +179,13 @@ export default function Home() {
     }
     return items;
   }, [state.tasks, currentPeriod, today]);
+
+  // GoalTask 기간 키 계산
+  const currentPeriodKeys = useMemo(() => ({
+    today: today,
+    week: getWeekKey(today),
+    month: getMonthKey(today),
+  }), [today]);
 
   // Theme
   const [isDark, setIsDark] = useState(false);
@@ -194,6 +209,7 @@ export default function Home() {
   const [slotPickerTarget, setSlotPickerTarget] = useState<string | null>(null);
   const [slotPickerIsRepeat, setSlotPickerIsRepeat] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ScheduledItem | null>(null);
+  const [recurrenceEditTarget, setRecurrenceEditTarget] = useState<{ item: ScheduledItem; title: string } | null>(null);
 
   // 프로젝트 이름 변경 모달
   const [renamingProject, setRenamingProject] = useState<Project | null>(null);
@@ -254,13 +270,13 @@ export default function Home() {
 
   // XP 계산
   const dailyXP = useMemo(
-    () => calculateDailyXP(state.tasks, [], today, state.goalCompletedDates),
-    [state.tasks, today, state.goalCompletedDates]
+    () => calculateDailyXP(state.tasks, [], today, state.goalCompletedDates, state.goalTasks),
+    [state.tasks, today, state.goalCompletedDates, state.goalTasks]
   );
 
   const totalXP = useMemo(
-    () => calculateTotalXP(state.tasks, [], state.goalCompletedDates),
-    [state.tasks, state.goalCompletedDates]
+    () => calculateTotalXP(state.tasks, [], state.goalCompletedDates, state.goalTasks),
+    [state.tasks, state.goalCompletedDates, state.goalTasks]
   );
 
   // 캘린더 dot indicator — 데이터 있는 날짜들
@@ -360,7 +376,11 @@ export default function Home() {
 
   const handleUpdateTitle = useCallback(
     (item: ScheduledItem, title: string) => {
-      updateTaskTitle(item.id, title);
+      if (item.recurrenceParentId || item.recurrence) {
+        setRecurrenceEditTarget({ item, title });
+      } else {
+        updateTaskTitle(item.id, title);
+      }
     },
     [updateTaskTitle]
   );
@@ -781,6 +801,13 @@ export default function Home() {
               previewKey={state.activeProjectFilter === '__calendar__' ? calendarViewMode === 'week' ? 'week' : 'month' : 'today'}
               onCompleteGoal={() => { completeGoal(today); triggerConfetti({}); }}
               isGoalCompleted={(state.goalCompletedDates ?? []).includes(today)}
+              goalTasks={state.goalTasks ?? []}
+              currentPeriodKeys={currentPeriodKeys}
+              onAddGoalTask={addGoalTask}
+              onCompleteGoalTask={(id) => { completeGoalTask(id); triggerConfetti({}); }}
+              onUncompleteGoalTask={uncompleteGoalTask}
+              onUpdateGoalTaskTitle={updateGoalTaskTitle}
+              onRemoveGoalTask={removeGoalTask}
             />
           )}
 
@@ -802,12 +829,50 @@ export default function Home() {
               onViewModeChange={setCalendarViewMode}
               onCreateTask={(title, date, projectId) => addTask(title, date, { projectId })}
               onUpdateTask={(taskId, updates) => {
-                batchUpdate((prev) => ({
-                  ...prev,
-                  tasks: prev.tasks.map((t) =>
-                    t.id === taskId ? { ...t, ...updates } : t
-                  ),
-                }));
+                batchUpdate((prev) => {
+                  const task = prev.tasks.find((t) => t.id === taskId);
+                  if (!task) return prev;
+
+                  const finalUpdates: Record<string, unknown> = { ...updates };
+
+                  // 시간 변경 시 슬롯 동기화
+                  if (updates.scheduledStartTime && task.slot) {
+                    const newPeriod = timeToPeriod(updates.scheduledStartTime);
+                    const targetDate = updates.date ?? task.date;
+
+                    if (newPeriod !== task.slot.period) {
+                      // 다른 시간대로 이동 — 빈 우선순위 찾기
+                      const occupiedPriorities = prev.tasks
+                        .filter((t) => t.id !== taskId && t.date === targetDate && t.slot?.period === newPeriod)
+                        .map((t) => t.slot!.priority);
+
+                      const freePriority = ([1, 2, 3] as Priority[]).find((p) => !occupiedPriorities.includes(p));
+                      if (!freePriority) return prev; // 자리 없으면 이동 거부
+
+                      finalUpdates.slot = { period: newPeriod, priority: freePriority };
+                    }
+                  }
+
+                  // 날짜만 변경된 경우에도 해당 날짜의 같은 슬롯이 차있으면 빈 슬롯으로 배치
+                  if (updates.date && updates.date !== task.date && task.slot && !updates.scheduledStartTime) {
+                    const occupiedPriorities = prev.tasks
+                      .filter((t) => t.id !== taskId && t.date === updates.date && t.slot?.period === task.slot!.period)
+                      .map((t) => t.slot!.priority);
+
+                    if (occupiedPriorities.includes(task.slot.priority)) {
+                      const freePriority = ([1, 2, 3] as Priority[]).find((p) => !occupiedPriorities.includes(p));
+                      if (!freePriority) return prev;
+                      finalUpdates.slot = { period: task.slot.period, priority: freePriority };
+                    }
+                  }
+
+                  return {
+                    ...prev,
+                    tasks: prev.tasks.map((t) =>
+                      t.id === taskId ? { ...t, ...finalUpdates } : t
+                    ),
+                  };
+                });
               }}
               retrospectives={state.retrospectives ?? []}
               onSaveRetro={upsertRetrospective}
@@ -1027,14 +1092,50 @@ export default function Home() {
         <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
           삭제한 항목은 복구할 수 없습니다.
         </p>
-        <div className="flex items-center gap-2 pt-1">
-          <button onClick={() => setDeleteTarget(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
-          <button onClick={() => {
-            if (deleteTarget) {
+        {deleteTarget && (deleteTarget.recurrenceParentId || deleteTarget.recurrence) ? (
+          <div className="flex flex-col gap-2 pt-1">
+            <button onClick={() => {
               removeTask(deleteTarget.id);
+              setDeleteTarget(null);
+            }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--muted)] transition-colors">이 투두만 삭제</button>
+            <button onClick={() => {
+              removeTaskWithRecurrence(deleteTarget.id);
+              setDeleteTarget(null);
+            }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">반복 전체 삭제</button>
+            <button onClick={() => setDeleteTarget(null)} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 pt-1">
+            <button onClick={() => setDeleteTarget(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+            <button onClick={() => {
+              if (deleteTarget) {
+                removeTask(deleteTarget.id);
+              }
+              setDeleteTarget(null);
+            }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
+          </div>
+        )}
+      </Dialog>
+
+      {/* 반복 투두 제목 수정 범위 선택 */}
+      <Dialog open={!!recurrenceEditTarget} onClose={() => setRecurrenceEditTarget(null)} title="어떻게 수정할까요?" width="sm">
+        <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
+          반복 투두의 제목을 수정합니다.
+        </p>
+        <div className="flex flex-col gap-2 pt-1">
+          <button onClick={() => {
+            if (recurrenceEditTarget) {
+              updateTaskTitle(recurrenceEditTarget.item.id, recurrenceEditTarget.title);
+              setRecurrenceEditTarget(null);
             }
-            setDeleteTarget(null);
-          }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
+          }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--muted)] transition-colors">이 투두만 수정</button>
+          <button onClick={() => {
+            if (recurrenceEditTarget) {
+              updateTaskTitleWithRecurrence(recurrenceEditTarget.item.id, recurrenceEditTarget.title);
+              setRecurrenceEditTarget(null);
+            }
+          }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--primary)] text-white transition-opacity hover:opacity-85">반복 전체 수정</button>
+          <button onClick={() => setRecurrenceEditTarget(null)} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
         </div>
       </Dialog>
 

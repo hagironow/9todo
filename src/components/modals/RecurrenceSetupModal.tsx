@@ -63,6 +63,14 @@ const SLOT_DEFAULT_HOURS: Record<TimePeriod, Record<Priority, number>> = {
   evening:   { 1: 18, 2: 19, 3: 20 },
 };
 
+/** 시간(HH:mm) → 시간대 매핑 */
+export function timeToPeriod(time: string): TimePeriod {
+  const h = Number(time.split(':')[0]);
+  if (h < 12) return 'morning';
+  if (h < 18) return 'afternoon';
+  return 'evening';
+}
+
 export function getDefaultStartTime(period: TimePeriod, priority: Priority): string {
   const h = SLOT_DEFAULT_HOURS[period][priority];
   return `${String(h).padStart(2, '0')}:00`;

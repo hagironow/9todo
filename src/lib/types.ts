@@ -86,13 +86,28 @@ export interface GoalCompass {
   affirmation: string;
 }
 
+export type GoalPeriod = 'today' | 'week' | 'month';
+
+export interface GoalTask {
+  id: string;
+  title: string;
+  goalPeriod: GoalPeriod;
+  periodKey: string;        // "YYYY-MM-DD" | "YYYY-Www" | "YYYY-MM"
+  completedAt: string | null;
+  createdAt: string;
+  carriedFrom?: string;     // 이관된 원본 GoalTask ID
+}
+
 export type RetroScope = 'day' | 'week' | 'month';
+
+export type EnergyLevel = 1 | 2 | 3 | 4 | 5;
 
 export interface RetrospectiveEntry {
   id: string;
   scope: RetroScope;
   scopeKey: string; // 'day': "YYYY-MM-DD", 'week': "YYYY-Www", 'month': "YYYY-MM"
   content: string;
+  energyLevel?: EnergyLevel; // 1~5 에너지 레벨
   createdAt: string;
   updatedAt: string;
 }
@@ -104,13 +119,14 @@ export interface AppState {
   routineInstances: RoutineInstance[];
   notes: Note[];
   goalCompass: GoalCompass;
-  goalCompletedDates: string[]; // 오늘 목표 완료한 날짜 목록
+  goalCompletedDates: string[]; // (레거시) 오늘 목표 완료한 날짜 목록
+  goalTasks: GoalTask[];        // 오늘/이번주/이번달 목표 태스크
   lastUsedProjectId: string | null;
   activeProjectFilter: string | null;
   projectFirstMode: boolean;
   colorTheme: string; // 'vivid' | 'pastel' | ...
   retrospectives: RetrospectiveEntry[];
-  goalTodayDate?: string; // 오늘 목표가 작성된 날짜 (리셋 판단용)
+  goalTodayDate?: string; // (레거시) 오늘 목표가 작성된 날짜 (리셋 판단용)
 }
 
 // 화면에서 사용하는 통합 타입 (Task로 통합)
