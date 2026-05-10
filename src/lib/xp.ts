@@ -1,5 +1,5 @@
-import type { Task, RoutineInstance, TimePeriod } from './types';
-import { getToday } from './date';
+import type { Task, RoutineInstance, TimePeriod, GoalTask } from './types';
+import { getToday, getWeekKey, getMonthKey } from './date';
 
 /**
  * 해당 시간대가 이미 지났는지 판단.
@@ -41,6 +41,7 @@ export function calculateTotalXP(
   tasks: Task[],
   routineInstances: RoutineInstance[],
   goalCompletedDates?: string[],
+  goalTasks?: GoalTask[],
 ): number {
   const today = getToday();
   let xp = 0;
@@ -53,7 +54,13 @@ export function calculateTotalXP(
     if (ri.completedAt) xp += 1;
   }
 
+  // 레거시 goalCompletedDates
   xp += (goalCompletedDates?.length ?? 0) * GOAL_COMPLETE_XP;
+
+  // 새 goalTasks 완료 XP
+  for (const gt of (goalTasks ?? [])) {
+    if (gt.completedAt) xp += GOAL_COMPLETE_XP;
+  }
 
   return xp;
 }
@@ -64,6 +71,7 @@ export function calculateDailyXP(
   routineInstances: RoutineInstance[],
   date: string,
   goalCompletedDates?: string[],
+  goalTasks?: GoalTask[],
 ): number {
   const today = getToday();
   let xp = 0;
@@ -79,7 +87,22 @@ export function calculateDailyXP(
     if (ri.completedAt) xp += 1;
   }
 
+  // 레거시
   if (goalCompletedDates?.includes(date)) xp += GOAL_COMPLETE_XP;
+
+  // 새 goalTasks — 해당 날짜에 매칭되는 완료된 목표
+  const weekKey = getWeekKey(date);
+  const monthKey = getMonthKey(date);
+  for (const gt of (goalTasks ?? [])) {
+    if (!gt.completedAt) continue;
+    if (
+      (gt.goalPeriod === 'today' && gt.periodKey === date) ||
+      (gt.goalPeriod === 'week' && gt.periodKey === weekKey) ||
+      (gt.goalPeriod === 'month' && gt.periodKey === monthKey)
+    ) {
+      xp += GOAL_COMPLETE_XP;
+    }
+  }
 
   return xp;
 }

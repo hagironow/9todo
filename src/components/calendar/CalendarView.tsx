@@ -3,9 +3,10 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Check, Plus } from 'lucide-react';
-import type { Task, Project, RetrospectiveEntry, RetroScope } from '@/lib/types';
+import type { Task, Project, RetrospectiveEntry, RetroScope, EnergyLevel } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import RetroInput from '@/components/retrospective/RetroInput';
+import { EnergyBadge } from '@/components/retrospective/EnergyLevelInput';
 import WeeklyTimelineView from './WeeklyTimelineView';
 import { calculateDailyXP } from '@/lib/xp';
 import { getToday } from '@/lib/date';
@@ -20,7 +21,7 @@ interface CalendarViewProps {
   onCreateTask?: (title: string, date: string, projectId: string | null) => void;
   onUpdateTask?: (taskId: string, updates: { scheduledStartTime?: string; scheduledEndTime?: string; date?: string }) => void;
   retrospectives?: RetrospectiveEntry[];
-  onSaveRetro?: (scope: RetroScope, scopeKey: string, content: string) => void;
+  onSaveRetro?: (scope: RetroScope, scopeKey: string, content: string, energyLevel?: EnergyLevel) => void;
 }
 
 type ViewMode = 'week' | 'month';
@@ -281,6 +282,28 @@ export default function CalendarView({
     ? weekDates.includes(todayStr)
     : viewYear === todayY && viewMonth === todayM - 1;
 
+  // 주간/월간 에너지 평균 계산
+  const weekEnergyAvg = useMemo(() => {
+    const entries = weekDates
+      .map((d) => (retrospectives ?? []).find((r) => r.scope === 'day' && r.scopeKey === d))
+      .filter((r) => r?.energyLevel)
+      .map((r) => r!.energyLevel!);
+    if (entries.length === 0) return null;
+    return entries.reduce((a, b) => a + b, 0) / entries.length;
+  }, [weekDates, retrospectives]);
+
+  const monthEnergyAvg = useMemo(() => {
+    const daysInM = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const entries: number[] = [];
+    for (let day = 1; day <= daysInM; day++) {
+      const dateStr = toDateStringYMD(viewYear, viewMonth, day);
+      const retro = (retrospectives ?? []).find((r) => r.scope === 'day' && r.scopeKey === dateStr);
+      if (retro?.energyLevel) entries.push(retro.energyLevel);
+    }
+    if (entries.length === 0) return null;
+    return entries.reduce((a, b) => a + b, 0) / entries.length;
+  }, [viewYear, viewMonth, retrospectives]);
+
   const weekLabel = useMemo(() => {
     const start = new Date(weekDates[0] + 'T00:00:00');
     const end = new Date(weekDates[6] + 'T00:00:00');
@@ -399,6 +422,17 @@ export default function CalendarView({
               오늘
             </button>
           )}
+          {/* 에너지 평균 뱃지 */}
+          {viewMode === 'week' && weekEnergyAvg !== null && (
+            <div className="ml-2">
+              <EnergyBadge level={weekEnergyAvg} />
+            </div>
+          )}
+          {viewMode === 'month' && monthEnergyAvg !== null && (
+            <div className="ml-2">
+              <EnergyBadge level={monthEnergyAvg} />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -470,6 +504,7 @@ export default function CalendarView({
                   scope="week"
                   scopeKey={weekKey}
                   initialContent={existing?.content ?? ''}
+                  initialEnergyLevel={existing?.energyLevel}
                   onSave={onSaveRetro}
                   label="이번 주 회고"
                   placeholder="이번 주는 어떤 한 주였나요?"
@@ -529,7 +564,12 @@ export default function CalendarView({
                     >
                       {day}
                     </span>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
+                      {(() => {
+                        const dayRetro = (retrospectives ?? []).find((r) => r.scope === 'day' && r.scopeKey === dateStr);
+                        if (!dayRetro?.energyLevel) return null;
+                        return <EnergyBadge level={dayRetro.energyLevel} size="xs" />;
+                      })()}
                       {data && renderXP(data.xp)}
                       {onCreateTask && inputDate !== dateStr && (
                         <button
@@ -575,6 +615,7 @@ export default function CalendarView({
                   scope="month"
                   scopeKey={monthKey}
                   initialContent={existing?.content ?? ''}
+                  initialEnergyLevel={existing?.energyLevel}
                   onSave={onSaveRetro}
                   label="이번 달 회고"
                   placeholder="이번 달은 어떤 한 달이었나요?"

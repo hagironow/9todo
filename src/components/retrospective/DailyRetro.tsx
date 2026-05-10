@@ -1,12 +1,12 @@
 'use client';
 
-import type { RetrospectiveEntry, RetroScope } from '@/lib/types';
+import type { RetrospectiveEntry, RetroScope, EnergyLevel } from '@/lib/types';
 import RetroInput from './RetroInput';
 
 interface DailyRetroProps {
   date: string; // YYYY-MM-DD
   retrospectives: RetrospectiveEntry[];
-  onSave: (scope: RetroScope, scopeKey: string, content: string) => void;
+  onSave: (scope: RetroScope, scopeKey: string, content: string, energyLevel?: EnergyLevel) => void;
 }
 
 export default function DailyRetro({ date, retrospectives, onSave }: DailyRetroProps) {
@@ -20,6 +20,7 @@ export default function DailyRetro({ date, retrospectives, onSave }: DailyRetroP
         scope="day"
         scopeKey={date}
         initialContent={existing?.content ?? ''}
+        initialEnergyLevel={existing?.energyLevel}
         onSave={onSave}
         label="오늘 회고"
         placeholder="오늘 하루는 어땠나요?"

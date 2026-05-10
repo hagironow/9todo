@@ -2,13 +2,14 @@
 
 import { useState, useMemo } from 'react';
 import { Trash2, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { RetrospectiveEntry, RetroScope } from '@/lib/types';
+import type { RetrospectiveEntry, RetroScope, EnergyLevel } from '@/lib/types';
 import RetroInput from './RetroInput';
+import EnergyLevelInput from './EnergyLevelInput';
 import Dialog from '@/components/ui/Dialog';
 
 interface RetrospectiveListViewProps {
   retrospectives: RetrospectiveEntry[];
-  onSave: (scope: RetroScope, scopeKey: string, content: string) => void;
+  onSave: (scope: RetroScope, scopeKey: string, content: string, energyLevel?: EnergyLevel) => void;
   onDelete: (retroId: string) => void;
 }
 
@@ -110,6 +111,13 @@ export default function RetrospectiveListView({
                   <span className="text-[13px] font-medium text-[var(--foreground)]">
                     {formatScopeKey(retro.scope, retro.scopeKey)}
                   </span>
+                  {retro.energyLevel && (
+                    <EnergyLevelInput
+                      value={retro.energyLevel}
+                      onChange={(level) => onSave(retro.scope, retro.scopeKey, retro.content, level)}
+                      compact
+                    />
+                  )}
                 </div>
                 <button
                   onClick={() => setDeleteTarget(retro)}

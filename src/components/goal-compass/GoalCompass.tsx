@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
-import { GoalCompass as GoalCompassType } from '@/lib/types';
+import type { GoalCompass as GoalCompassType, GoalTask, GoalPeriod } from '@/lib/types';
 import { GOAL_COMPLETE_XP } from '@/lib/xp';
 import GoalCompassIdentity from './GoalCompassIdentity';
 import GoalCompassGoals from './GoalCompassGoals';
@@ -17,8 +17,17 @@ interface GoalCompassProps {
   onSaveAffirmation: (value: string) => void;
   totalXP?: number;
   previewKey?: GoalKey;
+  // 레거시 (today 전용)
   onCompleteGoal?: () => void;
   isGoalCompleted?: boolean;
+  // GoalTask 관련
+  goalTasks: GoalTask[];
+  currentPeriodKeys: { today: string; week: string; month: string };
+  onAddGoalTask: (title: string, goalPeriod: GoalPeriod, periodKey: string) => void;
+  onCompleteGoalTask: (id: string) => void;
+  onUncompleteGoalTask: (id: string) => void;
+  onUpdateGoalTaskTitle: (id: string, title: string) => void;
+  onRemoveGoalTask: (id: string) => void;
 }
 
 const PREVIEW_CONFIG: Record<GoalKey, { prefix: string; empty: string }> = {
@@ -30,6 +39,8 @@ const PREVIEW_CONFIG: Record<GoalKey, { prefix: string; empty: string }> = {
   fiveYear: { prefix: '5년 뒤,', empty: '북극성을 정해보세요' },
 };
 
+const TASK_BASED_KEYS: GoalKey[] = ['today', 'week', 'month'];
+
 export default function GoalCompass({
   data,
   onSaveIdentity,
@@ -39,11 +50,34 @@ export default function GoalCompass({
   previewKey = 'week',
   onCompleteGoal,
   isGoalCompleted,
+  goalTasks,
+  currentPeriodKeys,
+  onAddGoalTask,
+  onCompleteGoalTask,
+  onUncompleteGoalTask,
+  onUpdateGoalTaskTitle,
+  onRemoveGoalTask,
 }: GoalCompassProps) {
   const [expanded, setExpanded] = useState(false);
 
   const config = PREVIEW_CONFIG[previewKey];
-  const goalValue = data.goals[previewKey];
+
+  // Task-based keys: goalTasks에서 가져옴, 나머지: goalCompass.goals에서
+  const isTaskBased = TASK_BASED_KEYS.includes(previewKey);
+  let goalValue = '';
+  let previewGoalTask: GoalTask | undefined;
+  let previewIsCompleted = false;
+
+  if (isTaskBased) {
+    const goalPeriod = previewKey as GoalPeriod;
+    const periodKey = currentPeriodKeys[goalPeriod];
+    previewGoalTask = goalTasks.find((gt) => gt.goalPeriod === goalPeriod && gt.periodKey === periodKey);
+    goalValue = previewGoalTask?.title ?? '';
+    previewIsCompleted = !!previewGoalTask?.completedAt;
+  } else {
+    goalValue = data.goals[previewKey];
+  }
+
   const preview = goalValue
     ? `${config.prefix} ${goalValue}`
     : config.empty;
@@ -66,30 +100,38 @@ export default function GoalCompass({
             ].join(' ')}
           >
             {goalValue ? (
-              <>{config.prefix} <span className="text-[var(--accent)] font-semibold">{goalValue}</span></>
+              <>
+                {config.prefix}{' '}
+                <span className={[
+                  'font-semibold',
+                  previewIsCompleted ? 'line-through text-[var(--muted-foreground)]' : 'text-[var(--accent)]',
+                ].join(' ')}>
+                  {goalValue}
+                </span>
+              </>
             ) : config.empty}
           </span>
 
           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-            {/* 오늘 목표 완료 — 높이 고정(32px)으로 레이아웃 흔들림 방지 */}
+            {/* 목표 완료 버튼 (task-based) */}
             <div className="flex items-center justify-end" style={{ minHeight: '32px' }}>
-              {previewKey === 'today' && goalValue && onCompleteGoal && !isGoalCompleted && (
+              {isTaskBased && previewGoalTask && !previewIsCompleted && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     if (typeof navigator !== 'undefined' && navigator.vibrate) {
                       navigator.vibrate(40);
                     }
-                    onCompleteGoal();
+                    onCompleteGoalTask(previewGoalTask!.id);
                   }}
                   className="flex items-center gap-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] active:scale-95 transition-all duration-150 cursor-pointer"
                   title={`완료 (+${GOAL_COMPLETE_XP}xp)`}
                 >
                   <span className="text-[12px] font-semibold">{GOAL_COMPLETE_XP}xp</span>
-                  <CheckCircle2 size={32} strokeWidth={0} fill="white" />
+                  <CheckCircle2 size={32} strokeWidth={0} fill="var(--muted-foreground)" />
                 </button>
               )}
-              {previewKey === 'today' && isGoalCompleted && (
+              {isTaskBased && previewIsCompleted && (
                 <span className="text-[12px] font-bold" style={{ color: 'var(--g-success)' }}>+{GOAL_COMPLETE_XP}xp</span>
               )}
             </div>
@@ -127,7 +169,17 @@ export default function GoalCompass({
       >
         <div className="border-t border-[var(--border)]">
           <GoalCompassIdentity identity={data.identity} onSave={onSaveIdentity} />
-          <GoalCompassGoals goals={data.goals} onSave={onSaveGoal} />
+          <GoalCompassGoals
+            goals={data.goals}
+            onSave={onSaveGoal}
+            goalTasks={goalTasks}
+            currentPeriodKeys={currentPeriodKeys}
+            onAddGoalTask={onAddGoalTask}
+            onCompleteGoalTask={onCompleteGoalTask}
+            onUncompleteGoalTask={onUncompleteGoalTask}
+            onUpdateGoalTaskTitle={onUpdateGoalTaskTitle}
+            onRemoveGoalTask={onRemoveGoalTask}
+          />
           <GoalCompassAffirmation affirmation={data.affirmation} onSave={onSaveAffirmation} />
         </div>
       </div>

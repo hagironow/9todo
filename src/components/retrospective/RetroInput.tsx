@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { BookOpen } from 'lucide-react';
-import type { RetroScope } from '@/lib/types';
+import type { RetroScope, EnergyLevel } from '@/lib/types';
+import EnergyLevelInput from './EnergyLevelInput';
 
 interface RetroInputProps {
   scope: RetroScope;
   scopeKey: string;
   initialContent: string;
-  onSave: (scope: RetroScope, scopeKey: string, content: string) => void;
+  initialEnergyLevel?: EnergyLevel;
+  onSave: (scope: RetroScope, scopeKey: string, content: string, energyLevel?: EnergyLevel) => void;
   placeholder?: string;
   label?: string;
   compact?: boolean;
@@ -18,18 +20,21 @@ export default function RetroInput({
   scope,
   scopeKey,
   initialContent,
+  initialEnergyLevel,
   onSave,
   placeholder = '회고를 남겨보세요...',
   label,
   compact = false,
 }: RetroInputProps) {
   const [value, setValue] = useState(initialContent);
+  const [energyLevel, setEnergyLevel] = useState<EnergyLevel | undefined>(initialEnergyLevel);
   const [editing, setEditing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setValue(initialContent);
-  }, [initialContent, scopeKey]);
+    setEnergyLevel(initialEnergyLevel);
+  }, [initialContent, initialEnergyLevel, scopeKey]);
 
   useEffect(() => {
     if (editing && textareaRef.current) {
@@ -41,10 +46,16 @@ export default function RetroInput({
 
   const handleSave = () => {
     const trimmed = value.trim();
-    if (trimmed !== initialContent.trim()) {
-      onSave(scope, scopeKey, trimmed);
+    if (trimmed !== initialContent.trim() || energyLevel !== initialEnergyLevel) {
+      onSave(scope, scopeKey, trimmed, energyLevel);
     }
     setEditing(false);
+  };
+
+  const handleEnergyChange = (level: EnergyLevel) => {
+    setEnergyLevel(level);
+    // 에너지 레벨은 즉시 저장
+    onSave(scope, scopeKey, value.trim() || initialContent.trim(), level);
   };
 
   // 내용이 있고 편집 중이 아닌 경우 — 표시 모드
@@ -52,9 +63,12 @@ export default function RetroInput({
     return (
       <div className={compact ? '' : 'mt-2'}>
         {label && (
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <BookOpen size={13} strokeWidth={1.8} className="text-[var(--muted-foreground)]" />
-            <span className="text-[12px] font-medium text-[var(--muted-foreground)]">{label}</span>
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <BookOpen size={13} strokeWidth={1.8} className="text-[var(--muted-foreground)]" />
+              <span className="text-[12px] font-medium text-[var(--muted-foreground)]">{label}</span>
+            </div>
+            <EnergyLevelInput value={energyLevel} onChange={handleEnergyChange} compact />
           </div>
         )}
         <button
@@ -71,9 +85,12 @@ export default function RetroInput({
   return (
     <div className={compact ? '' : 'mt-2'}>
       {label && (
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <BookOpen size={13} strokeWidth={1.8} className="text-[var(--muted-foreground)]" />
-          <span className="text-[12px] font-medium text-[var(--muted-foreground)]">{label}</span>
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-1.5">
+            <BookOpen size={13} strokeWidth={1.8} className="text-[var(--muted-foreground)]" />
+            <span className="text-[12px] font-medium text-[var(--muted-foreground)]">{label}</span>
+          </div>
+          <EnergyLevelInput value={energyLevel} onChange={handleEnergyChange} />
         </div>
       )}
       <div className="flex flex-col gap-2">

@@ -13,8 +13,12 @@ import type {
   RecurrenceType,
   RetrospectiveEntry,
   RetroScope,
+  EnergyLevel,
+  GoalTask,
+  GoalPeriod,
 } from '@/lib/types';
 import { resolveColor, hexToColorIndex, DEFAULT_THEME } from '@/lib/colors';
+import { getToday, getWeekKey, getMonthKey } from '@/lib/date';
 
 const STORAGE_KEY = '9todo_state';
 const CONSENT_KEY = '9todo_storage_consent';
@@ -38,6 +42,7 @@ export const EMPTY_STATE: AppState = {
     affirmation: '',
   },
   goalCompletedDates: [],
+  goalTasks: [],
   lastUsedProjectId: null,
   activeProjectFilter: null,
   projectFirstMode: true,
@@ -123,6 +128,56 @@ function migrateBacklogDates(state: AppState): AppState {
   };
 }
 
+/** 마이그레이션: goalCompass 문자열 목표 → goalTasks 변환 */
+function migrateGoalCompassToTasks(state: AppState): AppState {
+  if (state.goalTasks?.length) return state; // 이미 마이그레이션됨
+  const today = getToday();
+  const newGoalTasks: GoalTask[] = [];
+  const goals = state.goalCompass?.goals;
+  if (!goals) return { ...state, goalTasks: [] };
+
+  if (goals.today) {
+    const gt: GoalTask = {
+      id: `goal_${nanoid()}`,
+      title: goals.today,
+      goalPeriod: 'today',
+      periodKey: today,
+      completedAt: (state.goalCompletedDates ?? []).includes(today) ? new Date().toISOString() : null,
+      createdAt: new Date().toISOString(),
+    };
+    newGoalTasks.push(gt);
+  }
+  if (goals.week) {
+    const gt: GoalTask = {
+      id: `goal_${nanoid()}`,
+      title: goals.week,
+      goalPeriod: 'week',
+      periodKey: getWeekKey(today),
+      completedAt: null,
+      createdAt: new Date().toISOString(),
+    };
+    newGoalTasks.push(gt);
+  }
+  if (goals.month) {
+    const gt: GoalTask = {
+      id: `goal_${nanoid()}`,
+      title: goals.month,
+      goalPeriod: 'month',
+      periodKey: getMonthKey(today),
+      completedAt: null,
+      createdAt: new Date().toISOString(),
+    };
+    newGoalTasks.push(gt);
+  }
+
+  if (newGoalTasks.length === 0) return { ...state, goalTasks: [] };
+
+  return {
+    ...state,
+    goalTasks: newGoalTasks,
+  };
+}
+
 /** 프로젝트 색상을 현재 테마 기반으로 resolve */
 function resolveProjectColors(state: AppState): AppState {
   const themeId = state.colorTheme ?? DEFAULT_THEME;
@@ -153,7 +208,7 @@ export function useAppData() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = resolveProjectColors(JSON.parse(raw) as AppState);
-        setState(migrateBacklogDates(migrateRoutinesToTasks(parsed)));
+        setState(migrateGoalCompassToTasks(migrateBacklogDates(migrateRoutinesToTasks(parsed))));
       }
     } catch (err) {
       console.error('[useAppData] localStorage read error', err);
@@ -415,6 +470,25 @@ export function useAppData() {
     [update],
   );
 
+  /** 반복 부모 + 모든 인스턴스 일괄 삭제 */
+  const removeTaskWithRecurrence = useCallback(
+    (taskId: string) => {
+      update((prev) => {
+        const task = prev.tasks.find((t) => t.id === taskId);
+        if (!task) return prev;
+        // 부모 ID 결정: 인스턴스면 recurrenceParentId, 부모면 자기 자신
+        const parentId = task.recurrenceParentId ?? task.id;
+        return {
+          ...prev,
+          tasks: prev.tasks.filter(
+            (t) => t.id !== parentId && t.recurrenceParentId !== parentId
+          ),
+        };
+      });
+    },
+    [update],
+  );
+
   const updateTaskTitle = useCallback(
     (taskId: string, title: string) => {
       update((prev) => ({
@@ -423,6 +497,26 @@ export function useAppData() {
           t.id === taskId ? { ...t, title } : t,
         ),
       }));
+    },
+    [update],
+  );
+
+  /** 반복 부모 + 모든 인스턴스 제목 일괄 수정 */
+  const updateTaskTitleWithRecurrence = useCallback(
+    (taskId: string, title: string) => {
+      update((prev) => {
+        const task = prev.tasks.find((t) => t.id === taskId);
+        if (!task) return prev;
+        const parentId = task.recurrenceParentId ?? task.id;
+        return {
+          ...prev,
+          tasks: prev.tasks.map((t) =>
+            t.id === parentId || t.recurrenceParentId === parentId
+              ? { ...t, title }
+              : t,
+          ),
+        };
+      });
     },
     [update],
   );
@@ -633,13 +727,79 @@ export function useAppData() {
     [update],
   );
 
-  // ── Goal ────────────────────────────────────────────────────
+  // ── Goal (레거시) ──────────────────────────────────────────
   const completeGoal = useCallback(
     (date: string) => {
       update((prev) => {
         if ((prev.goalCompletedDates ?? []).includes(date)) return prev;
         return { ...prev, goalCompletedDates: [...(prev.goalCompletedDates ?? []), date] };
       });
+    },
+    [update],
+  );
+
+  // ── GoalTask CRUD ──────────────────────────────────────────
+  const addGoalTask = useCallback(
+    (title: string, goalPeriod: GoalPeriod, periodKey: string) => {
+      const gt: GoalTask = {
+        id: `goal_${nanoid()}`,
+        title,
+        goalPeriod,
+        periodKey,
+        completedAt: null,
+        createdAt: new Date().toISOString(),
+      };
+      update((prev) => ({
+        ...prev,
+        goalTasks: [...(prev.goalTasks ?? []), gt],
+      }));
+      return gt;
+    },
+    [update],
+  );
+
+  const completeGoalTask = useCallback(
+    (goalTaskId: string) => {
+      update((prev) => ({
+        ...prev,
+        goalTasks: (prev.goalTasks ?? []).map((gt) =>
+          gt.id === goalTaskId ? { ...gt, completedAt: new Date().toISOString() } : gt,
+        ),
+      }));
+    },
+    [update],
+  );
+
+  const uncompleteGoalTask = useCallback(
+    (goalTaskId: string) => {
+      update((prev) => ({
+        ...prev,
+        goalTasks: (prev.goalTasks ?? []).map((gt) =>
+          gt.id === goalTaskId ? { ...gt, completedAt: null } : gt,
+        ),
+      }));
+    },
+    [update],
+  );
+
+  const updateGoalTaskTitle = useCallback(
+    (goalTaskId: string, title: string) => {
+      update((prev) => ({
+        ...prev,
+        goalTasks: (prev.goalTasks ?? []).map((gt) =>
+          gt.id === goalTaskId ? { ...gt, title } : gt,
+        ),
+      }));
+    },
+    [update],
+  );
+
+  const removeGoalTask = useCallback(
+    (goalTaskId: string) => {
+      update((prev) => ({
+        ...prev,
+        goalTasks: (prev.goalTasks ?? []).filter((gt) => gt.id !== goalTaskId),
+      }));
     },
     [update],
   );
@@ -654,7 +814,7 @@ export function useAppData() {
 
   // ── Retrospective ─────────────────────────────────────────────
   const upsertRetrospective = useCallback(
-    (scope: RetroScope, scopeKey: string, content: string) => {
+    (scope: RetroScope, scopeKey: string, content: string, energyLevel?: EnergyLevel) => {
       update((prev) => {
         const retros = prev.retrospectives ?? [];
         const existing = retros.find((r) => r.scope === scope && r.scopeKey === scopeKey);
@@ -663,7 +823,7 @@ export function useAppData() {
             ...prev,
             retrospectives: retros.map((r) =>
               r.id === existing.id
-                ? { ...r, content, updatedAt: new Date().toISOString() }
+                ? { ...r, content, ...(energyLevel !== undefined && { energyLevel }), updatedAt: new Date().toISOString() }
                 : r,
             ),
           };
@@ -673,6 +833,7 @@ export function useAppData() {
           scope,
           scopeKey,
           content,
+          energyLevel,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -710,7 +871,9 @@ export function useAppData() {
     continueTask,
     assignTaskSlot,
     removeTask,
+    removeTaskWithRecurrence,
     updateTaskTitle,
+    updateTaskTitleWithRecurrence,
     // routine
     addRoutine,
     updateRoutine,
@@ -729,6 +892,12 @@ export function useAppData() {
     updateNoteContent,
     // goal
     completeGoal,
+    // goalTask
+    addGoalTask,
+    completeGoalTask,
+    uncompleteGoalTask,
+    updateGoalTaskTitle,
+    removeGoalTask,
     // retrospective
     upsertRetrospective,
     removeRetrospective,
