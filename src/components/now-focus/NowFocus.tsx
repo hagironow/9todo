@@ -568,10 +568,11 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
           {onClose && (
             <button
               onClick={onClose}
-              className="text-[13px] font-medium shrink-0 ml-1"
-              style={{ color: 'var(--timer-fg)' }}
+              className="w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:opacity-80 shrink-0"
+              style={{ color: 'var(--timer-muted)', backgroundColor: 'var(--timer-muted-bg)' }}
+              title="닫기"
             >
-              닫기
+              <X size={14} />
             </button>
           )}
         </div>

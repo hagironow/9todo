@@ -33,8 +33,10 @@ interface TimetableRowProps {
 
 const PRIORITIES: Priority[] = [1, 2, 3];
 
-function getLineColor(status: RowStatus, firstSlot: ScheduledItem | null): string {
-  // 1st 완료 → 그린, 그 외(현재/과거 미완료) → 코랄, 미래/빈칸 → 그레이
+function getLineColor(status: RowStatus, firstSlot: ScheduledItem | null, hasAnyItem: boolean): string {
+  // 행에 태스크가 하나도 없으면 항상 그레이
+  if (!hasAnyItem) return 'var(--border-subtle)';
+  // 1st 완료 → 그린, 그 외(현재/과거 미완료) → 코랄, 미래 → 그레이
   if (firstSlot?.completedAt) return 'var(--g-success)';
   if (status === 'active') return 'var(--accent)';
   if (status === 'past') return 'var(--accent)';
@@ -66,7 +68,8 @@ export default function TimetableRow({
 }: TimetableRowProps) {
 
   const isActive = status === 'active';
-  const lineColor = getLineColor(status, slots[1]);
+  const hasAnyItem = PRIORITIES.some((p) => slots[p] != null);
+  const lineColor = getLineColor(status, slots[1], hasAnyItem);
 
   return (
     <div
