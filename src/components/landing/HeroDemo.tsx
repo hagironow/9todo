@@ -390,7 +390,7 @@ export default function HeroDemo() {
   };
 
   return (
-    <div style={{ width: "100%", borderRadius: 16, overflow: "hidden", background: "linear-gradient(180deg, #0c0c0e 0%, #0a0a0a 8%, #080808 100%)", fontFamily: "var(--font-sans)", display: "flex", position: "relative" }}>
+    <div className="hero-demo-root" style={{ width: "100%", borderRadius: 16, overflow: "hidden", background: "linear-gradient(180deg, #0c0c0e 0%, #0a0a0a 8%, #080808 100%)", fontFamily: "var(--font-sans)", display: "flex", position: "relative" }}>
       <SidebarDemo />
 
       {/* Main */}
@@ -434,10 +434,15 @@ export default function HeroDemo() {
             </div>
           </div>
 
-          {/* Right: Timer */}
-          <TimerPanel item={nowItem} />
+          {/* Right: Timer — hidden on mobile via CSS */}
+          <div className="hero-timer-wrap">
+            <TimerPanel item={nowItem} />
+          </div>
         </div>
       </div>
+
+      {/* Right fade gradient — visible on mobile to smooth the cut-off */}
+      <div className="hero-right-fade" />
     </div>
   );
 }
