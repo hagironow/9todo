@@ -29,6 +29,9 @@ export const metadata: Metadata = {
       "우선순위를 강제하는 타임박스 플래너. 투두와 루틴을 한눈에, 뽀모도로 타이머, 퀵 메모, 목표 세우기와 회고.",
     images: ["https://9todo.app/og_9todo.jpg"],
   },
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function LandingLayout({

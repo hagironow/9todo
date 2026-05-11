@@ -3,17 +3,18 @@
 import { useEffect, useState } from "react";
 import { useLocale } from "@/i18n/context";
 
+/* ── Theme — landing-tokens.css 참조 ── */
 const T = {
-  bg: "#0a0a0a",
-  card: "#111113",
-  fg: "#e0e0e0",
-  fgDim: "#71717A",
-  muted: "#1a1a1a",
-  mutedFg: "#52525B",
-  accent: "#FF6E6E",
-  border: "#1c1c1f",
-  surfaceInset: "#161618",
-  success: "#22C55E",
+  bg: "var(--color-bg-void)",
+  card: "var(--color-bg-elevated)",
+  fg: "var(--color-text-primary)",
+  fgDim: "var(--color-text-tertiary)",
+  muted: "var(--color-bg-surface)",
+  mutedFg: "var(--color-text-ghost)",
+  accent: "var(--color-accent)",
+  border: "var(--color-border-subtle)",
+  surfaceInset: "var(--color-bg-primary)",
+  success: "var(--color-success)",
 };
 
 function Dot({ color, size = 5 }: { color: string; size?: number }) {

@@ -347,7 +347,7 @@ function QuickNotePanel({
               return (
                 <div key={note.id} className="group/note">
                   {i > 0 && (
-                    <div className="h-px" style={{ backgroundColor: timerDark ? '#1e1e1e' : '#f0f0f0' }} />
+                    <div className="h-px" style={{ backgroundColor: 'var(--timer-divider)' }} />
                   )}
                   <div className="py-3 flex flex-col gap-1.5">
                     {/* 헤더: 프로젝트 + 날짜 + 삭제 */}
@@ -404,8 +404,8 @@ function QuickNotePanel({
         <div
           className="flex flex-col gap-2 rounded-2xl px-3 py-2.5 transition-colors"
           style={{
-            backgroundColor: timerDark ? '#1a1a1a' : '#f5f5f5',
-            border: `1px solid ${timerDark ? '#2a2a2a' : '#e8e8e8'}`,
+            backgroundColor: 'var(--timer-input-bg)',
+            border: '1px solid var(--timer-input-border)',
           }}
         >
           <textarea
@@ -450,8 +450,8 @@ function QuickNotePanel({
               disabled={!canSubmit}
               className="w-7 h-7 flex items-center justify-center rounded-full shrink-0 transition-opacity disabled:opacity-20"
               style={{
-                backgroundColor: timerDark ? '#fff' : '#1a1a1a',
-                color: timerDark ? '#1a1a1a' : '#fff',
+                backgroundColor: 'var(--timer-submit-bg)',
+                color: 'var(--timer-submit-fg)',
               }}
             >
               <ArrowUp size={14} strokeWidth={2.5} />
@@ -513,14 +513,8 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
   return (
     <>
       <div
-        className="flex flex-col group rounded-none lg:rounded-[40px] overflow-hidden transition-colors duration-200 min-h-full lg:min-h-0"
-        style={{
-          ...(timerDark
-            ? { '--timer-bg': '#111111', '--timer-fg': '#e0e0e0', '--timer-muted': '#888', '--timer-muted-bg': '#1a1a1a', '--timer-hover': '#1f1f1f', '--timer-btn': '#2a2a2a', '--timer-btn-fg': '#aaa' }
-            : { '--timer-bg': '#ffffff', '--timer-fg': '#1a1a1a', '--timer-muted': '#8a8a8a', '--timer-muted-bg': '#f0f0f0', '--timer-hover': '#e8e8e8', '--timer-btn': '#e8e8e8', '--timer-btn-fg': '#888' }
-          ) as React.CSSProperties,
-          backgroundColor: timerDark ? '#111111' : '#ffffff',
-        }}
+        className={`flex flex-col group rounded-none lg:rounded-[40px] overflow-hidden transition-colors duration-200 min-h-full lg:min-h-0 ${timerDark ? 'timer-dark' : 'timer-light'}`}
+        style={{ backgroundColor: 'var(--timer-bg)' }}
       >
         {/* 상단 탭 바 */}
         <div className="flex items-center px-5 pt-2 pb-1 gap-1 flex-shrink-0" style={{ backgroundColor: 'var(--timer-bg)' }}>
@@ -529,7 +523,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
               onClick={() => setMode('timer')}
               className="flex items-center gap-1.5 flex-1 justify-center px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
               style={{
-                backgroundColor: mode === 'timer' ? (timerDark ? '#333' : '#fff') : 'transparent',
+                backgroundColor: mode === 'timer' ? 'var(--timer-tab-active-bg)' : 'transparent',
                 color: mode === 'timer' ? 'var(--timer-fg)' : 'var(--timer-muted)',
                 boxShadow: mode === 'timer' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
               }}
@@ -540,7 +534,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
               onClick={() => setMode('note')}
               className="flex items-center gap-1.5 flex-1 justify-center px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
               style={{
-                backgroundColor: mode === 'note' ? (timerDark ? '#333' : '#fff') : 'transparent',
+                backgroundColor: mode === 'note' ? 'var(--timer-tab-active-bg)' : 'transparent',
                 color: mode === 'note' ? 'var(--timer-fg)' : 'var(--timer-muted)',
                 boxShadow: mode === 'note' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
               }}

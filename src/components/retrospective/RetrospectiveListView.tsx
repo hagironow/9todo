@@ -130,8 +130,9 @@ export default function RetrospectiveListView({
                   </div>
                   <button
                     onClick={() => setDeleteTarget(retro)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--g-error)]"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity w-10 h-10 flex items-center justify-center rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--g-error)]"
                     title={t.delete}
+                    aria-label={t.delete}
                   >
                     <Trash2 size={13} strokeWidth={1.8} />
                   </button>

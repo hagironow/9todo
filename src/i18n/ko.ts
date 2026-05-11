@@ -1,5 +1,6 @@
 const ko = {
   // ── Common ──
+  dashboardTitle: '오늘의 시간표',
   cancel: '취소',
   save: '저장',
   delete: '삭제',
