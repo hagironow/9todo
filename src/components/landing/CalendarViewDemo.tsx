@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { useLocale } from "@/i18n/context";
 
 const T = {
   bg: "#0a0a0a",
@@ -19,38 +20,6 @@ function Dot({ color, size = 5 }: { color: string; size?: number }) {
   return <span style={{ width: size, height: size, borderRadius: "50%", backgroundColor: color, flexShrink: 0, display: "inline-block" }} />;
 }
 
-/* ── 3 presets that cycle ── */
-const PRESETS = [
-  {
-    title: "아이 등원",
-    project: { name: "일상/육아", color: "#34D399" },
-    recurrence: 1, days: [true,true,true,true,true,false,false],
-    period: 0, priority: 1, startTime: "08:30", endTime: "09:00", startDate: "2026-05-05",
-  },
-  {
-    title: "독서 30분",
-    project: { name: "사이드 프로젝트", color: "#A78BFA" },
-    recurrence: 0, days: [true,true,true,true,true,true,true],
-    period: 2, priority: 2, startTime: "22:00", endTime: "22:30", startDate: "2026-05-01",
-  },
-  {
-    title: "데일리 스크럼",
-    project: { name: "회사", color: "#60A5FA" },
-    recurrence: 1, days: [true,true,true,true,true,false,false],
-    period: 0, priority: 0, startTime: "09:00", endTime: "09:30", startDate: "2026-05-05",
-  },
-];
-
-const ALL_PROJECTS = [
-  { name: "일상/육아", color: "#34D399" },
-  { name: "사이드 프로젝트", color: "#A78BFA" },
-  { name: "회사", color: "#60A5FA" },
-];
-
-const REC_LABELS = ["매일", "매주", "2주마다", "매월"];
-const PERIOD_LABELS = ["오전", "오후", "저녁"];
-const DAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
-
 const PHASE_MS = 5000; // total per preset
 const DROPDOWN_OPEN_AT = 800; // dropdown appears
 const SELECT_AT = 2200; // item selected, dropdown closes
@@ -59,10 +28,49 @@ const DROPDOWN_CLOSE_AT = 2800; // fully closed, form updates
 /* ══════════════════════════════════════
    Left: RecurrenceSetupModal + animated dropdown
    ══════════════════════════════════════ */
-function RecurrenceModal({ preset, phase }: {
-  preset: typeof PRESETS[0];
+function RecurrenceModal({ presetIdx, phase }: {
+  presetIdx: number;
   phase: "idle" | "dropdown-open" | "selecting" | "selected";
 }) {
+  const { locale } = useLocale();
+  const ko = locale === 'ko';
+
+  const PRESETS = [
+    {
+      title: ko ? "아이 등원" : "School drop-off",
+      project: { name: ko ? "일상/육아" : "Life/Parenting", color: "#34D399" },
+      recurrence: 1, days: [true,true,true,true,true,false,false],
+      period: 0, priority: 1, startTime: "08:30", endTime: "09:00", startDate: "2026-05-05",
+    },
+    {
+      title: ko ? "독서 30분" : "Read 30min",
+      project: { name: ko ? "사이드 프로젝트" : "Side Project", color: "#A78BFA" },
+      recurrence: 0, days: [true,true,true,true,true,true,true],
+      period: 2, priority: 2, startTime: "22:00", endTime: "22:30", startDate: "2026-05-01",
+    },
+    {
+      title: ko ? "데일리 스크럼" : "Daily standup",
+      project: { name: ko ? "회사" : "Company", color: "#60A5FA" },
+      recurrence: 1, days: [true,true,true,true,true,false,false],
+      period: 0, priority: 0, startTime: "09:00", endTime: "09:30", startDate: "2026-05-05",
+    },
+  ];
+
+  const ALL_PROJECTS = [
+    { name: ko ? "일상/육아" : "Life/Parenting", color: "#34D399" },
+    { name: ko ? "사이드 프로젝트" : "Side Project", color: "#A78BFA" },
+    { name: ko ? "회사" : "Company", color: "#60A5FA" },
+  ];
+
+  const REC_LABELS = ko
+    ? ["매일", "매주", "2주마다", "매월"]
+    : ["Daily", "Weekly", "Biweekly", "Monthly"];
+  const PERIOD_LABELS = ko ? ["오전", "오후", "저녁"] : ["AM", "PM", "EVE"];
+  const DAY_LABELS = ko
+    ? ["월", "화", "수", "목", "금", "토", "일"]
+    : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  const preset = PRESETS[presetIdx];
   const dropdownVisible = phase === "dropdown-open" || phase === "selecting";
   const selectedIdx = ALL_PROJECTS.findIndex(p => p.name === preset.project.name);
 
@@ -90,7 +98,7 @@ function RecurrenceModal({ preset, phase }: {
 
         {/* Project row — trigger */}
         <div style={{ ...ROW, position: "relative" }}>
-          <span style={LABEL}>프로젝트</span>
+          <span style={LABEL}>{ko ? "프로젝트" : "Project"}</span>
           <button style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "5px 12px", borderRadius: 8,
@@ -110,7 +118,7 @@ function RecurrenceModal({ preset, phase }: {
 
         {/* Recurrence */}
         <div style={ROW}>
-          <span style={LABEL}>주기</span>
+          <span style={LABEL}>{ko ? "주기" : "Period"}</span>
           <div style={{ display: "flex", gap: 3 }}>
             {REC_LABELS.map((l, i) => (
               <span key={l} style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500, backgroundColor: i === preset.recurrence ? "rgba(255,255,255,0.12)" : "transparent", color: i === preset.recurrence ? T.fg : T.mutedFg }}>{l}</span>
@@ -120,7 +128,7 @@ function RecurrenceModal({ preset, phase }: {
 
         {/* Days */}
         <div style={ROW}>
-          <span style={LABEL}>요일</span>
+          <span style={LABEL}>{ko ? "요일" : "Days"}</span>
           <div style={{ display: "flex", gap: 6 }}>
             {DAY_LABELS.map((d, i) => (
               <div key={d} style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 500, backgroundColor: preset.days[i] ? "rgba(255,255,255,0.12)" : "transparent", color: preset.days[i] ? T.fg : T.mutedFg }}>{d}</div>
@@ -130,7 +138,7 @@ function RecurrenceModal({ preset, phase }: {
 
         {/* Slot */}
         <div style={ROW}>
-          <span style={LABEL}>슬롯</span>
+          <span style={LABEL}>{ko ? "슬롯" : "Slot"}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
             {PERIOD_LABELS.map((l, i) => (
               <span key={l} style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500, backgroundColor: i === preset.period ? "rgba(255,255,255,0.12)" : "transparent", color: i === preset.period ? T.fg : T.mutedFg }}>{l}</span>
@@ -144,7 +152,7 @@ function RecurrenceModal({ preset, phase }: {
 
         {/* Time */}
         <div style={ROW}>
-          <span style={LABEL}>시간</span>
+          <span style={LABEL}>{ko ? "시간" : "Time"}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ padding: "5px 14px", borderRadius: 8, backgroundColor: T.muted, fontSize: 13, color: T.fg }}>{preset.startTime}</span>
             <span style={{ fontSize: 12, color: T.mutedFg }}>~</span>
@@ -154,14 +162,14 @@ function RecurrenceModal({ preset, phase }: {
 
         {/* Start date */}
         <div style={{ ...ROW, borderBottom: "none" }}>
-          <span style={LABEL}>시작일</span>
+          <span style={LABEL}>{ko ? "시작일" : "Start date"}</span>
           <span style={{ padding: "5px 14px", borderRadius: 8, backgroundColor: T.muted, fontSize: 13, color: T.fg }}>{preset.startDate}</span>
         </div>
 
         {/* Footer */}
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
-          <span style={{ padding: "9px 18px", borderRadius: 8, fontSize: 14, color: T.mutedFg }}>취소</span>
-          <span style={{ padding: "9px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, backgroundColor: T.fg, color: T.bg }}>저장</span>
+          <span style={{ padding: "9px 18px", borderRadius: 8, fontSize: 14, color: T.mutedFg }}>{ko ? "취소" : "Cancel"}</span>
+          <span style={{ padding: "9px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, backgroundColor: T.fg, color: T.bg }}>{ko ? "저장" : "Save"}</span>
         </div>
       </div>
 
@@ -199,7 +207,7 @@ function RecurrenceModal({ preset, phase }: {
         <div style={{ borderTop: `1px solid ${T.border}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", fontSize: 12, color: T.mutedFg }}>
             <Dot color="#666" size={7} />
-            <span>미분류</span>
+            <span>{ko ? "미분류" : "Uncategorized"}</span>
           </div>
         </div>
       </div>
@@ -211,7 +219,12 @@ function RecurrenceModal({ preset, phase }: {
    Right: Monthly Calendar — sparse, clear
    ══════════════════════════════════════ */
 function MonthlyCalendar() {
-  const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+  const { locale } = useLocale();
+  const ko = locale === 'ko';
+
+  const WEEKDAYS = ko
+    ? ["일", "월", "화", "수", "목", "금", "토"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const FD = 4, DIM = 31, TODAY = 11;
 
   type Tag = { color: string; title: string; done?: boolean; recurring?: boolean };
@@ -220,24 +233,24 @@ function MonthlyCalendar() {
   // Sparse data: some days empty, clear distinction between recurring/one-off/past/future
   const DATA: Record<number, DI> = {
     // Past — completed
-    2: { xp: 3, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", done: true, recurring: true }] },
-    5: { xp: 6, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", done: true, recurring: true }, { color: "#A78BFA", title: "독서 30분", done: true, recurring: true }] },
-    6: { xp: 4, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }, { color: "#FBBF24", title: "랜딩 카피 수정", done: true }] },
-    7: { xp: 5, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }, { color: "#60A5FA", title: "API 리뷰", done: true }] },
-    8: { xp: 3, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", done: true, recurring: true }] },
-    9: { xp: 2, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }] },
-    10: { xp: 1, tags: [{ color: "#A78BFA", title: "독서 30분", done: true, recurring: true }] },
+    2: { xp: 3, tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", done: true, recurring: true }, { color: "#60A5FA", title: ko ? "데일리 스크럼" : "Daily standup", done: true, recurring: true }] },
+    5: { xp: 6, tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", done: true, recurring: true }, { color: "#60A5FA", title: ko ? "데일리 스크럼" : "Daily standup", done: true, recurring: true }, { color: "#A78BFA", title: ko ? "독서 30분" : "Read 30min", done: true, recurring: true }] },
+    6: { xp: 4, tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", done: true, recurring: true }, { color: "#FBBF24", title: ko ? "랜딩 카피 수정" : "Landing copy revision", done: true }] },
+    7: { xp: 5, tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", done: true, recurring: true }, { color: "#60A5FA", title: ko ? "API 리뷰" : "API review", done: true }] },
+    8: { xp: 3, tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", done: true, recurring: true }, { color: "#60A5FA", title: ko ? "데일리 스크럼" : "Daily standup", done: true, recurring: true }] },
+    9: { xp: 2, tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", done: true, recurring: true }] },
+    10: { xp: 1, tags: [{ color: "#A78BFA", title: ko ? "독서 30분" : "Read 30min", done: true, recurring: true }] },
     // Today — mixed
-    11: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }, { color: "#FBBF24", title: "영상 편집 EP.12" }] },
+    11: { tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", recurring: true }, { color: "#FBBF24", title: ko ? "영상 편집 EP.12" : "Edit video EP.12" }] },
     // Future — recurring only (sparse)
-    12: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", recurring: true }] },
-    13: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }] },
-    14: { tags: [{ color: "#A78BFA", title: "독서 30분", recurring: true }] },
-    15: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", recurring: true }] },
-    16: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }] },
-    19: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", recurring: true }] },
-    20: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }] },
-    21: { tags: [{ color: "#A78BFA", title: "독서 30분", recurring: true }] },
+    12: { tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", recurring: true }, { color: "#60A5FA", title: ko ? "데일리 스크럼" : "Daily standup", recurring: true }] },
+    13: { tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", recurring: true }] },
+    14: { tags: [{ color: "#A78BFA", title: ko ? "독서 30분" : "Read 30min", recurring: true }] },
+    15: { tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", recurring: true }, { color: "#60A5FA", title: ko ? "데일리 스크럼" : "Daily standup", recurring: true }] },
+    16: { tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", recurring: true }] },
+    19: { tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", recurring: true }, { color: "#60A5FA", title: ko ? "데일리 스크럼" : "Daily standup", recurring: true }] },
+    20: { tags: [{ color: "#34D399", title: ko ? "아이 등원" : "School drop-off", recurring: true }] },
+    21: { tags: [{ color: "#A78BFA", title: ko ? "독서 30분" : "Read 30min", recurring: true }] },
   };
 
   const cells: React.ReactNode[] = [];
@@ -307,12 +320,12 @@ function MonthlyCalendar() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 16, borderBottom: `1px solid ${T.border}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
-          <span style={{ fontSize: 13, fontWeight: 600, color: T.fg }}>2026년 5월</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: T.fg }}>{ko ? "2026년 5월" : "May 2026"}</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
         </div>
         <div style={{ display: "flex", gap: 2, padding: 2, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.04)" }}>
-          <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 6, color: T.mutedFg }}>이번주</span>
-          <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.08)", color: T.fg }}>이번달</span>
+          <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 6, color: T.mutedFg }}>{ko ? "이번주" : "This week"}</span>
+          <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.08)", color: T.fg }}>{ko ? "이번달" : "This month"}</span>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: `1px solid ${T.border}`, marginTop: 12 }}>
@@ -354,7 +367,7 @@ export default function CalendarViewDemo() {
 
               // 5. wait, then advance to next preset and restart
               timeout = setTimeout(() => {
-                setPresetIdx(prev => (prev + 1) % PRESETS.length);
+                setPresetIdx(prev => (prev + 1) % 3);
                 runCycle();
               }, 1200);
             }, 400);
@@ -372,7 +385,7 @@ export default function CalendarViewDemo() {
       <div style={{ position: "relative", minHeight: 580 }}>
         {/* LEFT: Modal — elevated, floats above calendar */}
         <div style={{ position: "absolute", top: 0, left: 0, zIndex: 10 }}>
-          <RecurrenceModal preset={PRESETS[presetIdx]} phase={phase} />
+          <RecurrenceModal presetIdx={presetIdx} phase={phase} />
         </div>
 
         {/* RIGHT: Calendar — behind, shifted down + generous left padding */}

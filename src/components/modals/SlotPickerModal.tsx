@@ -2,6 +2,7 @@
 
 import { TimePeriod, Priority, ScheduledItem, SlotCoord } from '@/lib/types';
 import Dialog from '@/components/ui/Dialog';
+import { useLocale } from '@/i18n/context';
 
 interface SlotPickerModalProps {
   open: boolean;
@@ -11,12 +12,6 @@ interface SlotPickerModalProps {
   title?: string;
   description?: string;
 }
-
-const PERIODS: { period: TimePeriod; label: string }[] = [
-  { period: 'morning',   label: '오전' },
-  { period: 'afternoon', label: '오후' },
-  { period: 'evening',   label: '저녁' },
-];
 
 const PRIORITIES: Priority[] = [1, 2, 3];
 
@@ -28,10 +23,18 @@ export default function SlotPickerModal({
   title,
   description,
 }: SlotPickerModalProps) {
+  const { t } = useLocale();
+
+  const PERIODS: { period: TimePeriod; label: string }[] = [
+    { period: 'morning',   label: t.morning },
+    { period: 'afternoon', label: t.afternoon },
+    { period: 'evening',   label: t.evening },
+  ];
+
   return (
-    <Dialog open={open} onClose={onClose} title={title ?? '슬롯 배치'} width="md">
+    <Dialog open={open} onClose={onClose} title={title ?? t.slotPickerTitle} width="md">
       <p className="text-[var(--fs-tag)] text-[var(--muted-foreground)]">
-        {description ?? '배치할 슬롯을 선택하세요'}
+        {description ?? t.slotPickerDesc}
       </p>
 
       {/* 우선순위 헤더 */}
@@ -42,7 +45,7 @@ export default function SlotPickerModal({
             key={p}
             className="text-center text-[11px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider"
           >
-            {p === 1 ? '1순위' : p === 2 ? '2순위' : '3순위'}
+            {p === 1 ? t.priority1 : p === 2 ? t.priority2 : t.priority3}
           </div>
         ))}
       </div>
@@ -67,9 +70,9 @@ export default function SlotPickerModal({
                     ? 'border-[var(--border)] bg-[var(--muted)] text-[var(--muted-foreground)] cursor-not-allowed opacity-50'
                     : 'border-dashed border-[var(--border)] text-[var(--muted-foreground)] hover:border-[var(--foreground)] hover:text-[var(--foreground)] cursor-pointer',
                 ].join(' ')}
-                aria-label={`${label} ${priority}순위 ${occupied ? '(사용 중)' : '(비어 있음)'}`}
+                aria-label={`${label} ${priority === 1 ? t.priority1 : priority === 2 ? t.priority2 : t.priority3} ${occupied ? `(${t.inUse})` : `(${t.empty})`}`}
               >
-                {occupied ? '사용 중' : '+'}
+                {occupied ? t.inUse : '+'}
               </button>
             );
           })}

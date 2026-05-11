@@ -8,6 +8,7 @@ import { formatLocalDate } from '@/lib/date';
 import Dialog from '@/components/ui/Dialog';
 import ColorDot from '@/components/ui/ColorDot';
 import InlineDatePicker from '@/components/ui/InlineDatePicker';
+import { useLocale } from '@/i18n/context';
 
 export interface RecurrenceSetupData {
   title: string;
@@ -34,28 +35,6 @@ interface RecurrenceSetupModalProps {
   onCreateProject?: (name: string, colorIndex: number) => Project;
 }
 
-const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string }[] = [
-  { value: 'daily',    label: '매일' },
-  { value: 'weekly',   label: '매주' },
-  { value: 'biweekly', label: '2주마다' },
-  { value: 'monthly',  label: '매월' },
-];
-
-const PERIOD_OPTIONS: { value: TimePeriod; label: string }[] = [
-  { value: 'morning',   label: '오전' },
-  { value: 'afternoon', label: '오후' },
-  { value: 'evening',   label: '저녁' },
-];
-
-const DAY_OPTIONS: { value: number; label: string }[] = [
-  { value: 1, label: '월' },
-  { value: 2, label: '화' },
-  { value: 3, label: '수' },
-  { value: 4, label: '목' },
-  { value: 5, label: '금' },
-  { value: 6, label: '토' },
-  { value: 0, label: '일' },
-];
 
 /* ── 슬롯 → 기본 시간 매핑 ── */
 const SLOT_DEFAULT_HOURS: Record<TimePeriod, Record<Priority, number>> = {
@@ -171,6 +150,31 @@ export default function RecurrenceSetupModal({
   initialProjectId = null,
   onCreateProject,
 }: RecurrenceSetupModalProps) {
+  const { t } = useLocale();
+
+  const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string }[] = [
+    { value: 'daily',    label: t.daily },
+    { value: 'weekly',   label: t.weekly },
+    { value: 'biweekly', label: t.biweekly },
+    { value: 'monthly',  label: t.monthly },
+  ];
+
+  const PERIOD_OPTIONS: { value: TimePeriod; label: string }[] = [
+    { value: 'morning',   label: t.morning },
+    { value: 'afternoon', label: t.afternoon },
+    { value: 'evening',   label: t.evening },
+  ];
+
+  const DAY_OPTIONS: { value: number; label: string }[] = [
+    { value: 1, label: t.weekdayShortMon[0] },
+    { value: 2, label: t.weekdayShortMon[1] },
+    { value: 3, label: t.weekdayShortMon[2] },
+    { value: 4, label: t.weekdayShortMon[3] },
+    { value: 5, label: t.weekdayShortMon[4] },
+    { value: 6, label: t.weekdayShortMon[5] },
+    { value: 0, label: t.weekdayShortMon[6] },
+  ];
+
   const [titleValue, setTitleValue] = useState('');
   const [recurrence, setRecurrence] = useState<RecurrenceType>('daily');
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([]);
@@ -254,9 +258,9 @@ export default function RecurrenceSetupModal({
   // duration 옵션 생성 (30분 단위)
   const durationOptions: { min: number; label: string }[] = [];
   for (let m = 30; m <= Math.max(maxDuration, 30); m += 30) {
-    if (m < 60) durationOptions.push({ min: m, label: `${m}분` });
-    else if (m % 60 === 0) durationOptions.push({ min: m, label: `${m / 60}시간` });
-    else durationOptions.push({ min: m, label: `${Math.floor(m / 60)}시간 ${m % 60}분` });
+    if (m < 60) durationOptions.push({ min: m, label: t.minutes(m) });
+    else if (m % 60 === 0) durationOptions.push({ min: m, label: `${m / 60}h` });
+    else durationOptions.push({ min: m, label: `${Math.floor(m / 60)}h ${m % 60}m` });
   }
 
   const handleDuration = (min: number) => {
@@ -296,7 +300,7 @@ export default function RecurrenceSetupModal({
             <input
               value={titleValue}
               onChange={(e) => setTitleValue(e.target.value)}
-              placeholder="반복 투두 이름..."
+              placeholder={t.recurrenceTitlePlaceholder}
               autoFocus={!titleValue}
               className="flex-1 text-[15px] font-medium text-[var(--foreground)] bg-transparent outline-none placeholder:text-[var(--muted-foreground)]"
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && canSave) handleSave(); }}
@@ -304,7 +308,7 @@ export default function RecurrenceSetupModal({
             <button
               onClick={onClose}
               className="w-6 h-6 flex items-center justify-center rounded-full text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors flex-shrink-0"
-              aria-label="닫기"
+              aria-label={t.close}
             >
               <X size={14} />
             </button>
@@ -315,14 +319,14 @@ export default function RecurrenceSetupModal({
             {/* 프로젝트 */}
             {projects.length > 0 && (
               <div className={ROW + ' relative'}>
-                <span className={LABEL}>프로젝트</span>
+                <span className={LABEL}>{t.project}</span>
                 <button
                   ref={projectBtnRef}
                   onClick={() => setProjectDropdownOpen((v) => !v)}
                   className="flex items-center gap-1.5 px-2 py-1 rounded-[var(--radius-sm)] text-[12px] font-medium text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors cursor-pointer"
                 >
                   <ColorDot color={selectedProject?.color ?? '#8A8A8A'} size="sm" />
-                  <span>{selectedProject?.name ?? '미분류'}</span>
+                  <span>{selectedProject?.name ?? t.uncategorized}</span>
                   <ChevronDown size={12} className={`text-[var(--muted-foreground)] transition-transform ${projectDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {projectDropdownOpen && (
@@ -356,7 +360,7 @@ export default function RecurrenceSetupModal({
                       ].join(' ')}
                     >
                       <span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)]" />
-                      <span>미분류</span>
+                      <span>{t.uncategorized}</span>
                     </button>
                   </div>
                 )}
@@ -365,7 +369,7 @@ export default function RecurrenceSetupModal({
 
             {/* 반복 주기 */}
             <div className={ROW}>
-              <span className={LABEL}>주기</span>
+              <span className={LABEL}>{t.period}</span>
               <div className="flex gap-0.5">
                 {RECURRENCE_OPTIONS.map((opt) => (
                   <button
@@ -382,7 +386,7 @@ export default function RecurrenceSetupModal({
             {/* 요일 */}
             {showDaysOfWeek && (
               <div className={ROW}>
-                <span className={LABEL}>요일</span>
+                <span className={LABEL}>{t.daysOfWeek}</span>
                 <div className="flex gap-0.5">
                   {DAY_OPTIONS.map((opt) => {
                     const active = daysOfWeek.includes(opt.value);
@@ -405,7 +409,7 @@ export default function RecurrenceSetupModal({
 
             {/* 슬롯 */}
             <div className={ROW}>
-              <span className={LABEL}>슬롯</span>
+              <span className={LABEL}>{t.slot}</span>
               <div className="flex gap-0.5">
                 {PERIOD_OPTIONS.map((opt) => (
                   <button
@@ -431,17 +435,17 @@ export default function RecurrenceSetupModal({
 
             {/* 시간 */}
             <div className={ROW}>
-              <span className={LABEL}>시간</span>
+              <span className={LABEL}>{t.time}</span>
               <div className="flex items-center gap-1.5">
-                <TimeInput value={scheduledStartTime} onChange={setScheduledStartTime} placeholder="시작" />
+                <TimeInput value={scheduledStartTime} onChange={setScheduledStartTime} placeholder={t.start} />
                 <span className="text-[11px] text-[var(--muted-foreground)]">~</span>
-                <TimeInput value={scheduledEndTime} onChange={setScheduledEndTime} placeholder="종료" />
+                <TimeInput value={scheduledEndTime} onChange={setScheduledEndTime} placeholder={t.end} />
               </div>
             </div>
 
             {/* 시작일 */}
             <div className={ROW + ' border-b-0'}>
-              <span className={LABEL}>시작일</span>
+              <span className={LABEL}>{t.startDate}</span>
               <InlineDatePicker value={startDate} onChange={setStartDate} />
             </div>
           </div>
@@ -453,7 +457,7 @@ export default function RecurrenceSetupModal({
                 onClick={() => { onDelete(); onClose(); }}
                 className="text-[12px] font-medium text-[var(--g-error)] hover:opacity-70 transition-opacity cursor-pointer"
               >
-                반복 해제
+                {t.unrecur}
               </button>
             ) : <span />}
             <div className="flex gap-2">
@@ -461,7 +465,7 @@ export default function RecurrenceSetupModal({
                 onClick={onClose}
                 className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors cursor-pointer"
               >
-                취소
+                {t.cancel}
               </button>
               <button
                 onClick={handleSave}
@@ -473,7 +477,7 @@ export default function RecurrenceSetupModal({
                     : 'bg-[var(--muted)] text-[var(--muted-foreground)] cursor-not-allowed',
                 ].join(' ')}
               >
-                {isEditing ? '수정' : '생성'}
+                {isEditing ? t.save : t.create}
               </button>
             </div>
           </div>

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { useLocale } from '@/i18n/context';
+import type { Locale } from '@/i18n/context';
 
-type Lang = "ko" | "en";
-const lang: Lang = "ko";
+type Lang = Locale;
 
 const PROJECTS: Record<Lang, { name: string; color: string }[]> = {
   ko: [
@@ -138,14 +139,15 @@ function Card({ item, isHighlighted }: { item: SlotItem; isHighlighted?: boolean
 
 /* ── Empty slot — inline creation style ── */
 function EmptySlot() {
+  const { locale } = useLocale();
   return (
     <div style={{ minHeight: 72, borderRadius: 8, backgroundColor: "#141416", border: "1px solid rgba(255,255,255,0.03)", display: "flex", flexDirection: "column", justifyContent: "center", padding: "8px 10px", gap: 6 }}>
       {/* Project tag placeholder */}
       <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, color: "#333", alignSelf: "flex-start" }}>
-        <Dot color="#333" size={4} />프로젝트
+        <Dot color="#333" size={4} />{locale === 'ko' ? '프로젝트' : 'Project'}
       </span>
       {/* Input placeholder */}
-      <span style={{ fontSize: 11, color: "#2a2a2a" }}>할 일 입력...</span>
+      <span style={{ fontSize: 11, color: "#2a2a2a" }}>{locale === 'ko' ? '할 일 입력...' : 'Enter a task...'}</span>
     </div>
   );
 }
@@ -179,7 +181,8 @@ function PeriodRow({ period, slots, lineColor, isActive }: {
 
 /* ── Goal mini — updated preview format ── */
 function GoalMini({ totalXp }: { totalXp: number }) {
-  const preview = GOAL_PREVIEW[lang];
+  const { locale } = useLocale();
+  const preview = GOAL_PREVIEW[locale];
   return (
     <div style={{ borderRadius: 10, backgroundColor: "#111111", border: "1px solid rgba(255,255,255,0.04)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -194,9 +197,10 @@ function GoalMini({ totalXp }: { totalXp: number }) {
 
 /* ── Sidebar ── */
 function SidebarDemo() {
-  const navItems = SIDEBAR_NAV[lang];
-  const labels = SIDEBAR_LABELS[lang];
-  const projects = PROJECTS[lang];
+  const { locale } = useLocale();
+  const navItems = SIDEBAR_NAV[locale];
+  const labels = SIDEBAR_LABELS[locale];
+  const projects = PROJECTS[locale];
   return (
     <div style={{ width: 180, flexShrink: 0, display: "flex", flexDirection: "column", background: "linear-gradient(180deg, #141416 0%, #111111 30%, #0e0e10 100%)", borderRight: "1px solid rgba(255,255,255,0.05)", position: "relative" }}>
       {/* Right edge gradient line */}
@@ -231,7 +235,7 @@ function SidebarDemo() {
           <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
           </div>
-          {lang === "ko" ? "로그인 하세요" : "Sign in"}
+          {locale === "ko" ? "로그인 하세요" : "Sign in"}
         </div>
       </div>
     </div>
@@ -242,6 +246,7 @@ function SidebarDemo() {
 const TIMER_COLORS = ["#FF6E6E", "#60A5FA", "#A78BFA", "#34D399", "#FBBF24"];
 
 function TimerPanel({ item }: { item: SlotItem }) {
+  const { locale } = useLocale();
   const [elapsed, setElapsed] = useState(0);
   const [colorIdx, setColorIdx] = useState(0);
   const dur = 25 * 60;
@@ -278,11 +283,11 @@ function TimerPanel({ item }: { item: SlotItem }) {
         <div style={{ flex: 1, display: "flex", borderRadius: 99, backgroundColor: "#1a1a1a", padding: 2 }}>
           <span style={{ flex: 1, textAlign: "center", fontSize: 10, fontWeight: 600, padding: "5px 0", borderRadius: 99, backgroundColor: "#333", color: "#e0e0e0", display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-            {lang === "ko" ? "타이머" : "Timer"}
+            {locale === "ko" ? "타이머" : "Timer"}
           </span>
           <span style={{ flex: 1, textAlign: "center", fontSize: 10, fontWeight: 600, padding: "5px 0", color: "#555", display: "flex", alignItems: "center", justifyContent: "center", gap: 3 }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="3" /><line x1="8" y1="2" x2="8" y2="6" /></svg>
-            {lang === "ko" ? "노트" : "Note"}
+            {locale === "ko" ? "노트" : "Note"}
           </span>
         </div>
         <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -329,7 +334,7 @@ function TimerPanel({ item }: { item: SlotItem }) {
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 20px", borderRadius: 99, backgroundColor: color, color: "#0a0a0a", fontSize: 12, fontWeight: 600, transition: "background-color 0.8s ease" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-          {lang === "ko" ? "완료" : "Done"}
+          {locale === "ko" ? "완료" : "Done"}
         </span>
         <span style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>
@@ -337,16 +342,16 @@ function TimerPanel({ item }: { item: SlotItem }) {
       </div>
 
       {/* Secondary items */}
-      {SLOTS[lang][1][1] && (
+      {SLOTS[locale][1][1] && (
         <div style={{ padding: "8px 16px", borderTop: "1px solid #1a1a1a", display: "flex", alignItems: "center", gap: 6 }}>
-          <Dot color={SLOTS[lang][1][1]!.project.color} size={5} />
-          <span style={{ flex: 1, fontSize: 11, fontWeight: 500, color: "#e0e0e0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{SLOTS[lang][1][1]!.title}</span>
+          <Dot color={SLOTS[locale][1][1]!.project.color} size={5} />
+          <span style={{ flex: 1, fontSize: 11, fontWeight: 500, color: "#e0e0e0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{SLOTS[locale][1][1]!.title}</span>
         </div>
       )}
-      {SLOTS[lang][1][2] && (
+      {SLOTS[locale][1][2] && (
         <div style={{ padding: "8px 16px", borderTop: "1px solid #1a1a1a", display: "flex", alignItems: "center", gap: 6 }}>
-          <Dot color={SLOTS[lang][1][2]!.project.color} size={5} />
-          <span style={{ flex: 1, fontSize: 11, fontWeight: 500, color: "#e0e0e0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{SLOTS[lang][1][2]!.title}</span>
+          <Dot color={SLOTS[locale][1][2]!.project.color} size={5} />
+          <span style={{ flex: 1, fontSize: 11, fontWeight: 500, color: "#e0e0e0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{SLOTS[locale][1][2]!.title}</span>
         </div>
       )}
     </div>
@@ -357,8 +362,13 @@ function TimerPanel({ item }: { item: SlotItem }) {
    MAIN
    ══════════════════════════════════════════ */
 export default function HeroDemo() {
-  const [slots, setSlots] = useState(SLOTS[lang]);
+  const { locale } = useLocale();
+  const [slots, setSlots] = useState(SLOTS[locale]);
   const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    setSlots(SLOTS[locale]);
+  }, [locale]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -368,15 +378,15 @@ export default function HeroDemo() {
           case 1: setSlots((s) => { const c = s.map((r) => [...r]); if (c[1][0]) c[1][0] = { ...c[1][0], completed: true }; return c; }); break;
           case 2: setSlots((s) => { const c = s.map((r) => [...r]); if (c[1][1]) c[1][1] = { ...c[1][1], deferCount: (c[1][1]!.deferCount || 0) + 1 }; return c; }); break;
           case 3: setSlots((s) => { const c = s.map((r) => [...r]); if (c[2][0]) c[2][0] = { ...c[2][0], completed: true }; return c; }); break;
-          case 4: setSlots(SLOTS[lang]); break;
+          case 4: setSlots(SLOTS[locale]); break;
         }
         return next;
       });
     }, 3000);
     return () => clearInterval(timer);
-  }, []);
+  }, [locale]);
 
-  const nowItem = slots[1][0] && !slots[1][0].completed ? slots[1][0] : SLOTS[lang][1][0]!;
+  const nowItem = slots[1][0] && !slots[1][0].completed ? slots[1][0] : SLOTS[locale][1][0]!;
   const totalXp = slots.flat().filter(Boolean).reduce((sum, item) => sum + (item!.completed ? item!.xp : 0), 0);
 
   /* Dynamic line colors — green when 1st slot completed */
@@ -398,7 +408,7 @@ export default function HeroDemo() {
         {/* Date header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.01), transparent)" }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#e0e0e0" }}>2026{lang === "ko" ? "년" : "."} 5{lang === "ko" ? "월" : "."} 11{lang === "ko" ? "일 월요일" : " Mon"}</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#e0e0e0" }}>2026{locale === "ko" ? "년" : "."} 5{locale === "ko" ? "월" : "."} 11{locale === "ko" ? "일 월요일" : " Mon"}</span>
           {/* XP hidden for clean hero */}
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
         </div>
@@ -421,7 +431,7 @@ export default function HeroDemo() {
 
             {/* Period rows — no routine rows */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {PERIODS[lang].map((period, rowIdx) => (
+              {PERIODS[locale].map((period, rowIdx) => (
                 <PeriodRow key={period.label} period={period} slots={slots[rowIdx]} lineColor={getLineColor(rowIdx)} isActive={rowIdx === 1} />
               ))}
             </div>
@@ -429,7 +439,7 @@ export default function HeroDemo() {
             {/* Backlog hint */}
             <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
-              <span style={{ fontSize: 11, color: "#333" }}>{lang === "ko" ? "백로그" : "Backlog"}</span>
+              <span style={{ fontSize: 11, color: "#333" }}>{locale === "ko" ? "백로그" : "Backlog"}</span>
               <span style={{ fontSize: 10, color: "#1a1a1a" }}>3</span>
             </div>
           </div>

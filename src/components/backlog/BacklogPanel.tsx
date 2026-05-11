@@ -8,6 +8,7 @@ import { Task, RoutineInstance, Project } from '@/lib/types';
 import BacklogItem from './BacklogItem';
 import ColorDot from '@/components/ui/ColorDot';
 import ProjectPicker from '@/components/quick-input/ProjectPicker';
+import { useLocale } from '@/i18n/context';
 
 type BacklogEntry = Task | RoutineInstance;
 
@@ -36,13 +37,7 @@ function getOriginGroup(item: BacklogEntry): 'deferred' | 'repeated' | 'normal' 
   return 'normal';
 }
 
-const GROUP_CONFIG = {
-  deferred: { label: '미룬 일', icon: Clock, order: 0 },
-  repeated: { label: '또하기', icon: null, order: 1 },
-  normal:   { label: '할 일', icon: Inbox, order: 2 },
-} as const;
-
-type GroupKey = keyof typeof GROUP_CONFIG;
+type GroupKey = 'deferred' | 'repeated' | 'normal';
 
 export default function BacklogPanel({
   items,
@@ -56,6 +51,7 @@ export default function BacklogPanel({
   lastUsedProjectId,
   isReadOnly,
 }: BacklogPanelProps) {
+  const { t } = useLocale();
   const [expanded, setExpanded] = useState(true);
   const [inputValue, setInputValue] = useState('');
   const [selectedProject, setSelectedProject] = useState<Project | null>(
@@ -63,6 +59,13 @@ export default function BacklogPanel({
   );
   const [pickerOpen, setPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pickerAnchorRef = useRef<HTMLButtonElement>(null);
+
+  const GROUP_CONFIG: Record<GroupKey, { label: string; icon: typeof Clock | typeof Inbox | null; order: number }> = {
+    deferred: { label: t.deferredItems, icon: Clock, order: 0 },
+    repeated: { label: t.redoItems,    icon: null,  order: 1 },
+    normal:   { label: t.todoItems,    icon: Inbox,  order: 2 },
+  };
 
   const handleAdd = () => {
     const trimmed = inputValue.trim();
@@ -107,7 +110,7 @@ export default function BacklogPanel({
       >
         <div className="flex items-center gap-2">
           <span className="text-[15px] font-semibold text-[var(--foreground)]">
-            백로그
+            {t.backlog}
           </span>
           {totalCount > 0 && (
             <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 bg-[var(--muted)] rounded-full text-[11px] font-semibold text-[var(--muted-foreground)]">
@@ -131,7 +134,7 @@ export default function BacklogPanel({
             <div className="py-8 flex flex-col items-center gap-2 text-center px-3">
               <Inbox size={24} className="text-[var(--muted-foreground)]" />
               <p className="text-[14px] text-[var(--muted-foreground)]">
-                백로그가 비어있습니다
+                {t.backlogEmpty}
               </p>
             </div>
           ) : (
@@ -185,9 +188,10 @@ export default function BacklogPanel({
           {!isReadOnly && onAdd && (
             <div className="relative flex items-center gap-2 px-3 py-2 border-t border-[var(--border)]">
               <button
+                ref={pickerAnchorRef}
                 onClick={() => setPickerOpen((v) => !v)}
                 className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-[var(--radius)] hover:bg-[var(--muted)] transition-colors"
-                aria-label="프로젝트 선택"
+                aria-label={t.selectProject}
               >
                 <ColorDot color={selectedProject?.color ?? '#8A8A8A'} size="sm" />
               </button>
@@ -196,14 +200,14 @@ export default function BacklogPanel({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="백로그에 추가..."
+                placeholder={t.addToBacklog}
                 className="flex-1 bg-transparent text-[var(--foreground)] text-[var(--fs-item)] placeholder:text-[var(--muted-foreground)] outline-none"
               />
               <button
                 onClick={handleAdd}
                 disabled={!inputValue.trim()}
                 className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-[var(--radius)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors disabled:opacity-30"
-                aria-label="추가"
+                aria-label={t.add}
               >
                 <Plus size={14} />
               </button>
@@ -213,6 +217,7 @@ export default function BacklogPanel({
                   selectedId={selectedProject?.id ?? null}
                   onSelect={(project) => setSelectedProject(project)}
                   onClose={() => setPickerOpen(false)}
+                  anchorRef={pickerAnchorRef}
                 />
               )}
             </div>

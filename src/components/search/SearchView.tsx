@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
 import type { Task, Note, Project } from '@/lib/types';
+import { useLocale } from '@/i18n/context';
 
 interface SearchViewProps {
   tasks: Task[];
@@ -12,6 +13,7 @@ interface SearchViewProps {
 }
 
 export default function SearchView({ tasks, notes, projects, onClose }: SearchViewProps) {
+  const { t } = useLocale();
   const [query, setQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -54,7 +56,7 @@ export default function SearchView({ tasks, notes, projects, onClose }: SearchVi
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="태스크, 노트 검색..."
+            placeholder={t.searchPlaceholder}
             className="flex-1 bg-transparent text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"
           />
           {query && (
@@ -67,7 +69,7 @@ export default function SearchView({ tasks, notes, projects, onClose }: SearchVi
           onClick={onClose}
           className="px-3 py-2 text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
         >
-          취소
+          {t.cancel}
         </button>
       </div>
 
@@ -76,7 +78,7 @@ export default function SearchView({ tasks, notes, projects, onClose }: SearchVi
         <div className="flex flex-col gap-4">
           {totalResults === 0 && (
             <p className="text-sm text-[var(--muted-foreground)] text-center py-10">
-              검색 결과가 없습니다
+              {t.noSearchResults}
             </p>
           )}
 
@@ -84,7 +86,7 @@ export default function SearchView({ tasks, notes, projects, onClose }: SearchVi
           {matchedTasks.length > 0 && (
             <div className="flex flex-col gap-1">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-1 pb-1">
-                태스크 ({matchedTasks.length})
+                {t.taskResults} ({matchedTasks.length})
               </p>
               {matchedTasks.map((task) => {
                 const proj = getProject(task.projectId);
@@ -103,7 +105,7 @@ export default function SearchView({ tasks, notes, projects, onClose }: SearchVi
                         <span className="text-[10px] text-[var(--muted-foreground)]">{proj.name}</span>
                       </span>
                     )}
-                    <span className="text-xs text-[var(--muted-foreground)] shrink-0">{task.date ?? '백로그'}</span>
+                    <span className="text-xs text-[var(--muted-foreground)] shrink-0">{task.date ?? t.backlog}</span>
                   </div>
                 );
               })}
@@ -114,7 +116,7 @@ export default function SearchView({ tasks, notes, projects, onClose }: SearchVi
           {matchedNotes.length > 0 && (
             <div className="flex flex-col gap-1">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-1 pb-1">
-                노트 ({matchedNotes.length})
+                {t.noteResults} ({matchedNotes.length})
               </p>
               {matchedNotes.map((note) => {
                 const proj = getProject(note.projectId);
@@ -148,7 +150,7 @@ export default function SearchView({ tasks, notes, projects, onClose }: SearchVi
         </div>
       ) : (
         <p className="text-sm text-[var(--muted-foreground)] text-center py-10">
-          키워드를 입력하세요
+          {t.enterKeyword}
         </p>
       )}
     </div>

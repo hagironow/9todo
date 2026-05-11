@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Project } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 
@@ -9,6 +10,7 @@ interface ProjectPickerProps {
   selectedId: string | null;
   onSelect: (project: Project | null) => void;
   onClose: () => void;
+  anchorRef?: React.RefObject<HTMLElement | null>;
 }
 
 export default function ProjectPicker({
@@ -16,8 +18,17 @@ export default function ProjectPicker({
   selectedId,
   onSelect,
   onClose,
+  anchorRef,
 }: ProjectPickerProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  // 앵커 기준 위치 계산
+  useLayoutEffect(() => {
+    if (!anchorRef?.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    setPos({ top: rect.top - 8, left: rect.left });
+  }, [anchorRef]);
 
   // 외부 클릭 닫기
   useEffect(() => {
@@ -30,15 +41,19 @@ export default function ProjectPicker({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [onClose]);
 
-  return (
+  const picker = (
     <div
       ref={ref}
       className={[
-        'absolute bottom-full left-0 mb-2 z-20',
         'w-48 rounded-[calc(var(--radius)*1.4)] border border-[var(--border)]',
         'bg-[var(--popover)] shadow-xl overflow-hidden',
         'animate-[status-appear_0.15s_ease_forwards]',
       ].join(' ')}
+      style={
+        pos
+          ? { position: 'fixed', bottom: `${window.innerHeight - pos.top}px`, left: `${pos.left}px`, zIndex: 9999 }
+          : { position: 'absolute', bottom: '100%', left: 0, marginBottom: 8, zIndex: 20 }
+      }
       role="listbox"
       aria-label="프로젝트 선택"
     >
@@ -49,7 +64,7 @@ export default function ProjectPicker({
           'w-full flex items-center gap-2.5 px-3 py-2',
           'text-[var(--fs-tag)] text-left transition-colors duration-100',
           selectedId === null
-            ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-semibold'
+            ? 'bg-[var(--muted)] text-[var(--foreground)] font-semibold'
             : 'text-[var(--foreground)] hover:bg-[var(--muted)]',
         ].join(' ')}
         role="option"
@@ -73,7 +88,7 @@ export default function ProjectPicker({
             'w-full flex items-center gap-2.5 px-3 py-2',
             'text-[var(--fs-tag)] text-left transition-colors duration-100',
             selectedId === project.id
-              ? 'bg-[var(--accent)]/10 text-[var(--accent)] font-semibold'
+              ? 'bg-[var(--muted)] text-[var(--foreground)] font-semibold'
               : 'text-[var(--foreground)] hover:bg-[var(--muted)]',
           ].join(' ')}
           role="option"
@@ -85,4 +100,10 @@ export default function ProjectPicker({
       ))}
     </div>
   );
+
+  if (anchorRef?.current && pos) {
+    return createPortal(picker, document.body);
+  }
+
+  return picker;
 }

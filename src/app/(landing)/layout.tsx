@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     url: "https://9todo.app/",
     images: [
       {
-        url: "https://9todo.app/og-image.png",
+        url: "https://9todo.app/og_9todo.jpg",
         width: 1200,
         height: 630,
         alt: "9todo — 하루를 9개의 타임박스로 설계하는 생산성 앱",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     title: "하루를 9개의 타임박스로 설계하세요 — 9todo",
     description:
       "우선순위를 강제하는 타임박스 플래너. 투두와 루틴을 한눈에, 뽀모도로 타이머, 퀵 메모, 목표 세우기와 회고.",
-    images: ["https://9todo.app/og-image.png"],
+    images: ["https://9todo.app/og_9todo.jpg"],
   },
 };
 

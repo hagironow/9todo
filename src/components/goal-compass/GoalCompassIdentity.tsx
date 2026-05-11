@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, KeyboardEvent } from 'react';
+import { useLocale } from '@/i18n/context';
 
 interface GoalCompassIdentityProps {
   identity: string;
@@ -11,6 +12,7 @@ export default function GoalCompassIdentity({
   identity,
   onSave,
 }: GoalCompassIdentityProps) {
+  const { t } = useLocale();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(identity);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,7 +46,7 @@ export default function GoalCompassIdentity({
   return (
     <div className="px-4 py-3 flex items-center gap-2 border-b border-[var(--border)]">
       <span className="text-[var(--fs-item)] font-semibold text-[var(--muted-foreground)] whitespace-nowrap">
-        나는
+        {t.identityLabel}
       </span>
 
       {editing ? (
@@ -61,7 +63,7 @@ export default function GoalCompassIdentity({
             'outline-none',
             'border border-[var(--border)] focus:border-[var(--foreground)]',
           ].join(' ')}
-          placeholder="어떤 사람이 되고 싶나요?"
+          placeholder={t.identityPlaceholder}
 
         />
       ) : (
@@ -79,7 +81,7 @@ export default function GoalCompassIdentity({
       )}
 
       <span className="text-[var(--fs-item)] font-semibold text-[var(--muted-foreground)] whitespace-nowrap">
-        이다
+        {t.identitySuffix}
       </span>
     </div>
   );

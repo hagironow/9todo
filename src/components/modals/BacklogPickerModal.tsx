@@ -4,6 +4,7 @@ import { Task, RoutineInstance, Project } from '@/lib/types';
 import Dialog from '@/components/ui/Dialog';
 import ColorDot from '@/components/ui/ColorDot';
 import Badge from '@/components/ui/Badge';
+import { useLocale } from '@/i18n/context';
 
 type BacklogEntry = Task | RoutineInstance;
 
@@ -24,14 +25,15 @@ export default function BacklogPickerModal({
   getTitleForItem,
   onSelect,
 }: BacklogPickerModalProps) {
+  const { t } = useLocale();
   const projectMap = new Map(projects.map((p) => [p.id, p]));
 
   return (
-    <Dialog open={open} onClose={onClose} title="백로그에서 선택" width="md">
+    <Dialog open={open} onClose={onClose} title={t.selectFromBacklog} width="md">
       {items.length === 0 ? (
         <div className="py-8 text-center">
           <p className="text-[var(--fs-item)] text-[var(--muted-foreground)]">
-            백로그가 비어있습니다
+            {t.backlogIsEmpty}
           </p>
         </div>
       ) : (

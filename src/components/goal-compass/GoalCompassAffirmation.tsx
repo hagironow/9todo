@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, KeyboardEvent } from 'react';
+import { useLocale } from '@/i18n/context';
 
 interface GoalCompassAffirmationProps {
   affirmation: string;
@@ -11,6 +12,7 @@ export default function GoalCompassAffirmation({
   affirmation,
   onSave,
 }: GoalCompassAffirmationProps) {
+  const { t } = useLocale();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(affirmation);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -40,7 +42,7 @@ export default function GoalCompassAffirmation({
     <div className="px-4 py-2 border-t border-[var(--border)]">
       <div className="flex items-start gap-3 py-1.5">
         <span className="w-8 text-right text-[11px] font-semibold shrink-0 text-[var(--muted-foreground)] pt-0.5">
-          확언
+          {t.affirmationLabel}
         </span>
 
         {editing ? (
@@ -58,7 +60,7 @@ export default function GoalCompassAffirmation({
               'outline-none',
               'border border-[var(--border)] focus:border-[var(--foreground)]',
             ].join(' ')}
-            placeholder="나에게 해주고 싶은 말"
+            placeholder={t.affirmationPlaceholder}
           />
         ) : (
           <p
@@ -70,7 +72,7 @@ export default function GoalCompassAffirmation({
               affirmation ? 'text-[var(--foreground)]' : 'text-[var(--muted-foreground)]',
             ].join(' ')}
           >
-            {affirmation || '나에게 해주고 싶은 말'}
+            {affirmation || t.affirmationPlaceholder}
           </p>
         )}
       </div>

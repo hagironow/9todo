@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * ProjectViewDemo — 실제 9todo ProjectDetailView + Sidebar 재현
  *
@@ -8,6 +10,8 @@
  * 참조: /Users/sara/Desktop/9todo/src/components/project-detail/ProjectDetailView.tsx
  *       /Users/sara/Desktop/9todo/src/components/layout/Sidebar.tsx
  */
+
+import { useLocale } from "@/i18n/context";
 
 const T = {
   bg: "#0a0a0a",
@@ -24,13 +28,6 @@ const T = {
   radius: 12,
 };
 
-const PROJECTS = [
-  { name: "AI 챗봇 앱", color: "#60A5FA", tasks: 12, completed: 7, xp: 42, hours: "6h 30m" },
-  { name: "포트폴리오", color: "#A78BFA", tasks: 8, completed: 3, xp: 18, hours: "2h 45m" },
-  { name: "운동 트래커", color: "#34D399", tasks: 5, completed: 2, xp: 12, hours: "1h 20m" },
-  { name: "유튜브 채널", color: "#FBBF24", tasks: 6, completed: 4, xp: 24, hours: "3h 15m" },
-];
-
 type TaskItem = {
   title: string;
   done?: boolean;
@@ -39,23 +36,6 @@ type TaskItem = {
   deferCount?: number;
   timerStr?: string;
 };
-
-const DETAIL_TASKS: TaskItem[] = [
-  { title: "GPT API 연동 테스트", done: true, xp: 3, slot: "오전 1st", timerStr: "45m" },
-  { title: "채팅 UI 스크롤 버그 수정", done: true, xp: 2, slot: "오전 2nd", timerStr: "30m" },
-  { title: "스트리밍 응답 구현", done: true, xp: 3, slot: "오후 1st", timerStr: "52m" },
-  { title: "프롬프트 튜닝 실험", done: true, xp: 3, slot: "저녁 1st", timerStr: "38m" },
-  { title: "멀티턴 대화 구현", xp: 3, slot: "오후 1st" },
-  { title: "히스토리 저장 기능", xp: 2, deferCount: 2 },
-  { title: "에러 핸들링 개선", xp: 2, slot: "오후 2nd" },
-  { title: "모델 선택 UI", xp: 1 },
-  { title: "배포 파이프라인 세팅", xp: 2, deferCount: 1 },
-];
-
-const DETAIL_ROUTINES = [
-  { title: "GitHub 이슈 체크", recurrence: "매일", slot: "오전" },
-  { title: "코드 리뷰 30분", recurrence: "평일", slot: "오후" },
-];
 
 /* ── Dot ── */
 function Dot({ color, size = 5 }: { color: string; size?: number }) {
@@ -66,7 +46,17 @@ function Dot({ color, size = 5 }: { color: string; size?: number }) {
    좌: 프로젝트 리스트 패널
    ══════════════════════════════════════ */
 function ProjectListPanel() {
-  const activeIdx = 0; // AI 챗봇 앱 선택됨
+  const { locale } = useLocale();
+  const ko = locale === 'ko';
+
+  const PROJECTS = [
+    { name: ko ? "AI 챗봇 앱" : "AI Chatbot App", color: "#60A5FA", tasks: 12, completed: 7, xp: 42, hours: "6h 30m" },
+    { name: ko ? "포트폴리오" : "Portfolio", color: "#A78BFA", tasks: 8, completed: 3, xp: 18, hours: "2h 45m" },
+    { name: ko ? "운동 트래커" : "Fitness Tracker", color: "#34D399", tasks: 5, completed: 2, xp: 12, hours: "1h 20m" },
+    { name: ko ? "유튜브 채널" : "YouTube Channel", color: "#FBBF24", tasks: 6, completed: 4, xp: 24, hours: "3h 15m" },
+  ];
+
+  const activeIdx = 0;
 
   return (
     <div style={{
@@ -96,7 +86,7 @@ function ProjectListPanel() {
           textTransform: "uppercase" as const,
           letterSpacing: "0.1em",
           color: T.mutedFg,
-        }}>프로젝트</span>
+        }}>{ko ? "프로젝트" : "Projects"}</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="1.5" strokeLinecap="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>
@@ -135,7 +125,7 @@ function ProjectListPanel() {
           padding: "10px 10px", borderRadius: 8,
         }}>
           <Dot color="#444" size={8} />
-          <span style={{ flex: 1, fontSize: 13, color: T.mutedFg }}>미분류</span>
+          <span style={{ flex: 1, fontSize: 13, color: T.mutedFg }}>{ko ? "미분류" : "Uncategorized"}</span>
           <span style={{ fontSize: 11, color: T.mutedFg }}>3</span>
         </div>
 
@@ -147,7 +137,7 @@ function ProjectListPanel() {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          <span style={{ fontSize: 13, color: "#333" }}>프로젝트 이름</span>
+          <span style={{ fontSize: 13, color: "#333" }}>{ko ? "프로젝트 이름" : "Project name"}</span>
         </div>
       </div>
     </div>
@@ -158,6 +148,33 @@ function ProjectListPanel() {
    우: 프로젝트 상세 뷰
    ══════════════════════════════════════ */
 function ProjectDetailPanel() {
+  const { locale } = useLocale();
+  const ko = locale === 'ko';
+
+  const PROJECTS = [
+    { name: ko ? "AI 챗봇 앱" : "AI Chatbot App", color: "#60A5FA", tasks: 12, completed: 7, xp: 42, hours: "6h 30m" },
+    { name: ko ? "포트폴리오" : "Portfolio", color: "#A78BFA", tasks: 8, completed: 3, xp: 18, hours: "2h 45m" },
+    { name: ko ? "운동 트래커" : "Fitness Tracker", color: "#34D399", tasks: 5, completed: 2, xp: 12, hours: "1h 20m" },
+    { name: ko ? "유튜브 채널" : "YouTube Channel", color: "#FBBF24", tasks: 6, completed: 4, xp: 24, hours: "3h 15m" },
+  ];
+
+  const DETAIL_TASKS: TaskItem[] = [
+    { title: ko ? "GPT API 연동 테스트" : "GPT API integration test", done: true, xp: 3, slot: ko ? "오전 1st" : "AM 1st", timerStr: "45m" },
+    { title: ko ? "채팅 UI 스크롤 버그 수정" : "Fix chat UI scroll bug", done: true, xp: 2, slot: ko ? "오전 2nd" : "AM 2nd", timerStr: "30m" },
+    { title: ko ? "스트리밍 응답 구현" : "Implement streaming response", done: true, xp: 3, slot: ko ? "오후 1st" : "PM 1st", timerStr: "52m" },
+    { title: ko ? "프롬프트 튜닝 실험" : "Prompt tuning experiment", done: true, xp: 3, slot: ko ? "저녁 1st" : "EVE 1st", timerStr: "38m" },
+    { title: ko ? "멀티턴 대화 구현" : "Implement multi-turn chat", xp: 3, slot: ko ? "오후 1st" : "PM 1st" },
+    { title: ko ? "히스토리 저장 기능" : "History save feature", xp: 2, deferCount: 2 },
+    { title: ko ? "에러 핸들링 개선" : "Improve error handling", xp: 2, slot: ko ? "오후 2nd" : "PM 2nd" },
+    { title: ko ? "모델 선택 UI" : "Model selection UI", xp: 1 },
+    { title: ko ? "배포 파이프라인 세팅" : "Setup deploy pipeline", xp: 2, deferCount: 1 },
+  ];
+
+  const DETAIL_ROUTINES = [
+    { title: ko ? "GitHub 이슈 체크" : "Check GitHub issues", recurrence: ko ? "매일" : "Daily", slot: ko ? "오전" : "AM" },
+    { title: ko ? "코드 리뷰 30분" : "Code review 30min", recurrence: ko ? "평일" : "Weekdays", slot: ko ? "오후" : "PM" },
+  ];
+
   const p = PROJECTS[0];
   const pct = Math.round((p.completed / p.tasks) * 100);
 
@@ -182,9 +199,9 @@ function ProjectDetailPanel() {
       {/* 통계 카드 3열 (실제 StatCard 재현) */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, padding: "12px 20px" }}>
         {[
-          { label: "완료 / 전체", value: `${p.completed} / ${p.tasks}`, sub: `${pct}%`, color: T.fg },
-          { label: "투입 시간", value: p.hours, color: T.fg },
-          { label: "획득 XP", value: `${p.xp}`, color: T.success },
+          { label: ko ? "완료 / 전체" : "Done / Total", value: `${p.completed} / ${p.tasks}`, sub: `${pct}%`, color: T.fg },
+          { label: ko ? "투입 시간" : "Focus Time", value: p.hours, color: T.fg },
+          { label: ko ? "획득 XP" : "Earned XP", value: `${p.xp}`, color: T.success },
         ].map((stat) => (
           <div key={stat.label} style={{
             padding: "10px 12px",
@@ -205,7 +222,7 @@ function ProjectDetailPanel() {
         <span style={{
           fontSize: 10, fontWeight: 600, color: T.mutedFg,
           textTransform: "uppercase" as const, letterSpacing: "0.08em",
-        }}>태스크 ({DETAIL_TASKS.length})</span>
+        }}>{ko ? "태스크" : "Tasks"} ({DETAIL_TASKS.length})</span>
 
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 1 }}>
           {DETAIL_TASKS.map((task, i) => (
@@ -273,7 +290,7 @@ function ProjectDetailPanel() {
 
         {/* 더보기 */}
         <div style={{ marginTop: 8 }}>
-          <span style={{ fontSize: 12, color: T.accent, cursor: "pointer" }}>더보기 (+3)</span>
+          <span style={{ fontSize: 12, color: T.accent, cursor: "pointer" }}>{ko ? "더보기 (+3)" : "Show more (+3)"}</span>
         </div>
       </div>
 
@@ -282,7 +299,7 @@ function ProjectDetailPanel() {
         <span style={{
           fontSize: 10, fontWeight: 600, color: T.mutedFg,
           textTransform: "uppercase" as const, letterSpacing: "0.08em",
-        }}>루틴 ({DETAIL_ROUTINES.length})</span>
+        }}>{ko ? "루틴" : "Routines"} ({DETAIL_ROUTINES.length})</span>
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
           {DETAIL_ROUTINES.map((r, i) => (
             <div key={i} style={{

@@ -8,6 +8,7 @@ import ColorDot from '@/components/ui/ColorDot';
 import { getToday } from '@/lib/date';
 import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
 import { getDefaultStartTime, getDefaultEndTime } from '@/components/modals/RecurrenceSetupModal';
+import { useLocale } from '@/i18n/context';
 
 interface WeeklyTimelineViewProps {
   tasks: Task[];
@@ -18,8 +19,6 @@ interface WeeklyTimelineViewProps {
   onCreateTask?: (title: string, date: string, projectId: string | null) => void;
   onEditRecurrence?: (task: Task) => void;
 }
-
-const KO_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const STORAGE_KEY = '9todo_timeline_range';
 const HOUR_HEIGHT = 60;
 const SNAP_MINUTES = 15;
@@ -85,6 +84,7 @@ export default function WeeklyTimelineView({
   onCreateTask,
   onEditRecurrence,
 }: WeeklyTimelineViewProps) {
+  const { t } = useLocale();
   const todayStr = getToday();
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -280,7 +280,7 @@ export default function WeeklyTimelineView({
             return (
               <div key={dateStr} className="flex flex-col items-center py-2.5 gap-1">
                 <span className="text-[11px] font-medium text-[var(--muted-foreground)]">
-                  {KO_WEEKDAYS[d.getDay()]}
+                  {t.weekdaysSingle[d.getDay()]}
                 </span>
                 <span
                   className={[
@@ -436,7 +436,7 @@ export default function WeeklyTimelineView({
                             <button
                               className="flex-shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
                               onClick={(e) => { e.stopPropagation(); onEditRecurrence?.(task); }}
-                              title="반복 설정"
+                              title={t.recurrenceSettings}
                             >
                               <Repeat size={9} strokeWidth={2} />
                             </button>

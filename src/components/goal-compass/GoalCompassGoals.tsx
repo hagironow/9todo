@@ -3,6 +3,7 @@
 import { useState, useRef, KeyboardEvent } from 'react';
 import { CheckCircle2, Circle, Plus, X, CornerDownRight } from 'lucide-react';
 import type { GoalCompass, GoalTask, GoalPeriod } from '@/lib/types';
+import { useLocale } from '@/i18n/context';
 
 type GoalKey = keyof GoalCompass['goals'];
 
@@ -13,15 +14,6 @@ interface GoalRow {
   isTaskBased?: boolean; // today/week/month는 task 기반
   goalPeriod?: GoalPeriod;
 }
-
-const GOAL_ROWS: GoalRow[] = [
-  { key: 'today',    label: '오늘',   placeholder: '오늘 끝내야 할 일은?', isTaskBased: true, goalPeriod: 'today' },
-  { key: 'week',     label: '이번주', placeholder: '이번 주에 꼭 끝낼 것은?', isTaskBased: true, goalPeriod: 'week' },
-  { key: 'month',    label: '이번달', placeholder: '이번 달 집중하는 방향은?', isTaskBased: true, goalPeriod: 'month' },
-  { key: 'quarter',  label: '분기',   placeholder: '이번 분기 성장하고 싶은 방향은?' },
-  { key: 'oneYear',  label: '1년',    placeholder: '1년 뒤 나는 어떤 모습일까?' },
-  { key: 'fiveYear', label: '5년',    placeholder: '내가 향하는 북극성은?' },
-];
 
 // ── Task-based goal row (today/week/month) ──
 function GoalTaskRow({
@@ -41,6 +33,7 @@ function GoalTaskRow({
   onUpdateTitle: (id: string, title: string) => void;
   onRemove: (id: string) => void;
 }) {
+  const { t } = useLocale();
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
   const [editing, setEditing] = useState(false);
@@ -147,7 +140,7 @@ function GoalTaskRow({
             onClick={() => onRemove(goalTask.id)}
             className="shrink-0 text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
             style={{ opacity: undefined }}
-            title="삭제"
+            title={t.delete}
           >
             <X size={14} />
           </button>
@@ -276,6 +269,17 @@ export default function GoalCompassGoals({
   onUpdateGoalTaskTitle,
   onRemoveGoalTask,
 }: GoalCompassGoalsProps) {
+  const { t } = useLocale();
+
+  const GOAL_ROWS: GoalRow[] = [
+    { key: 'today',    label: t.goalPeriodLabels[0], placeholder: t.goalPeriodPlaceholders[0], isTaskBased: true, goalPeriod: 'today' },
+    { key: 'week',     label: t.goalPeriodLabels[1], placeholder: t.goalPeriodPlaceholders[1], isTaskBased: true, goalPeriod: 'week' },
+    { key: 'month',    label: t.goalPeriodLabels[2], placeholder: t.goalPeriodPlaceholders[2], isTaskBased: true, goalPeriod: 'month' },
+    { key: 'quarter',  label: t.goalPeriodLabels[3], placeholder: t.goalPeriodPlaceholders[3] },
+    { key: 'oneYear',  label: t.goalPeriodLabels[4], placeholder: t.goalPeriodPlaceholders[4] },
+    { key: 'fiveYear', label: t.goalPeriodLabels[5], placeholder: t.goalPeriodPlaceholders[5] },
+  ];
+
   const getGoalTaskForPeriod = (goalPeriod: GoalPeriod): GoalTask | undefined => {
     const periodKey = currentPeriodKeys[goalPeriod];
     return goalTasks.find((gt) => gt.goalPeriod === goalPeriod && gt.periodKey === periodKey);

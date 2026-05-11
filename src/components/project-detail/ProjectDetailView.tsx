@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Check, SkipForward, RefreshCw, Trash2 } from 'lucide-react';
 import type { Project, Task, ScheduledItem, RoutineInstance, Routine, Note } from '@/lib/types';
 import { COLOR_THEMES, resolveColor } from '@/lib/colors';
+import { useLocale } from '@/i18n/context';
 
 const TASK_PAGE_SIZE = 10;
 
@@ -42,6 +43,7 @@ export default function ProjectDetailView({
   onDelete,
   onUncomplete,
 }: ProjectDetailViewProps) {
+  const { t } = useLocale();
   const [expanded, setExpanded] = useState(false);
   const [noteInput, setNoteInput] = useState('');
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
@@ -49,7 +51,7 @@ export default function ProjectDetailView({
   const dotRef = useRef<HTMLButtonElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
-  const theme = COLOR_THEMES.find((t) => t.id === colorTheme) ?? COLOR_THEMES[0];
+  const theme = COLOR_THEMES.find((th) => th.id === colorTheme) ?? COLOR_THEMES[0];
 
   const openColorPicker = () => {
     if (!dotRef.current || !onUpdateColor) return;
@@ -74,7 +76,7 @@ export default function ProjectDetailView({
 
   // 이 프로젝트에 속한 태스크만
   const projectTasks = useMemo(
-    () => tasks.filter((t) => isUnassigned ? !t.projectId : t.projectId === project.id),
+    () => tasks.filter((task) => isUnassigned ? !task.projectId : task.projectId === project.id),
     [tasks, project.id, isUnassigned],
   );
 
@@ -103,19 +105,19 @@ export default function ProjectDetailView({
 
   // 통계
   const stats = useMemo(() => {
-    const completed = projectTasks.filter((t) => t.completedAt);
+    const completed = projectTasks.filter((task) => task.completedAt);
 
     const totalSeconds = projectTasks.reduce(
-      (acc, t) => acc + (t.timerSeconds ?? 0),
+      (acc, task) => acc + (task.timerSeconds ?? 0),
       0,
     );
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
 
     let xp = 0;
-    for (const t of completed) {
-      if (t.slot) {
-        xp += t.slot.priority === 1 ? 3 : t.slot.priority === 2 ? 2 : 1;
+    for (const task of completed) {
+      if (task.slot) {
+        xp += task.slot.priority === 1 ? 3 : task.slot.priority === 2 ? 2 : 1;
       }
     }
     for (const ri of projectInstances) {
@@ -140,18 +142,18 @@ export default function ProjectDetailView({
   const groupedTasks = useMemo(() => {
     const lineageMap = new Map<string, Task[]>();
     const standalone: Task[] = [];
-    for (const t of projectTasks) {
-      if (t.lineageId) {
-        const arr = lineageMap.get(t.lineageId) ?? [];
-        arr.push(t);
-        lineageMap.set(t.lineageId, arr);
+    for (const task of projectTasks) {
+      if (task.lineageId) {
+        const arr = lineageMap.get(task.lineageId) ?? [];
+        arr.push(task);
+        lineageMap.set(task.lineageId, arr);
       } else {
-        standalone.push(t);
+        standalone.push(task);
       }
     }
     const result: { task: Task; lineageCount: number }[] = [];
-    for (const t of standalone) {
-      result.push({ task: t, lineageCount: 0 });
+    for (const task of standalone) {
+      result.push({ task, lineageCount: 0 });
     }
     for (const [, group] of lineageMap) {
       // 대표: 미완료 우선, 없으면 가장 최근
@@ -198,7 +200,7 @@ export default function ProjectDetailView({
           onClick={openColorPicker}
           className="w-4 h-4 rounded-full shrink-0 cursor-pointer hover:scale-125 transition-transform"
           style={{ backgroundColor: project.color }}
-          title="컬러 변경"
+          title={t.changeColor}
         />
         <h2 className="text-xl font-bold text-[var(--foreground)]">
           {project.name}
@@ -239,7 +241,7 @@ export default function ProjectDetailView({
       {/* 통계 카드 */}
       <div className="grid grid-cols-3 gap-3">
         <StatCard
-          label="완료 / 전체"
+          label={t.completionRatio}
           value={`${stats.completed} / ${stats.total}`}
           sub={
             stats.total > 0
@@ -248,21 +250,21 @@ export default function ProjectDetailView({
           }
         />
         <StatCard
-          label="포커스 타임"
+          label={t.focusTime}
           value={formatTime(stats.hours, stats.minutes)}
         />
-        <StatCard label="획득 XP" value={`${stats.xp}`} color="var(--g-success)" />
+        <StatCard label={t.earnedXP} value={`${stats.xp}`} color="var(--g-success)" />
       </div>
 
       {/* 태스크 목록 */}
       <div className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-          태스크 ({groupedTasks.length})
+          {t.tasks} ({groupedTasks.length})
         </h3>
 
         {groupedTasks.length === 0 ? (
           <p className="text-sm text-[var(--muted-foreground)] py-6 text-center">
-            아직 태스크가 없습니다
+            {t.noTasksYet}
           </p>
         ) : (
           <div className="flex flex-col gap-1">
@@ -287,8 +289,8 @@ export default function ProjectDetailView({
             className="text-sm text-[var(--accent)] hover:underline self-start mt-1"
           >
             {expanded
-              ? '접기'
-              : `더보기 (+${groupedTasks.length - TASK_PAGE_SIZE})`}
+              ? t.collapse
+              : t.showMore(groupedTasks.length - TASK_PAGE_SIZE)}
           </button>
         )}
 
@@ -298,7 +300,7 @@ export default function ProjectDetailView({
       {projectRoutines.length > 0 && (
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-            루틴 ({projectRoutines.length})
+            {t.routines} ({projectRoutines.length})
           </h3>
           <div className="flex flex-col gap-1">
             {projectRoutines.map((routine) => {
@@ -324,7 +326,7 @@ export default function ProjectDetailView({
       {/* 노트 */}
       <div className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-          노트 ({projectNotes.length})
+          {t.notes} ({projectNotes.length})
         </h3>
 
         {/* 노트 입력 */}
@@ -332,7 +334,7 @@ export default function ProjectDetailView({
           <textarea
             value={noteInput}
             onChange={(e) => setNoteInput(e.target.value)}
-            placeholder="노트를 입력하세요..."
+            placeholder={t.noteInputPlaceholderProject}
             rows={2}
             className="flex-1 px-3 py-2 text-sm rounded-[var(--radius-sm)] border border-[var(--border)] bg-transparent text-[var(--foreground)] outline-none focus:border-[var(--foreground)] placeholder:text-[var(--muted-foreground)] resize-none"
           />
@@ -341,7 +343,7 @@ export default function ProjectDetailView({
             disabled={!noteInput.trim()}
             className="px-3 py-2 text-sm font-medium rounded-[var(--radius-sm)] border border-[var(--foreground)] bg-[var(--foreground)] text-[var(--background)] disabled:opacity-40 hover:opacity-90 transition-opacity self-end"
           >
-            저장
+            {t.save}
           </button>
         </div>
 
@@ -404,10 +406,11 @@ function TaskRow({
   onDelete?: (item: ScheduledItem) => void;
   onUncomplete?: (item: ScheduledItem) => void;
 }) {
+  const { t } = useLocale();
   const done = !!task.completedAt;
   const timeLabel = task.slot
-    ? `${task.slot.period === 'morning' ? '오전' : task.slot.period === 'afternoon' ? '오후' : '저녁'} P${task.slot.priority}`
-    : '백로그';
+    ? `${task.slot.period === 'morning' ? t.morning : task.slot.period === 'afternoon' ? t.afternoon : t.evening} P${task.slot.priority}`
+    : t.backlog;
 
   const timer = task.timerSeconds
     ? `${Math.floor(task.timerSeconds / 60)}m`
@@ -440,7 +443,7 @@ function TaskRow({
         )}
       </span>
       <span className="text-xs text-[var(--muted-foreground)] shrink-0">
-        {task.date ?? '백로그'}
+        {task.date ?? t.backlog}
       </span>
       <span className="text-xs text-[var(--muted-foreground)] shrink-0 w-16 text-right">
         {timeLabel}
@@ -467,7 +470,7 @@ function TaskRow({
               onClick={() => onUncomplete(task)}
               className="px-3 py-1 text-[12px] font-medium text-[var(--muted-foreground)] rounded-full bg-[var(--muted)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
             >
-              완료 취소
+              {t.undoComplete}
             </button>
           )
         ) : (
@@ -476,7 +479,8 @@ function TaskRow({
               <button
                 onClick={() => onDefer(task)}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
-                title="미루기"
+                title={t.defer}
+                aria-label={t.defer}
               >
                 <SkipForward size={14} />
               </button>
@@ -485,7 +489,8 @@ function TaskRow({
               <button
                 onClick={() => onComplete(task)}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity pointer-events-auto"
-                title="완료"
+                title={t.complete}
+                aria-label={t.complete}
               >
                 <Check size={14} strokeWidth={2.5} />
               </button>
@@ -494,7 +499,8 @@ function TaskRow({
               <button
                 onClick={() => onRepeat(task)}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
-                title="또하기"
+                title={t.redo}
+                aria-label={t.redo}
               >
                 <RefreshCw size={13} />
               </button>
@@ -503,7 +509,8 @@ function TaskRow({
               <button
                 onClick={() => onDelete(task)}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--g-error)]/10 hover:text-[var(--g-error)] transition-colors pointer-events-auto"
-                title="삭제"
+                title={t.delete}
+                aria-label={t.delete}
               >
                 <Trash2 size={13} />
               </button>
@@ -525,18 +532,19 @@ function RoutineRow({
   instanceCount: number;
   completedCount: number;
 }) {
+  const { t } = useLocale();
   const recurrenceLabel =
     routine.recurrence === 'daily'
-      ? '매일'
+      ? t.frequency.daily
       : routine.recurrence === 'weekly'
         ? routine.daysOfWeek?.length
-          ? `매주 ${routine.daysOfWeek.map((d) => ['일', '월', '화', '수', '목', '금', '토'][d]).join('·')}`
-          : '매주'
+          ? `${t.frequency.weekly} ${routine.daysOfWeek.map((d) => t.weekdaysSingle[d]).join('·')}`
+          : t.frequency.weekly
         : routine.recurrence === 'biweekly'
-          ? '격주'
-          : '매월';
+          ? t.frequency.biweekly
+          : t.frequency.monthly;
 
-  const slotLabel = `${routine.defaultSlot.period === 'morning' ? '오전' : routine.defaultSlot.period === 'afternoon' ? '오후' : '저녁'} P${routine.defaultSlot.priority}`;
+  const slotLabel = `${routine.defaultSlot.period === 'morning' ? t.morning : routine.defaultSlot.period === 'afternoon' ? t.afternoon : t.evening} P${routine.defaultSlot.priority}`;
 
   return (
     <div className="flex items-center gap-3 px-3 py-2 rounded-[var(--radius-sm)] bg-[var(--card)]">
@@ -557,7 +565,7 @@ function RoutineRow({
       </span>
       {completedCount > 0 && (
         <span className="text-xs shrink-0 w-10 text-right" style={{ color: 'var(--g-success)' }}>
-          {completedCount}회
+          {t.completionCount(completedCount)}
         </span>
       )}
     </div>
@@ -572,6 +580,7 @@ function NoteRow({
   note: Note;
   onRemove: (id: string) => void;
 }) {
+  const { t } = useLocale();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const dateStr = new Date(note.createdAt).toLocaleDateString('ko-KR', {
     month: 'short',
@@ -599,11 +608,11 @@ function NoteRow({
       {confirmDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius)] p-5 shadow-xl w-72 flex flex-col gap-3">
-            <p className="font-semibold text-[var(--foreground)]">노트를 삭제할까요?</p>
-            <p className="text-sm text-[var(--muted-foreground)]">삭제한 노트는 복구할 수 없습니다.</p>
+            <p className="font-semibold text-[var(--foreground)]">{t.deleteNoteConfirm}</p>
+            <p className="text-sm text-[var(--muted-foreground)]">{t.deleteNoteWarning}</p>
             <div className="flex items-center gap-2">
-              <button onClick={() => setConfirmDelete(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
-              <button onClick={() => { onRemove(note.id); setConfirmDelete(false); }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
+              <button onClick={() => setConfirmDelete(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">{t.cancel}</button>
+              <button onClick={() => { onRemove(note.id); setConfirmDelete(false); }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">{t.delete}</button>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { MoreHorizontal, Plus, Download, Upload, Trash2, Settings, X, ShieldChec
 import { Project } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import Avatar from '@/components/ui/Avatar';
+import { useLocale, type Locale } from '@/i18n/context';
 
 interface SidebarProps {
   projects: Project[];
@@ -27,12 +28,6 @@ interface SidebarProps {
   className?: string;
 }
 
-const FILTERS = [
-  { id: null, label: '오늘' },
-  { id: '__calendar__', label: '캘린더' },
-  { id: '__retrospective__', label: '회고' },
-] as const;
-
 function ProjectMenu({
   project,
   onEdit,
@@ -46,6 +41,7 @@ function ProjectMenu({
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { t } = useLocale();
 
   useEffect(() => {
     if (!open) return;
@@ -63,7 +59,7 @@ function ProjectMenu({
       <button
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
         className="opacity-0 group-hover:opacity-100 transition-opacity duration-100 w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] flex-shrink-0"
-        aria-label="프로젝트 메뉴"
+        aria-label={t.projectMenu}
       >
         <MoreHorizontal size={14} />
       </button>
@@ -74,19 +70,19 @@ function ProjectMenu({
             onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(project); }}
             className="w-full text-left px-3 py-1.5 text-[var(--fs-item)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
           >
-            이름 변경
+            {t.rename}
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setOpen(false); onArchive(project.id); }}
             className="w-full text-left px-3 py-1.5 text-[var(--fs-item)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
           >
-            아카이브
+            {t.archive}
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(project.id); }}
             className="w-full text-left px-3 py-1.5 text-[var(--fs-item)] text-[var(--g-error)] hover:bg-[var(--g-error)]/5 dark:hover:bg-[var(--g-error)]/10 transition-colors"
           >
-            삭제
+            {t.delete}
           </button>
         </div>
       )}
@@ -114,10 +110,17 @@ export default function Sidebar({
   onProjectFirstModeChange,
   className = '',
 }: SidebarProps) {
+  const { locale, setLocale, t } = useLocale();
   const activeProjects = projects.filter((p) => !p.archived);
   const archivedProjects = projects.filter((p) => p.archived);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [dataMenuOpen, setDataMenuOpen] = useState(false);
+
+  const FILTERS = [
+    { id: null, label: t.today },
+    { id: '__calendar__', label: t.calendar },
+    { id: '__retrospective__', label: t.retrospective },
+  ] as const;
   return (
     <aside
       className={[
@@ -135,6 +138,7 @@ export default function Sidebar({
           <button
             onClick={onSearchClick}
             className="w-7 h-7 flex items-center justify-center rounded-full text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition-colors"
+            aria-label={t.searchPlaceholder}
           >
             <Search size={15} strokeWidth={2} />
           </button>
@@ -145,7 +149,7 @@ export default function Sidebar({
       <nav className="flex-1 overflow-y-auto py-3 flex flex-col px-2">
         {/* 기본 필터 */}
         <p className="px-3 pt-1 pb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]" style={{ opacity: 0.5 }}>
-          뷰
+          {t.views}
         </p>
         <div className="flex flex-col gap-0.5">
           {FILTERS.map((f) => (
@@ -168,7 +172,7 @@ export default function Sidebar({
         {/* 프로젝트 목록 */}
         <div className="px-3 pb-2 flex items-center justify-between" style={{ paddingTop: 40 }}>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted-foreground)]" style={{ opacity: 0.5 }}>
-            프로젝트
+            {t.projects}
           </p>
         </div>
         {activeProjects.map((project) => (
@@ -211,7 +215,7 @@ export default function Sidebar({
           ].join(' ')}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--muted-foreground)] inline-block flex-shrink-0" />
-          미분류
+          {t.uncategorized}
         </button>
 
         {/* 프로젝트 추가 */}
@@ -220,7 +224,7 @@ export default function Sidebar({
           className="w-full flex items-center gap-2 px-3 py-1.5 mt-1 rounded-[var(--radius-sm)] text-[13px] text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition-colors duration-100"
         >
           <Plus size={14} strokeWidth={1.8} />
-          프로젝트 이름
+          {t.projectName}
         </button>
 
         {/* 보관함 */}
@@ -231,7 +235,7 @@ export default function Sidebar({
               className="w-full flex items-center gap-2 px-3 py-1.5 mt-4 rounded-[var(--radius-sm)] text-[12px] text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition-colors duration-100"
             >
               <Archive size={13} strokeWidth={1.8} />
-              <span>보관함 ({archivedProjects.length})</span>
+              <span>{t.archiveBox} ({archivedProjects.length})</span>
               <svg
                 width="10" height="10" viewBox="0 0 10 10"
                 className={`ml-auto transition-transform ${archiveOpen ? 'rotate-180' : ''}`}
@@ -253,7 +257,7 @@ export default function Sidebar({
                       <button
                         onClick={() => onUnarchiveProject(project.id)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="복원"
+                        title={t.restore}
                       >
                         <ArchiveRestore size={13} strokeWidth={1.8} className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]" />
                       </button>
@@ -273,7 +277,7 @@ export default function Sidebar({
           className="w-full flex items-center gap-3 px-3 py-2 text-[13px] text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition-colors duration-100"
         >
           <Avatar size="md" />
-          <span className="truncate text-left">로그인 하세요</span>
+          <span className="truncate text-left">{t.login}</span>
         </button>
 
         {/* 구분선 — 반듯한 직선 */}
@@ -285,7 +289,7 @@ export default function Sidebar({
           className="w-full flex items-center gap-2 px-3 py-1.5 text-[13px] text-[var(--muted-foreground)] hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)] transition-colors duration-100"
         >
           <Settings size={14} strokeWidth={1.8} />
-          <span>데이터 관리</span>
+          <span>{t.dataManagement}</span>
         </button>
 
         {/* 데이터 관리 패널 */}
@@ -295,7 +299,7 @@ export default function Sidebar({
             <div className="px-3 py-3 border-b border-[var(--border)] flex items-start gap-2">
               <ShieldCheck size={14} className="text-[var(--g-success)] flex-shrink-0 mt-0.5" />
               <p className="text-[14px] leading-snug text-[var(--muted-foreground)]">
-                투두슬롯은 데이터를 서버에 저장하지 않아요. 모든 데이터는 이 브라우저에만 보관됩니다. 소중한 기록은 직접 백업해 주세요.
+                {t.dataDisclaimer}
               </p>
             </div>
 
@@ -305,24 +309,41 @@ export default function Sidebar({
               className="w-full flex items-center gap-2 px-3 py-2 text-[var(--fs-tag)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors duration-100"
             >
               <Download size={13} strokeWidth={1.8} />
-              <span>내보내기</span>
+              <span>{t.exportData}</span>
             </button>
             <button
               onClick={() => { onImport?.(); setDataMenuOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-2 text-[var(--fs-tag)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors duration-100"
             >
               <Upload size={13} strokeWidth={1.8} />
-              <span>가져오기</span>
+              <span>{t.importData}</span>
             </button>
             <button
               onClick={() => { onResetData?.(); setDataMenuOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-2 text-[var(--fs-tag)] text-[var(--g-error)] hover:bg-[var(--g-error)]/10 transition-colors duration-100"
             >
               <Trash2 size={13} strokeWidth={1.8} />
-              <span>삭제하기</span>
+              <span>{t.deleteData}</span>
             </button>
           </div>
         )}
+
+        {/* Language switcher */}
+        <div className="mx-3 my-1 border-t border-[var(--border)]" />
+        <div className="flex items-center gap-1 px-3 py-1.5">
+          <button
+            onClick={() => setLocale('ko')}
+            className={`px-2 py-1 text-[12px] rounded-[var(--radius-sm)] transition-colors ${locale === 'ko' ? 'font-semibold text-[var(--foreground)] bg-[var(--muted)]' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`}
+          >
+            한국어
+          </button>
+          <button
+            onClick={() => setLocale('en')}
+            className={`px-2 py-1 text-[12px] rounded-[var(--radius-sm)] transition-colors ${locale === 'en' ? 'font-semibold text-[var(--foreground)] bg-[var(--muted)]' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'}`}
+          >
+            EN
+          </button>
+        </div>
       </div>
     </aside>
   );

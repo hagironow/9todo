@@ -2,6 +2,7 @@
 
 import type { RetrospectiveEntry, RetroScope, EnergyLevel } from '@/lib/types';
 import RetroInput from './RetroInput';
+import { useLocale } from '@/i18n/context';
 
 interface DailyRetroProps {
   date: string; // YYYY-MM-DD
@@ -10,6 +11,8 @@ interface DailyRetroProps {
 }
 
 export default function DailyRetro({ date, retrospectives, onSave }: DailyRetroProps) {
+  const { t } = useLocale();
+
   const existing = (retrospectives ?? []).find(
     (r) => r.scope === 'day' && r.scopeKey === date
   );
@@ -22,8 +25,8 @@ export default function DailyRetro({ date, retrospectives, onSave }: DailyRetroP
         initialContent={existing?.content ?? ''}
         initialEnergyLevel={existing?.energyLevel}
         onSave={onSave}
-        label="오늘 회고"
-        placeholder="오늘 하루는 어땠나요?"
+        label={t.dailyRetroTitle}
+        placeholder={t.dailyRetroPlaceholder}
         compact
       />
     </div>

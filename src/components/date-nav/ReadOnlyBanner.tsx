@@ -1,16 +1,18 @@
 'use client';
 
+import { useLocale } from '@/i18n/context';
+
 interface ReadOnlyBannerProps {
   date: string; // "YYYY-MM-DD"
   onGoToday: () => void;
 }
 
-function formatDateKo(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return `${year}년 ${month}월 ${day}일`;
-}
-
 export default function ReadOnlyBanner({ date, onGoToday }: ReadOnlyBannerProps) {
+  const { t } = useLocale();
+
+  const [year, month, day] = date.split('-').map(Number);
+  const formattedDate = t.dateShort(year, month, day);
+
   return (
     <div
       className={[
@@ -22,8 +24,8 @@ export default function ReadOnlyBanner({ date, onGoToday }: ReadOnlyBannerProps)
       aria-live="polite"
     >
       <span className="text-sm text-[var(--muted-foreground)]">
-        {formatDateKo(date)}의 기록입니다.{' '}
-        <span className="font-medium">(읽기 전용)</span>
+        {t.recordFrom(formattedDate)}{' '}
+        <span className="font-medium">{t.readOnlyLabel}</span>
       </span>
       <button
         onClick={onGoToday}
@@ -33,7 +35,7 @@ export default function ReadOnlyBanner({ date, onGoToday }: ReadOnlyBannerProps)
           'transition-colors duration-150',
         ].join(' ')}
       >
-        오늘로 이동
+        {t.goTodayButton}
       </button>
     </div>
   );

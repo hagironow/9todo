@@ -2,18 +2,13 @@
 
 import { Repeat } from 'lucide-react';
 import { ScheduledItem, TimePeriod } from '@/lib/types';
+import { useLocale } from '@/i18n/context';
 
 interface RoutineSectionProps {
   items: ScheduledItem[];
   onComplete: (item: ScheduledItem) => void;
   onDefer: (item: ScheduledItem) => void;
 }
-
-const PERIOD_LABELS: Record<TimePeriod, string> = {
-  morning: '오전',
-  afternoon: '오후',
-  evening: '저녁',
-};
 
 const PERIOD_ORDER: TimePeriod[] = ['morning', 'afternoon', 'evening'];
 
@@ -32,6 +27,14 @@ export default function RoutineSection({
   onComplete,
   onDefer,
 }: RoutineSectionProps) {
+  const { t } = useLocale();
+
+  const PERIOD_LABELS: Record<TimePeriod, string> = {
+    morning: t.morning,
+    afternoon: t.afternoon,
+    evening: t.evening,
+  };
+
   if (items.length === 0) return null;
 
   // 시간대별 그룹핑
@@ -45,8 +48,8 @@ export default function RoutineSection({
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold text-[var(--foreground)]">루틴</span>
-        <span className="text-[11px] text-[var(--muted-foreground)] flex items-center gap-1"><Repeat size={11} strokeWidth={1.8} /> 오늘의 반복 항목</span>
+        <span className="text-sm font-semibold text-[var(--foreground)]">{t.routine}</span>
+        <span className="text-[11px] text-[var(--muted-foreground)] flex items-center gap-1"><Repeat size={11} strokeWidth={1.8} /> {t.routine}</span>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -87,13 +90,13 @@ export default function RoutineSection({
                             onClick={() => onComplete(item)}
                             className="h-6 px-2 rounded-[var(--radius-sm)] bg-[var(--foreground)] text-[var(--background)] text-[10px] font-semibold hover:opacity-85 transition-opacity"
                           >
-                            완료
+                            {t.complete}
                           </button>
                           <button
                             onClick={() => onDefer(item)}
                             className="h-6 px-2 rounded-[var(--radius-sm)] bg-[var(--muted)] text-[var(--foreground)] text-[10px] font-semibold hover:bg-[var(--border)] transition-colors"
                           >
-                            미루기
+                            {t.defer}
                           </button>
                         </>
                       )}

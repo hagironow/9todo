@@ -2,6 +2,7 @@
 
 import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project, Routine } from '@/lib/types';
 import TimetableRow from './TimetableRow';
+import { useLocale } from '@/i18n/context';
 
 type RowStatus = 'active' | 'past' | 'future';
 
@@ -27,12 +28,6 @@ interface TimetableGridProps {
   onItemSelect?: (item: ScheduledItem) => void;
   onEditRecurrence?: (item: ScheduledItem) => void;
 }
-
-const PERIODS: { period: TimePeriod; label: string; time: string }[] = [
-  { period: 'morning',   label: '오전', time: '9:00 ~ 12:00' },
-  { period: 'afternoon', label: '오후', time: '12:00 ~ 18:00' },
-  { period: 'evening',   label: '저녁', time: '18:00 ~ 새벽 5:00' },
-];
 
 const PERIOD_ORDER: TimePeriod[] = ['morning', 'afternoon', 'evening'];
 
@@ -66,6 +61,14 @@ export default function TimetableGrid({
   onItemSelect,
   onEditRecurrence,
 }: TimetableGridProps) {
+  const { t } = useLocale();
+
+  const PERIODS: { period: TimePeriod; label: string; time: string }[] = [
+    { period: 'morning',   label: t.morning,   time: t.morningTime },
+    { period: 'afternoon', label: t.afternoon, time: t.afternoonTime },
+    { period: 'evening',   label: t.evening,   time: t.eveningTime },
+  ];
+
   return (
     <div className="rounded-[var(--radius)] bg-[var(--grid-bg)]">
       {/* Priority header */}

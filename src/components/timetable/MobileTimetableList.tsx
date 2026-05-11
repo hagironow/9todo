@@ -5,6 +5,7 @@ import { Check, SkipForward, RefreshCw, Trash2, Plus, Repeat, Inbox } from 'luci
 import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
 import ColorDot from '@/components/ui/ColorDot';
+import { useLocale } from '@/i18n/context';
 
 interface MobileTimetableListProps {
   currentPeriod: TimePeriod;
@@ -31,12 +32,6 @@ interface MobileTimetableListProps {
 
 type RowStatus = 'active' | 'past' | 'future';
 
-const PERIODS: { period: TimePeriod; label: string; time: string }[] = [
-  { period: 'morning',   label: '오전', time: '9–12' },
-  { period: 'afternoon', label: '오후', time: '12–18' },
-  { period: 'evening',   label: '저녁', time: '18–5' },
-];
-
 const PERIOD_ORDER: TimePeriod[] = ['morning', 'afternoon', 'evening'];
 const PRIORITIES: Priority[] = [1, 2, 3];
 
@@ -52,16 +47,8 @@ function getXpForPriority(priority: Priority): number {
   return priority === 1 ? 3 : priority === 2 ? 2 : 1;
 }
 
-function getPriorityLabel(priority: Priority): string {
-  return priority === 1 ? '1st' : priority === 2 ? '2nd' : '3rd';
-}
-
 function getItemTitle(item: ScheduledItem): string {
   return item.title;
-}
-
-function getPeriodLabel(period: TimePeriod): string {
-  return period === 'morning' ? '오전' : period === 'afternoon' ? '오후' : '저녁';
 }
 
 // ─── Collected item with metadata ─────────────────────────────────────────────
@@ -104,11 +91,17 @@ function MobileCard({
   onSendToBacklog?: (item: ScheduledItem) => void;
   isToday?: boolean;
 }) {
+  const { t } = useLocale();
   const { item, period, priority, isRoutine } = card;
   const isCompleted = !!item.completedAt;
   const title = getItemTitle(item);
   const xp = getXpForPriority(priority);
   const isTapped = tappedId === item.id;
+
+  const getPeriodLabel = (p: TimePeriod) =>
+    p === 'morning' ? t.morning : p === 'afternoon' ? t.afternoon : t.evening;
+  const getPriorityLabel = (p: Priority) =>
+    p === 1 ? t.priority1 : p === 2 ? t.priority2 : t.priority3;
 
   const deferCount = 'deferCount' in item ? item.deferCount : 0;
   const continueCount = 'continueCount' in item ? (item as { continueCount?: number }).continueCount ?? 0 : 0;
@@ -174,7 +167,7 @@ function MobileCard({
             {isRoutine ? (
               <span className="inline-flex items-center gap-1 text-[10px] text-[var(--muted-foreground)]">
                 <Repeat size={10} strokeWidth={1.8} />
-                루틴
+                {t.routine}
               </span>
             ) : proj ? (
               <span
@@ -190,7 +183,7 @@ function MobileCard({
                 style={{ backgroundColor: 'var(--muted)' }}
               >
                 <span className="w-[6px] h-[6px] rounded-full bg-[var(--muted-foreground)] inline-block" />
-                미분류
+                {t.uncategorized}
               </span>
             )}
           </div>
@@ -270,7 +263,7 @@ function MobileCard({
           onClick={(e) => { e.stopPropagation(); onUncomplete(item); }}
           className="absolute top-2 right-3 text-[11px] text-[var(--muted-foreground)]"
         >
-          완료 취소
+          {t.undoComplete}
         </button>
       )}
     </div>
@@ -290,9 +283,21 @@ function AddSlotPicker({
   slots: Record<TimePeriod, Record<Priority, ScheduledItem | null>>;
   onCreateInSlot?: (title: string, coord: SlotCoord, projectId?: string | null) => void;
 }) {
+  const { t } = useLocale();
   const [selectedCoord, setSelectedCoord] = useState<SlotCoord | null>(null);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const PERIODS: { period: TimePeriod; label: string }[] = [
+    { period: 'morning',   label: t.morningShort },
+    { period: 'afternoon', label: t.afternoonShort },
+    { period: 'evening',   label: t.eveningShort },
+  ];
+
+  const getPeriodLabel = (p: TimePeriod) =>
+    p === 'morning' ? t.morning : p === 'afternoon' ? t.afternoon : t.evening;
+  const getPriorityLabel = (p: Priority) =>
+    p === 1 ? t.priority1 : p === 2 ? t.priority2 : t.priority3;
 
   useEffect(() => {
     if (selectedCoord) {
@@ -335,7 +340,7 @@ function AddSlotPicker({
           /* Input mode */
           <div>
             <p className="text-[13px] text-[var(--muted-foreground)] mb-2">
-              {getPeriodLabel(selectedCoord.period)} {getPriorityLabel(selectedCoord.priority)}에 추가
+              {t.addToSlotLabel(getPeriodLabel(selectedCoord.period), getPriorityLabel(selectedCoord.priority))}
             </p>
             <input
               ref={inputRef}
@@ -345,7 +350,7 @@ function AddSlotPicker({
                 if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitInput();
                 if (e.key === 'Escape') { setSelectedCoord(null); setInputValue(''); }
               }}
-              placeholder="할 일 입력..."
+              placeholder={t.taskInputPlaceholder}
               className="w-full px-4 py-3 rounded-[var(--radius)] bg-[var(--background)] text-[var(--foreground)] text-[15px] outline-none border border-[var(--border)] focus:border-[var(--accent)]"
             />
             <div className="flex gap-2 mt-3">
@@ -353,22 +358,22 @@ function AddSlotPicker({
                 onClick={() => { setSelectedCoord(null); setInputValue(''); }}
                 className="flex-1 py-2.5 rounded-[var(--radius)] text-[14px] text-[var(--muted-foreground)] bg-[var(--muted)]"
               >
-                뒤로
+                {t.back}
               </button>
               <button
                 onClick={commitInput}
                 className="flex-1 py-2.5 rounded-[var(--radius)] text-[14px] font-semibold bg-[var(--foreground)] text-[var(--background)]"
               >
-                추가
+                {t.add}
               </button>
             </div>
           </div>
         ) : (
           /* Slot picker */
           <div>
-            <p className="text-[15px] font-semibold text-[var(--foreground)] mb-3">어디에 추가할까요?</p>
+            <p className="text-[15px] font-semibold text-[var(--foreground)] mb-3">{t.whereToAdd}</p>
             {allFilled ? (
-              <p className="text-[13px] text-[var(--muted-foreground)] text-center py-6">빈 슬롯이 없어요</p>
+              <p className="text-[13px] text-[var(--muted-foreground)] text-center py-6">{t.noEmptySlots}</p>
             ) : (
               <>
                 {/* Header: priority labels */}
@@ -444,8 +449,15 @@ export default function MobileTimetableList({
   onSendToBacklog,
   isToday = true,
 }: MobileTimetableListProps) {
+  const { t } = useLocale();
   const [tappedId, setTappedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+
+  const PERIODS: { period: TimePeriod }[] = [
+    { period: 'morning' },
+    { period: 'afternoon' },
+    { period: 'evening' },
+  ];
 
   // Tap outside to deselect
   const containerRef = useRef<HTMLDivElement>(null);
@@ -483,7 +495,7 @@ export default function MobileTimetableList({
     <div ref={containerRef} className="md:hidden flex flex-col gap-2">
       {cards.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="text-[14px] text-[var(--muted-foreground)]">오늘 할 일을 추가해 보세요</p>
+          <p className="text-[14px] text-[var(--muted-foreground)]">{t.addTodayTasks}</p>
         </div>
       ) : (
         cards.map((card) => (
@@ -513,7 +525,7 @@ export default function MobileTimetableList({
           className="flex items-center justify-center gap-2 py-3.5 rounded-[var(--radius)] border border-dashed border-[var(--border)] text-[14px] text-[var(--muted-foreground)] active:bg-[var(--muted)] transition-colors"
         >
           <Plus size={16} strokeWidth={1.5} />
-          할 일 추가
+          {t.addTask}
         </button>
       )}
 

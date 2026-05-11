@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useLocale } from '@/i18n/context';
 
 interface CalendarModalProps {
   open: boolean;
@@ -12,8 +13,6 @@ interface CalendarModalProps {
   onSelectDate: (date: string) => void;
   onGoToday: () => void;
 }
-
-const KO_WEEKDAYS_SHORT = ['일', '월', '화', '수', '목', '금', '토'];
 
 function toDateString(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -28,6 +27,7 @@ export default function CalendarModal({
   onSelectDate,
   onGoToday,
 }: CalendarModalProps) {
+  const { t } = useLocale();
   const [year, month] = currentDate.split('-').map(Number);
   // month is 1-based from currentDate, convert to 0-based for state
   const [viewYear, setViewYear] = useState(year);
@@ -104,7 +104,7 @@ export default function CalendarModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       aria-modal="true"
       role="dialog"
-      aria-label="날짜 선택"
+      aria-label={t.selectDate}
     >
       {/* Backdrop */}
       <div
@@ -127,7 +127,7 @@ export default function CalendarModal({
         <div className="flex items-center justify-between">
           <button
             onClick={prevMonth}
-            aria-label="이전 달"
+            aria-label={t.prevMonth}
             className={[
               'flex items-center justify-center w-7 h-7',
               'rounded-[var(--radius-sm)]',
@@ -139,13 +139,13 @@ export default function CalendarModal({
           </button>
 
           <span className="text-sm font-semibold text-[var(--foreground)]">
-            {viewYear}년 {viewMonth + 1}월
+            {t.monthYear(viewYear, viewMonth + 1)}
           </span>
 
           <div className="flex items-center gap-1">
             <button
               onClick={nextMonth}
-              aria-label="다음 달"
+              aria-label={t.nextMonth}
               className={[
                 'flex items-center justify-center w-7 h-7',
                 'rounded-[var(--radius-sm)]',
@@ -158,7 +158,7 @@ export default function CalendarModal({
 
             <button
               onClick={onClose}
-              aria-label="닫기"
+              aria-label={t.close}
               className={[
                 'flex items-center justify-center w-7 h-7',
                 'rounded-[var(--radius-sm)]',
@@ -173,7 +173,7 @@ export default function CalendarModal({
 
         {/* 요일 헤더 */}
         <div className="grid grid-cols-7 gap-0.5">
-          {KO_WEEKDAYS_SHORT.map((day, i) => (
+          {t.weekdaysSingle.map((day, i) => (
             <div
               key={day}
               className={[
@@ -221,7 +221,7 @@ export default function CalendarModal({
                     ? 'ring-2 ring-[var(--accent)] ring-offset-1 ring-offset-[var(--card)]'
                     : '',
                 ].join(' ')}
-                aria-label={`${viewYear}년 ${viewMonth + 1}월 ${day}일${today ? ' (오늘)' : ''}${selected ? ' (선택됨)' : ''}`}
+                aria-label={`${t.dateShort(viewYear, viewMonth + 1, day)}${today ? ` (${t.today})` : ''}${selected ? ` (${t.selected})` : ''}`}
               >
                 <span className="leading-none">{day}</span>
                 {dotVisible && (
@@ -255,7 +255,7 @@ export default function CalendarModal({
                 'transition-colors duration-150',
               ].join(' ')}
             >
-              오늘로 돌아가기
+              {t.goToToday}
             </button>
           </div>
         )}

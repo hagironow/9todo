@@ -2,6 +2,7 @@
 
 import { useRef, useCallback } from 'react';
 import type { EnergyLevel } from '@/lib/types';
+import { useLocale } from '@/i18n/context';
 
 interface EnergyLevelInputProps {
   value?: EnergyLevel;
@@ -24,14 +25,6 @@ const ENERGY_BG: Record<EnergyLevel, string> = {
   3: 'rgba(255, 212, 59, 0.15)',
   4: 'rgba(81, 207, 102, 0.15)',
   5: 'rgba(81, 207, 102, 0.15)',
-};
-
-const ENERGY_LABELS: Record<EnergyLevel, string> = {
-  1: '지침',
-  2: '낮음',
-  3: '보통',
-  4: '좋음',
-  5: '최고',
 };
 
 export function getEnergyColor(level: number): string {
@@ -60,6 +53,7 @@ export default function EnergyLevelInput({
   compact = false,
   readOnly = false,
 }: EnergyLevelInputProps) {
+  const { t } = useLocale();
   const levels: EnergyLevel[] = [1, 2, 3, 4, 5];
   const containerRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
@@ -96,7 +90,7 @@ export default function EnergyLevelInput({
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" className="opacity-70">
           <path d="M13 2L8.5 9H11L7 14L9.5 9H7L9 2H13Z" fill="currentColor" />
         </svg>
-        {!compact && '에너지'}
+        {!compact && t.energy}
       </span>
       <div
         ref={containerRef}
@@ -135,7 +129,7 @@ export default function EnergyLevelInput({
             backgroundColor: ENERGY_BG[value],
           }}
         >
-          {ENERGY_LABELS[value]}
+          {t.energyLevels[value - 1]}
         </span>
       )}
     </div>

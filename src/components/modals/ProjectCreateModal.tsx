@@ -5,6 +5,7 @@ import Dialog from '@/components/ui/Dialog';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { COLOR_THEMES, resolveColor } from '@/lib/colors';
+import { useLocale } from '@/i18n/context';
 
 interface ProjectCreateData {
   name: string;
@@ -26,17 +27,18 @@ export default function ProjectCreateModal({
   colorTheme,
   onThemeChange,
 }: ProjectCreateModalProps) {
+  const { t } = useLocale();
   const [name, setName] = useState('');
   const [colorIndex, setColorIndex] = useState(0);
   const [nameError, setNameError] = useState('');
 
-  const theme = COLOR_THEMES.find((t) => t.id === colorTheme) ?? COLOR_THEMES[0];
+  const theme = COLOR_THEMES.find((th) => th.id === colorTheme) ?? COLOR_THEMES[0];
   const previewColor = resolveColor(colorIndex, colorTheme);
 
   const handleSave = () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setNameError('프로젝트 이름을 입력하세요');
+      setNameError(t.enterProjectName);
       return;
     }
     onSave({ name: trimmed, colorIndex });
@@ -54,17 +56,17 @@ export default function ProjectCreateModal({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} title="새 프로젝트" width="sm">
+    <Dialog open={open} onClose={handleClose} title={t.newProject} width="sm">
       {/* 프로젝트 이름 */}
       <Input
-        label="프로젝트 이름"
+        label={t.projectName}
         value={name}
         onChange={(e) => {
           setName(e.target.value);
           if (nameError) setNameError('');
         }}
         onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
-        placeholder="프로젝트 이름"
+        placeholder={t.projectName}
         error={nameError}
         autoFocus
       />
@@ -72,24 +74,24 @@ export default function ProjectCreateModal({
       {/* 컬러 테마 */}
       <div className="flex flex-col gap-3">
         <p className="text-[var(--fs-tag)] font-semibold text-[var(--foreground)]">
-          컬러
+          {t.color}
         </p>
 
         {/* 테마 탭 */}
         <div className="flex gap-1.5">
-          {COLOR_THEMES.map((t) => (
+          {COLOR_THEMES.map((th) => (
             <button
-              key={t.id}
-              onClick={() => onThemeChange(t.id)}
+              key={th.id}
+              onClick={() => onThemeChange(th.id)}
               className={[
                 'px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium',
                 'transition-all duration-150 cursor-pointer',
-                colorTheme === t.id
+                colorTheme === th.id
                   ? 'bg-[var(--foreground)] text-[var(--background)]'
                   : 'bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]',
               ].join(' ')}
             >
-              {t.label}
+              {th.label}
             </button>
           ))}
         </div>
@@ -108,7 +110,7 @@ export default function ProjectCreateModal({
                   : 'hover:scale-105',
               ].join(' ')}
               style={{ backgroundColor: hex }}
-              aria-label={`컬러 ${idx + 1}`}
+              aria-label={`${t.color} ${idx + 1}`}
               aria-pressed={colorIndex === idx}
             />
           ))}
@@ -122,14 +124,14 @@ export default function ProjectCreateModal({
           style={{ backgroundColor: previewColor }}
         />
         <span className="text-[var(--fs-item)] text-[var(--foreground)] truncate">
-          {name.trim() || '프로젝트 이름'}
+          {name.trim() || t.projectName}
         </span>
       </div>
 
       {/* 버튼 */}
       <div className="flex justify-end gap-2 pt-1">
-        <Button variant="ghost" onClick={handleClose}>취소</Button>
-        <Button variant="primary" onClick={handleSave}>만들기</Button>
+        <Button variant="ghost" onClick={handleClose}>{t.cancel}</Button>
+        <Button variant="primary" onClick={handleSave}>{t.create}</Button>
       </div>
     </Dialog>
   );
