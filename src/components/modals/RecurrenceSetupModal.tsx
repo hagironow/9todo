@@ -7,6 +7,7 @@ import { RecurrenceType, TimePeriod, Priority, SlotCoord, Task, Project } from '
 import { formatLocalDate } from '@/lib/date';
 import Dialog from '@/components/ui/Dialog';
 import ColorDot from '@/components/ui/ColorDot';
+import InlineDatePicker from '@/components/ui/InlineDatePicker';
 
 export interface RecurrenceSetupData {
   title: string;
@@ -441,12 +442,7 @@ export default function RecurrenceSetupModal({
             {/* 시작일 */}
             <div className={ROW + ' border-b-0'}>
               <span className={LABEL}>시작일</span>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="text-[12px] text-[var(--foreground)] bg-[var(--muted)] rounded-[var(--radius-sm)] px-2 py-1 border-none outline-none"
-              />
+              <InlineDatePicker value={startDate} onChange={setStartDate} />
             </div>
           </div>
 

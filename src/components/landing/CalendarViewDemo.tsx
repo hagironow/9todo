@@ -77,7 +77,7 @@ function RecurrenceModal({ preset, phase }: {
       <div style={{
         width: 400, borderRadius: 14,
         backgroundColor: T.card, border: `1px solid ${T.border}`,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.02)",
+        boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03)",
         display: "flex", flexDirection: "column", padding: "24px 28px",
       }}>
         {/* Title — animates */}
@@ -303,8 +303,8 @@ function MonthlyCalendar() {
   }
 
   return (
-    <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${T.border}`, backgroundColor: T.card }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: `1px solid ${T.border}` }}>
+    <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${T.border}`, backgroundColor: T.card, padding: "32px 32px 32px 72px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 16, borderBottom: `1px solid ${T.border}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
           <span style={{ fontSize: 13, fontWeight: 600, color: T.fg }}>2026년 5월</span>
@@ -315,9 +315,9 @@ function MonthlyCalendar() {
           <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.08)", color: T.fg }}>이번달</span>
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: `1px solid ${T.border}`, marginTop: 12 }}>
         {WEEKDAYS.map((d) => (
-          <div key={d} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "7px 0", fontSize: 11, fontWeight: 600, color: T.mutedFg }}>{d}</div>
+          <div key={d} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 0", fontSize: 11, fontWeight: 600, color: T.mutedFg }}>{d}</div>
         ))}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>{cells}</div>
@@ -369,19 +369,22 @@ export default function CalendarViewDemo() {
 
   return (
     <div style={{ width: "100%", position: "relative", fontFamily: "var(--font-sans)" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 32, minHeight: 520 }}>
-        {/* LEFT */}
-        <div style={{ flexShrink: 0, paddingTop: 8 }}>
+      <div style={{ position: "relative", minHeight: 580 }}>
+        {/* LEFT: Modal — elevated, floats above calendar */}
+        <div style={{ position: "absolute", top: 0, left: 0, zIndex: 10 }}>
           <RecurrenceModal preset={PRESETS[presetIdx]} phase={phase} />
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT: Calendar — behind, shifted down + generous left padding */}
         <div style={{
-          flex: 1, minWidth: 0,
-          maxHeight: 580, overflow: "hidden",
-          maskImage: "linear-gradient(to bottom, black 70%, transparent 98%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 70%, transparent 98%)",
-          paddingTop: 8,
+          marginLeft: 340,
+          paddingTop: 40,
+          position: "relative", zIndex: 1,
+          maxHeight: 600, overflow: "hidden",
+          maskImage: "linear-gradient(to bottom, black 65%, transparent 96%), linear-gradient(to right, transparent 0%, black 3%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 65%, transparent 96%), linear-gradient(to right, transparent 0%, black 3%)",
+          maskComposite: "intersect",
+          WebkitMaskComposite: "source-in" as React.CSSProperties["WebkitMaskComposite"],
         }}>
           <MonthlyCalendar />
         </div>

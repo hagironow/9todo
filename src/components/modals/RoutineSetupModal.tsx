@@ -7,6 +7,7 @@ import { formatLocalDate } from '@/lib/date';
 import Dialog from '@/components/ui/Dialog';
 import Button from '@/components/ui/Button';
 import ColorDot from '@/components/ui/ColorDot';
+import InlineDatePicker from '@/components/ui/InlineDatePicker';
 import ProjectSelectModal from './ProjectSelectModal';
 
 export interface RoutineSetupData {
@@ -297,12 +298,7 @@ export default function RoutineSetupModal({
         {/* 시작일 */}
         <div className="flex flex-col gap-2.5 mt-4">
           <span className={SECTION_LABEL}>시작일</span>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className={INPUT_CLASS}
-          />
+          <InlineDatePicker value={startDate} onChange={setStartDate} />
         </div>
 
         {/* 시간 */}

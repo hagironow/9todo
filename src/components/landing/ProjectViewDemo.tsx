@@ -72,13 +72,16 @@ function ProjectListPanel() {
     <div style={{
       width: 260,
       borderRadius: T.radius * 1.2,
-      backgroundColor: T.card,
-      border: `1px solid ${T.border}`,
+      background: "linear-gradient(180deg, #161618 0%, #111113 25%, #0e0e10 100%)",
+      border: `1px solid rgba(255,255,255,0.06)`,
       overflow: "hidden",
-      boxShadow: "0 0 60px rgba(0,0,0,0.6), 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
+      boxShadow: "0 8px 40px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03)",
       flexShrink: 0,
       zIndex: 10,
+      position: "relative",
     }}>
+      {/* Top edge highlight */}
+      <div style={{ position: "absolute", top: 0, left: 16, right: 16, height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)", zIndex: 3 }} />
       {/* 헤더 */}
       <div style={{
         padding: "12px 16px",
@@ -162,13 +165,14 @@ function ProjectDetailPanel() {
     <div style={{
       borderRadius: T.radius,
       border: `1px solid ${T.border}`,
-      backgroundColor: T.bg,
+      background: "linear-gradient(180deg, #0e0e10 0%, #0a0a0a 15%, #080808 100%)",
       overflow: "hidden",
       display: "flex",
       flexDirection: "column",
+      paddingLeft: 48,
     }}>
       {/* 프로젝트 헤더 */}
-      <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${T.border}` }}>
+      <div style={{ padding: "20px 24px 14px", borderBottom: `1px solid ${T.border}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: p.color }} />
           <span style={{ fontSize: 18, fontWeight: 700, color: T.fg }}>{p.name}</span>
@@ -306,55 +310,44 @@ function ProjectDetailPanel() {
    ══════════════════════════════════════ */
 export default function ProjectViewDemo() {
   return (
-    <div style={{
+    <div className="project-demo-root" style={{
       width: "100%",
       position: "relative",
-      borderRadius: 16,
-      overflow: "hidden",
-      backgroundColor: "#08080A",
       fontFamily: "var(--font-sans)",
     }}>
       <div style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 0,
-        padding: "20px 0 0 16px",
         position: "relative",
+        minHeight: 520,
       }}>
-        {/* 좌: 프로젝트 리스트 (플로팅) */}
-        <div style={{
-          position: "relative",
+        {/* 좌: 프로젝트 리스트 (플로팅, elevated) */}
+        <div className="project-left" style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
           zIndex: 10,
-          flexShrink: 0,
-          marginTop: 16,
         }}>
           <ProjectListPanel />
         </div>
 
-        {/* 우: 프로젝트 상세 (뒤, 오버플로) */}
-        <div style={{
-          flex: 1,
-          marginLeft: -16,
+        {/* 우: 프로젝트 상세 (뒤, shifted down) */}
+        <div className="project-right" style={{
+          marginLeft: 220,
+          paddingTop: 32,
           position: "relative",
           zIndex: 1,
-          maskImage: "linear-gradient(to bottom, black 55%, transparent 100%), linear-gradient(to left, transparent, black 3%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%), linear-gradient(to left, transparent, black 3%)",
+          maskImage: "linear-gradient(to bottom, black 60%, transparent 95%), linear-gradient(to right, transparent 0%, black 3%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 95%), linear-gradient(to right, transparent 0%, black 3%)",
           maskComposite: "intersect",
-          WebkitMaskComposite: "source-in" as any,
-          maxHeight: 480,
+          WebkitMaskComposite: "source-in" as React.CSSProperties["WebkitMaskComposite"],
+          maxHeight: 540,
           overflow: "hidden",
         }}>
           <ProjectDetailPanel />
         </div>
       </div>
 
-      {/* 하단 페이드 */}
-      <div style={{
-        height: 32,
-        background: "linear-gradient(to bottom, #08080A, transparent)",
-        position: "relative",
-        zIndex: 2,
-      }} />
+      {/* Right fade — mobile only */}
+      <div className="project-right-fade" />
     </div>
   );
 }
