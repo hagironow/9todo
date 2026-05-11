@@ -300,8 +300,7 @@ function QuickNotePanel({
 }) {
   const [content, setContent] = useState('');
   const [projectId, setProjectId] = useState(lastUsedProjectId || '__unassigned__');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const activeProjects = projects.filter((p) => !p.archived);
 
@@ -362,45 +361,32 @@ function QuickNotePanel({
                       </span>
                       <button
                         onClick={() => setDeleteTargetId(note.id)}
-                        className="text-xs ml-1 lg:opacity-0 lg:group-hover/note:opacity-100 transition-opacity"
+                        className="text-xs ml-1"
                         style={{ color: 'var(--timer-muted)' }}
                       >
                         ×
                       </button>
                     </div>
-                    {/* 본문 — 클릭 시 인라인 편집 */}
-                    {editingId === note.id ? (
-                      <textarea
-                        autoFocus
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        onBlur={() => {
-                          const trimmed = editContent.trim();
-                          if (trimmed && trimmed !== note.content) onUpdate(note.id, trimmed);
-                          setEditingId(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') setEditingId(null);
-                        }}
-                        className="text-[14px] leading-relaxed w-full bg-transparent outline-none resize-none"
-                        style={{ color: 'var(--timer-fg)', minHeight: '2.5em' }}
-                        rows={3}
-                      />
-                    ) : (
-                      <p
-                        onClick={() => { setEditingId(note.id); setEditContent(note.content); }}
-                        className="text-[14px] leading-relaxed whitespace-pre-wrap break-words cursor-text"
-                        style={{
-                          color: 'var(--timer-fg)',
+                    {/* 본문 — 클릭 시 펼침/접힘 (드래그 선택 중에는 무시) */}
+                    <p
+                      onClick={() => {
+                        const sel = window.getSelection();
+                        if (sel && sel.toString().length > 0) return;
+                        setExpandedId(expandedId === note.id ? null : note.id);
+                      }}
+                      className="text-[14px] leading-relaxed whitespace-pre-wrap break-words cursor-pointer"
+                      style={{
+                        color: 'var(--timer-fg)',
+                        ...(expandedId !== note.id ? {
                           display: '-webkit-box',
-                          WebkitLineClamp: 5,
+                          WebkitLineClamp: 3,
                           WebkitBoxOrient: 'vertical',
                           overflow: 'hidden',
-                        }}
-                      >
-                        {note.content}
-                      </p>
-                    )}
+                        } : {}),
+                      }}
+                    >
+                      {note.content}
+                    </p>
                   </div>
                 </div>
               );

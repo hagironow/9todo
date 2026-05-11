@@ -340,11 +340,13 @@ export default function Home() {
     [uncompleteTask]
   );
 
+  const [deferTarget, setDeferTarget] = useState<ScheduledItem | null>(null);
+
   const handleDefer = useCallback(
     (item: ScheduledItem) => {
-      deferTask(item.id);
+      setDeferTarget(item);
     },
-    [deferTask]
+    []
   );
 
   const handleSendToBacklog = useCallback(
@@ -879,6 +881,7 @@ export default function Home() {
                   };
                 });
               }}
+              onEditRecurrence={handleEditRoutine}
               retrospectives={state.retrospectives ?? []}
               onSaveRetro={upsertRetrospective}
             />
@@ -1020,6 +1023,27 @@ export default function Home() {
           </div>
         )}
       </DragOverlay>
+
+      {/* 미루기 확인 */}
+      <Dialog open={!!deferTarget} onClose={() => setDeferTarget(null)} title="미루기" width="sm">
+        <p className="text-[13px] text-[var(--muted-foreground)] mb-4">
+          &ldquo;{deferTarget?.title}&rdquo;을(를) 백로그로 보낼까요?
+        </p>
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={() => setDeferTarget(null)}
+            className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
+          >
+            취소
+          </button>
+          <button
+            onClick={() => { if (deferTarget) { deferTask(deferTarget.id); setDeferTarget(null); } }}
+            className="px-4 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-semibold bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity"
+          >
+            미루기
+          </button>
+        </div>
+      </Dialog>
 
       {/* Modals */}
       <SlotPickerModal

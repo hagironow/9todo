@@ -278,7 +278,13 @@ export default function SlotCell({
                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onCreateRoutine(inputValue.trim(), coord);
+                  const title = inputValue.trim();
+                  // 입력 초기화 먼저 — 모달 열릴 때 commitInput 방지
+                  setInputting(false);
+                  setInputValue('');
+                  setSelectedProject(null);
+                  setDropdownOpen(false);
+                  onCreateRoutine(title, coord);
                 }}
                 className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-[var(--radius)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
                 title="반복 설정"

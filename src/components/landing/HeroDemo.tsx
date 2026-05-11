@@ -105,9 +105,9 @@ function Card({ item, isHighlighted }: { item: SlotItem; isHighlighted?: boolean
       className={isHighlighted && !item.completed ? "hero-highlight" : ""}
       style={{
         padding: "8px 10px", borderRadius: 8,
-        backgroundColor: item.completed ? "transparent" : "#161616",
+        backgroundColor: item.completed ? "transparent" : "#141416",
         display: "flex", flexDirection: "column", gap: 5, minHeight: 72,
-        border: isHighlighted && !item.completed ? "1px solid rgba(255,110,110,0.4)" : "1px solid transparent",
+        border: isHighlighted && !item.completed ? "1px solid rgba(255,110,110,0.4)" : "1px solid rgba(255,255,255,0.03)",
       }}
     >
       <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, fontWeight: 500, color: item.project.color, alignSelf: "flex-start" }}>
@@ -130,9 +130,6 @@ function Card({ item, isHighlighted }: { item: SlotItem; isHighlighted?: boolean
               {item.timer}
             </span>
           )}
-          <span style={{ fontSize: 9, fontWeight: 700, color: item.completed ? "#4ADE80" : "rgba(249,112,102,0.45)" }}>
-            {item.completed ? "+" : ""}{item.xp}xp
-          </span>
         </div>
       </div>
     </div>
@@ -142,7 +139,7 @@ function Card({ item, isHighlighted }: { item: SlotItem; isHighlighted?: boolean
 /* ── Empty slot — inline creation style ── */
 function EmptySlot() {
   return (
-    <div style={{ minHeight: 72, borderRadius: 8, backgroundColor: "#161616", display: "flex", flexDirection: "column", justifyContent: "center", padding: "8px 10px", gap: 6 }}>
+    <div style={{ minHeight: 72, borderRadius: 8, backgroundColor: "#141416", border: "1px solid rgba(255,255,255,0.03)", display: "flex", flexDirection: "column", justifyContent: "center", padding: "8px 10px", gap: 6 }}>
       {/* Project tag placeholder */}
       <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, color: "#333", alignSelf: "flex-start" }}>
         <Dot color="#333" size={4} />프로젝트
@@ -158,18 +155,18 @@ function PeriodRow({ period, slots, lineColor, isActive }: {
   period: { label: string; time: string }; slots: (SlotItem | null)[]; lineColor: string; isActive?: boolean;
 }) {
   return (
-    <div style={{ borderRadius: 10, backgroundColor: "#111111" }}>
+    <div style={{ borderRadius: 10, backgroundColor: "#111111", border: "1px solid rgba(255,255,255,0.04)" }}>
       {/* Header with line */}
       <div style={{ display: "flex", alignItems: "center" }}>
-        <div style={{ width: 3, alignSelf: "stretch", backgroundColor: lineColor, flexShrink: 0, marginLeft: 10, borderRadius: 2, transition: "background-color 0.5s ease" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px" }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#e0e0e0" }}>{period.label}</span>
-          <span style={{ fontSize: 10, color: "#333" }}>{period.time}</span>
+        <div style={{ width: 2, alignSelf: "stretch", backgroundColor: lineColor, flexShrink: 0, marginLeft: 10, borderRadius: 1, transition: "background-color 0.5s ease" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px" }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#999" }}>{period.label}</span>
+          <span style={{ fontSize: 8, color: "#2a2a2a" }}>{period.time}</span>
         </div>
       </div>
       {/* Content with line — task slots only, no routine row */}
       <div style={{ display: "flex" }}>
-        <div style={{ width: 3, backgroundColor: lineColor, flexShrink: 0, marginLeft: 10, borderRadius: 2, transition: "background-color 0.5s ease" }} />
+        <div style={{ width: 2, backgroundColor: lineColor, flexShrink: 0, marginLeft: 10, borderRadius: 1, transition: "background-color 0.5s ease" }} />
         <div style={{ flex: 1, padding: "0 10px 10px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
             {slots.map((item, i) => item ? <Card key={i} item={item} isHighlighted={isActive && i === 0} /> : <EmptySlot key={i} />)}
@@ -184,15 +181,13 @@ function PeriodRow({ period, slots, lineColor, isActive }: {
 function GoalMini({ totalXp }: { totalXp: number }) {
   const preview = GOAL_PREVIEW[lang];
   return (
-    <div style={{ borderRadius: 10, backgroundColor: "#111111", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+    <div style={{ borderRadius: 10, backgroundColor: "#111111", border: "1px solid rgba(255,255,255,0.04)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
           {preview.label} <span style={{ color: "#FF6E6E", fontWeight: 600 }}>{preview.value}</span>
         </p>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#e0e0e0", fontFamily: "'Poppins', sans-serif" }}>{totalXp}<sub style={{ fontSize: 10, fontWeight: 600, color: "#888" }}>xp</sub></span>
-      </div>
+      {/* XP hidden for clean hero */}
     </div>
   );
 }
@@ -203,8 +198,10 @@ function SidebarDemo() {
   const labels = SIDEBAR_LABELS[lang];
   const projects = PROJECTS[lang];
   return (
-    <div style={{ width: 180, flexShrink: 0, display: "flex", flexDirection: "column", backgroundColor: "#111111", borderRight: "1px solid #191919" }}>
-      <div style={{ height: 44, display: "flex", alignItems: "center", padding: "0 16px", borderBottom: "1px solid #191919", gap: 8 }}>
+    <div style={{ width: 180, flexShrink: 0, display: "flex", flexDirection: "column", background: "linear-gradient(180deg, #141416 0%, #111111 30%, #0e0e10 100%)", borderRight: "1px solid rgba(255,255,255,0.05)", position: "relative" }}>
+      {/* Right edge gradient line */}
+      <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 1, background: "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02) 50%, transparent)", zIndex: 3 }} />
+      <div style={{ height: 44, display: "flex", alignItems: "center", padding: "0 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", gap: 8 }}>
         <img src="/9todo.svg" alt="9todo" style={{ height: 18 }} />
         <div style={{ flex: 1 }} />
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
@@ -229,7 +226,7 @@ function SidebarDemo() {
         </div>
       </div>
       {/* 하단 */}
-      <div style={{ padding: "8px 8px", borderTop: "1px solid #191919" }}>
+      <div style={{ padding: "8px 8px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 8px", fontSize: 12, color: "#888" }}>
           <div style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
@@ -271,7 +268,11 @@ function TimerPanel({ item }: { item: SlotItem }) {
   });
 
   return (
-    <div style={{ width: 280, flexShrink: 0, backgroundColor: "#111111", borderRadius: 28, display: "flex", flexDirection: "column", overflow: "hidden", border: "1px solid #191919" }}>
+    <div style={{ width: 280, flexShrink: 0, background: "linear-gradient(180deg, #161618 0%, #111113 20%, #0d0d0f 100%)", borderRadius: 28, display: "flex", flexDirection: "column", overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)", position: "relative" }}>
+      {/* Top edge highlight */}
+      <div style={{ position: "absolute", top: 0, left: 20, right: 20, height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)", zIndex: 3 }} />
+      {/* Left edge highlight */}
+      <div style={{ position: "absolute", top: 20, left: 0, bottom: 20, width: 1, background: "linear-gradient(180deg, transparent, rgba(255,255,255,0.04), transparent)", zIndex: 3 }} />
       {/* Tab */}
       <div style={{ display: "flex", padding: "8px 14px", gap: 4 }}>
         <div style={{ flex: 1, display: "flex", borderRadius: 99, backgroundColor: "#1a1a1a", padding: 2 }}>
@@ -389,16 +390,16 @@ export default function HeroDemo() {
   };
 
   return (
-    <div style={{ width: "100%", borderRadius: 16, overflow: "hidden", border: "1px solid #161616", backgroundColor: "#0a0a0a", fontFamily: "var(--font-sans)", display: "flex", position: "relative", boxShadow: "0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)" }}>
+    <div style={{ width: "100%", borderRadius: 16, overflow: "hidden", background: "linear-gradient(180deg, #0c0c0e 0%, #0a0a0a 8%, #080808 100%)", fontFamily: "var(--font-sans)", display: "flex", position: "relative" }}>
       <SidebarDemo />
 
       {/* Main */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         {/* Date header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid #191919" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.01), transparent)" }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
           <span style={{ fontSize: 12, fontWeight: 600, color: "#e0e0e0" }}>2026{lang === "ko" ? "년" : "."} 5{lang === "ko" ? "월" : "."} 11{lang === "ko" ? "일 월요일" : " Mon"}</span>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#4ADE80", backgroundColor: "rgba(74,222,128,0.1)", padding: "1px 6px", borderRadius: 4 }}>+5 XP</span>
+          {/* XP hidden for clean hero */}
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
         </div>
 

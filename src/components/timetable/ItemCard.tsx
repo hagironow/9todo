@@ -356,13 +356,15 @@ export default function ItemCard({
               <Pencil size={13} />
             </button>
           )}
-          <button
-            onClick={(e) => { e.stopPropagation(); onDefer(item); }}
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
-            title="미루기"
-          >
-            <SkipForward size={14} />
-          </button>
+          {!isRecurring && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDefer(item); }}
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
+              title="미루기"
+            >
+              <SkipForward size={14} />
+            </button>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onComplete(item); }}
             className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity pointer-events-auto"
@@ -370,13 +372,15 @@ export default function ItemCard({
           >
             <Check size={14} strokeWidth={2.5} />
           </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onRepeat(item); }}
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
-            title="또하기"
-          >
-            <RefreshCw size={13} />
-          </button>
+          {!isRecurring && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onRepeat(item); }}
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
+              title="또하기"
+            >
+              <RefreshCw size={13} />
+            </button>
+          )}
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(item); }}
