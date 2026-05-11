@@ -36,7 +36,7 @@ export default function BacklogItem({
 }: BacklogItemProps) {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
-  const editRef = useRef<HTMLInputElement>(null);
+  const editRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (editing) editRef.current?.focus();
@@ -102,19 +102,21 @@ export default function BacklogItem({
           </span>
         )}
         {editing ? (
-          <input
+          <textarea
             ref={editRef}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={commitEdit}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit();
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); commitEdit(); }
               if (e.key === 'Escape') { setEditValue(title); setEditing(false); }
             }}
-            className="flex-1 text-[var(--fs-item)] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--accent)]"
+            rows={1}
+            onInput={(e) => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }}
+            className="flex-1 text-[var(--fs-item)] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--accent)] resize-none"
           />
         ) : (
-          <span className="text-[var(--fs-item)] text-[var(--foreground)] truncate">
+          <span className="text-[var(--fs-item)] text-[var(--foreground)] whitespace-pre-wrap break-words">
             {title}
           </span>
         )}

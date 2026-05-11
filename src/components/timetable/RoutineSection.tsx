@@ -72,7 +72,7 @@ export default function RoutineSection({
                     <Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)] flex-shrink-0" />
                     <span
                       className={[
-                        'flex-1 text-[var(--fs-item)] text-[var(--foreground)] truncate',
+                        'flex-1 text-[var(--fs-item)] text-[var(--foreground)] whitespace-pre-wrap break-words',
                         isCompleted ? 'line-through text-[var(--muted-foreground)]' : '',
                       ].join(' ')}
                     >

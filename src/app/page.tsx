@@ -1010,7 +1010,7 @@ export default function Home() {
       {/* Drag Overlay */}
       <DragOverlay>
         {activeItem && (
-          <div className="px-3 py-2 rounded-[var(--radius)] bg-[var(--card)] border border-[var(--accent)] shadow-lg text-sm font-medium text-[var(--foreground)] max-w-[180px] truncate">
+          <div className="px-3 py-2 rounded-[var(--radius)] bg-[var(--card)] border border-[var(--accent)] shadow-lg text-sm font-medium text-[var(--foreground)] max-w-[240px] whitespace-pre-wrap break-words">
             {activeItem.title}
           </div>
         )}
@@ -1134,7 +1134,7 @@ export default function Home() {
               updateTaskTitleWithRecurrence(recurrenceEditTarget.item.id, recurrenceEditTarget.title);
               setRecurrenceEditTarget(null);
             }
-          }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--primary)] text-white transition-opacity hover:opacity-85">반복 전체 수정</button>
+          }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] transition-opacity hover:opacity-85">반복 전체 수정</button>
           <button onClick={() => setRecurrenceEditTarget(null)} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
         </div>
       </Dialog>

@@ -76,7 +76,7 @@ export default function ItemCard({
   // 편집 모드 (제목 + 프로젝트)
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // 프로젝트 드롭다운
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
@@ -247,16 +247,18 @@ export default function ItemCard({
           <div className="flex-1 min-w-0 flex items-center gap-1">
             {editing ? (
               <>
-                <input
+                <textarea
                   ref={inputRef}
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   onBlur={() => { if (!projectDropdownOpen) commitEdit(); }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitEdit();
+                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); commitEdit(); }
                     if (e.key === 'Escape') cancelEdit();
                   }}
-                  className="flex-1 text-[var(--fs-item)] font-medium text-[var(--card-foreground)] leading-snug bg-transparent border-b border-[var(--accent)] outline-none"
+                  rows={1}
+                  onInput={(e) => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }}
+                  className="flex-1 text-[var(--fs-item)] font-medium text-[var(--card-foreground)] leading-snug bg-transparent border-b border-[var(--accent)] outline-none resize-none"
                 />
                 {onEditRecurrence && (
                   <button
@@ -277,7 +279,7 @@ export default function ItemCard({
             ) : (
               <p
                 className={[
-                  'text-[var(--fs-item)] font-medium leading-snug truncate',
+                  'text-[var(--fs-item)] font-medium leading-snug whitespace-pre-wrap break-words',
                   isCompleted
                     ? 'line-through text-[var(--muted-foreground)]'
                     : 'text-[var(--card-foreground)]',
