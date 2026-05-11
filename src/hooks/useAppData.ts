@@ -18,6 +18,7 @@ import type {
   GoalPeriod,
 } from '@/lib/types';
 import { resolveColor, hexToColorIndex, DEFAULT_THEME } from '@/lib/colors';
+import { trackSlotFill, trackTaskComplete, trackRoutineComplete } from '@/lib/analytics';
 import { getToday, getWeekKey, getMonthKey } from '@/lib/date';
 
 const STORAGE_KEY = '9todo_state';
@@ -387,6 +388,7 @@ export function useAppData() {
             : t,
         ),
       }));
+      trackTaskComplete(timerSeconds ? Math.round(timerSeconds / 60) : 0);
     },
     [update],
   );
@@ -456,6 +458,7 @@ export function useAppData() {
           t.id === taskId ? { ...t, slot: coord, ...(date ? { date } : {}) } : t,
         ),
       }));
+      trackSlotFill(coord.period, coord.priority);
     },
     [update],
   );
@@ -592,6 +595,7 @@ export function useAppData() {
             : ri,
         ),
       }));
+      trackRoutineComplete();
     },
     [update],
   );

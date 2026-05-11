@@ -55,7 +55,7 @@ export default function SlotCell({
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const tagRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -260,16 +260,18 @@ export default function SlotCell({
 
           {/* 하단: 텍스트 입력 + 반복 아이콘 */}
           <div className="flex items-center gap-1">
-            <input
+            <textarea
               ref={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitInput();
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); commitInput(); }
                 if (e.key === 'Escape') cancelInput();
               }}
+              rows={1}
+              onInput={(e) => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }}
               placeholder="할 일 입력..."
-              className="flex-1 text-[var(--fs-item)] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--accent)] placeholder:text-[var(--muted-foreground)] py-1"
+              className="flex-1 text-[var(--fs-item)] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--accent)] placeholder:text-[var(--muted-foreground)] py-1 resize-none"
             />
             {onCreateRoutine && (
               <button

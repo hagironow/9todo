@@ -185,7 +185,7 @@ export default function RoutineSlotCell({
         )}
         <span
           className={[
-            'flex-1 text-[var(--fs-item)] text-[var(--foreground)] truncate leading-tight',
+            'flex-1 text-[var(--fs-item)] text-[var(--foreground)] whitespace-pre-wrap break-words leading-tight',
             isCompleted ? 'line-through text-[var(--muted-foreground)]' : '',
           ].join(' ')}
         >

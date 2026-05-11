@@ -64,3 +64,38 @@ export const trackPomodoroComplete = (seconds: number) =>
 /** 검색 사용 */
 export const trackSearch = (query_length: number) =>
   trackEvent('search_use', { query_length });
+
+// ── 리텐션 코호트 추적 ──
+
+const FIRST_VISIT_KEY = '9todo_first_visit';
+
+/** 첫 방문일 기록 + D1/D3/D7 재방문 이벤트 발송 */
+export function trackReturnVisit() {
+  if (typeof window === 'undefined') return;
+
+  const now = Date.now();
+  const stored = localStorage.getItem(FIRST_VISIT_KEY);
+
+  if (!stored) {
+    localStorage.setItem(FIRST_VISIT_KEY, String(now));
+    return;
+  }
+
+  const firstVisit = Number(stored);
+  const daysSince = Math.floor((now - firstVisit) / (1000 * 60 * 60 * 24));
+
+  // 같은 세션에서 중복 발송 방지
+  const sentKey = `9todo_rv_sent_d${daysSince}`;
+  if (sessionStorage.getItem(sentKey)) return;
+
+  if (daysSince === 1) {
+    trackEvent('return_visit', { day: 1 });
+    sessionStorage.setItem(sentKey, '1');
+  } else if (daysSince === 3) {
+    trackEvent('return_visit', { day: 3 });
+    sessionStorage.setItem(sentKey, '1');
+  } else if (daysSince === 7) {
+    trackEvent('return_visit', { day: 7 });
+    sessionStorage.setItem(sentKey, '1');
+  }
+}

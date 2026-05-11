@@ -409,7 +409,7 @@ function AddSlotPicker({
                           ].join(' ')}
                         >
                           {occupied ? (
-                            <span className="truncate block">{title}</span>
+                            <span className="block whitespace-pre-wrap break-words">{title}</span>
                           ) : (
                             <Plus size={14} className="mx-auto" strokeWidth={1.5} />
                           )}

@@ -1,0 +1,82 @@
+/* Landing page scoped styles */
+
+/* 스크롤바 숨김 */
+.landing {
+  scrollbar-width: none;
+}
+.landing::-webkit-scrollbar {
+  display: none;
+}
+
+/* 기본 typography */
+.landing * {
+  box-sizing: border-box;
+}
+
+.landing {
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-void);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 컨테이너 */
+.landing .container {
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-padding);
+}
+
+/* 섹션 패딩 */
+.landing .section-pad {
+  padding-block: var(--section-gap);
+}
+.landing .section-pad-lg {
+  padding-block: var(--section-gap-lg);
+}
+
+/* 플레이스홀더 공통 */
+.landing .visual-placeholder {
+  background: var(--color-bg-elevated);
+  border: 1px dashed var(--color-border-default);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-small);
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  text-align: center;
+  padding: var(--space-6);
+}
+
+/* Primary 버튼 */
+.landing .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #FAFAFA;
+  color: #0A0A0B;
+  border-radius: var(--radius-md);
+  height: var(--form-height-lg);
+  padding: 0 var(--space-8);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  font-family: var(--font-sans);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background var(--duration-fast) var(--ease-default),
+    opacity var(--duration-fast) var(--ease-default);
+  white-space: nowrap;
+}
+.landing .btn-primary:hover {
+  opacity: 0.85;
+}
+
+/* word-break 한글 */
+.landing .keep-all {
+  word-break: keep-all;
+}

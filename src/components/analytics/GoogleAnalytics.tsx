@@ -1,10 +1,16 @@
 'use client';
 
+import { useEffect } from 'react';
 import Script from 'next/script';
+import { trackReturnVisit } from '@/lib/analytics';
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 export default function GoogleAnalytics() {
+  useEffect(() => {
+    trackReturnVisit();
+  }, []);
+
   if (!GA_ID) return null;
 
   return (
