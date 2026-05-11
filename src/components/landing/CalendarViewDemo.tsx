@@ -1,477 +1,391 @@
-/**
- * CalendarViewDemo — 실제 9todo CalendarView 월간 + 모바일 타임테이블 재현
- *
- * 레이어:
- * - 좌(앞): 모바일 타임테이블 플로팅 (투두+루틴 오늘 뷰)
- * - 우(뒤): PC 월간 캘린더 (7칼럼 그리드, 하단/우측 오버플로)
- *
- * 실제 코드 참조:
- * /Users/sara/Desktop/9todo/src/components/calendar/CalendarView.tsx
- */
+'use client';
 
-/* ── 실제 앱 dark theme 토큰 ── */
+import { useEffect, useState } from "react";
+
 const T = {
   bg: "#0a0a0a",
-  card: "#111111",
+  card: "#111113",
   fg: "#e0e0e0",
+  fgDim: "#71717A",
   muted: "#1a1a1a",
-  mutedFg: "#888",
-  accent: "#FF5C65",
-  border: "#191919",
-  borderSubtle: "#161616",
-  surfaceInset: "#161616",
+  mutedFg: "#52525B",
+  accent: "#FF6E6E",
+  border: "#1c1c1f",
+  surfaceInset: "#161618",
   success: "#22C55E",
-  gridBg: "#0e0e0e",
-  radius: 12,
 };
 
-const PROJECTS = [
-  { name: "AI 챗봇 앱", color: "#60A5FA" },
-  { name: "포트폴리오", color: "#A78BFA" },
-  { name: "운동 트래커", color: "#34D399" },
-  { name: "유튜브 채널", color: "#FBBF24" },
-];
-
-type TodoItem = { title: string; project?: typeof PROJECTS[0]; done?: boolean };
-type RoutineItem = { title: string; done?: boolean };
-
-type DayData = {
-  todos: TodoItem[];
-  routines: RoutineItem[];
-  xp: number;
-};
-
-/* ── 5월 캘린더 데이터 ── */
-const MAY_DATA: Record<number, DayData> = {
-  1: { todos: [], routines: [{ title: "GitHub 이슈 체크", done: true }], xp: 1 },
-  2: { todos: [{ title: "DB 스키마 설계", project: PROJECTS[0], done: true }], routines: [{ title: "코드 리뷰 30분", done: true }], xp: 5 },
-  3: { todos: [], routines: [], xp: 0 },
-  5: { todos: [{ title: "API 엔드포인트 정리", project: PROJECTS[0], done: true }], routines: [{ title: "GitHub 이슈 체크", done: true }, { title: "운동 30분", done: true }], xp: 6 },
-  6: { todos: [{ title: "채팅 UI 프로토타입", project: PROJECTS[0], done: true }, { title: "포트폴리오 레이아웃", project: PROJECTS[1], done: true }], routines: [{ title: "코드 리뷰 30분", done: true }], xp: 7 },
-  7: { todos: [{ title: "GPT API 연동 테스트", project: PROJECTS[0], done: true }, { title: "스크롤 버그 수정", project: PROJECTS[0], done: true }], routines: [{ title: "GitHub 이슈 체크", done: true }, { title: "운동 30분", done: true }], xp: 8 },
-  8: { todos: [{ title: "스트리밍 응답 구현", project: PROJECTS[0] }, { title: "히어로 카피 작성", project: PROJECTS[1] }, { title: "영상 편집 EP.12", project: PROJECTS[3] }], routines: [{ title: "GitHub 이슈 체크" }, { title: "코드 리뷰 30분" }], xp: 0 },
-  9: { todos: [{ title: "프롬프트 튜닝", project: PROJECTS[0] }], routines: [{ title: "운동 30분" }], xp: 0 },
-  12: { todos: [{ title: "대시보드 와이어프레임", project: PROJECTS[2] }], routines: [{ title: "GitHub 이슈 체크" }], xp: 0 },
-  13: { todos: [{ title: "썸네일 디자인", project: PROJECTS[3] }], routines: [], xp: 0 },
-  14: { todos: [], routines: [{ title: "코드 리뷰 30분" }, { title: "운동 30분" }], xp: 0 },
-};
-
-const KO_WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-const FIRST_DAY = 4; // 2026-05-01 = 금요일 (0=일)
-const DAYS_IN_MONTH = 31;
-const TODAY = 8;
-
-const LINE_COLORS = ["#4ADE80", "#F97066", "#F59E0B"];
-
-/* ── Dot ── */
-function Dot({ color, size = 4 }: { color: string; size?: number }) {
+function Dot({ color, size = 5 }: { color: string; size?: number }) {
   return <span style={{ width: size, height: size, borderRadius: "50%", backgroundColor: color, flexShrink: 0, display: "inline-block" }} />;
 }
 
-/* ── Check icon ── */
-function CheckIcon({ size = 8 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={T.success} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
+/* ── 3 presets that cycle ── */
+const PRESETS = [
+  {
+    title: "아이 등원",
+    project: { name: "일상/육아", color: "#34D399" },
+    recurrence: 1, days: [true,true,true,true,true,false,false],
+    period: 0, priority: 1, startTime: "08:30", endTime: "09:00", startDate: "2026-05-05",
+  },
+  {
+    title: "독서 30분",
+    project: { name: "사이드 프로젝트", color: "#A78BFA" },
+    recurrence: 0, days: [true,true,true,true,true,true,true],
+    period: 2, priority: 2, startTime: "22:00", endTime: "22:30", startDate: "2026-05-01",
+  },
+  {
+    title: "데일리 스크럼",
+    project: { name: "회사", color: "#60A5FA" },
+    recurrence: 1, days: [true,true,true,true,true,false,false],
+    period: 0, priority: 0, startTime: "09:00", endTime: "09:30", startDate: "2026-05-05",
+  },
+];
 
-/* ── 투두 칩 (실제 renderTodoItem 재현) ── */
-function TodoChip({ item }: { item: TodoItem }) {
-  return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 3,
-      padding: "2px 6px",
-      borderRadius: 4,
-      fontSize: 10,
-      lineHeight: 1.3,
-      backgroundColor: item.done ? "transparent" : T.muted,
-      color: item.done ? T.success : T.fg,
-      overflow: "hidden",
-      whiteSpace: "nowrap",
-      textOverflow: "ellipsis",
-    }}>
-      {item.done && <CheckIcon />}
-      {item.project && <Dot color={item.project.color} size={4} />}
-      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</span>
-    </div>
-  );
-}
+const ALL_PROJECTS = [
+  { name: "일상/육아", color: "#34D399" },
+  { name: "사이드 프로젝트", color: "#A78BFA" },
+  { name: "회사", color: "#60A5FA" },
+];
 
-/* ── 루틴 칩 (실제 renderRoutineItem 재현) ── */
-function RoutineChip({ item }: { item: RoutineItem }) {
-  return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 3,
-      padding: "2px 6px",
-      borderRadius: 4,
-      fontSize: 10,
-      lineHeight: 1.3,
-      backgroundColor: item.done ? "transparent" : T.muted,
-      color: item.done ? T.success : T.fg,
-      overflow: "hidden",
-      whiteSpace: "nowrap",
-      textOverflow: "ellipsis",
-    }}>
-      {item.done && <CheckIcon />}
-      <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</span>
-    </div>
-  );
-}
+const REC_LABELS = ["매일", "매주", "2주마다", "매월"];
+const PERIOD_LABELS = ["오전", "오후", "저녁"];
+const DAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
 
-/* ── 날짜 셀 (실제 월간 캘린더 셀 재현) ── */
-function DayCell({ day, data }: { day: number; data?: DayData }) {
-  const isToday = day === TODAY;
-  const dayOfWeek = (FIRST_DAY + day - 1) % 7;
+const PHASE_MS = 5000; // total per preset
+const DROPDOWN_OPEN_AT = 800; // dropdown appears
+const SELECT_AT = 2200; // item selected, dropdown closes
+const DROPDOWN_CLOSE_AT = 2800; // fully closed, form updates
+
+/* ══════════════════════════════════════
+   Left: RecurrenceSetupModal + animated dropdown
+   ══════════════════════════════════════ */
+function RecurrenceModal({ preset, phase }: {
+  preset: typeof PRESETS[0];
+  phase: "idle" | "dropdown-open" | "selecting" | "selected";
+}) {
+  const dropdownVisible = phase === "dropdown-open" || phase === "selecting";
+  const selectedIdx = ALL_PROJECTS.findIndex(p => p.name === preset.project.name);
+
+  const ROW: React.CSSProperties = {
+    display: "flex", alignItems: "center", justifyContent: "space-between",
+    padding: "14px 0", borderBottom: `1px solid ${T.border}`,
+  };
+  const LABEL: React.CSSProperties = { fontSize: 13, color: T.fgDim, flexShrink: 0, minWidth: 48 };
 
   return (
-    <div style={{
-      minHeight: 72,
-      padding: 6,
-      display: "flex",
-      flexDirection: "column",
-      gap: 2,
-      borderRight: dayOfWeek === 6 ? "none" : `1px solid ${T.border}`,
-      borderBottom: `1px solid ${T.border}`,
-    }}>
-      {/* 날짜 헤더 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
-        <span style={{
-          fontSize: 11,
-          fontWeight: isToday ? 700 : 400,
-          lineHeight: 1,
-          color: isToday ? T.bg : T.mutedFg,
-          ...(isToday ? {
-            width: 20, height: 20, borderRadius: "50%",
-            backgroundColor: T.fg, display: "flex", alignItems: "center", justifyContent: "center",
-          } : {}),
-        }}>
-          {day}
-        </span>
-        {data && data.xp > 0 && (
-          <span style={{ fontSize: 9, fontWeight: 600, color: T.success }}>+{data.xp}</span>
-        )}
+    <div style={{ position: "relative" }}>
+      <div style={{
+        width: 400, borderRadius: 14,
+        backgroundColor: T.card, border: `1px solid ${T.border}`,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.02)",
+        display: "flex", flexDirection: "column", padding: "24px 28px",
+      }}>
+        {/* Title — animates */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <span style={{ fontSize: 16, fontWeight: 500, color: T.fg, transition: "opacity 0.3s ease", opacity: phase === "selecting" ? 0.5 : 1 }}>{preset.title}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </div>
+
+        {/* Project row — trigger */}
+        <div style={{ ...ROW, position: "relative" }}>
+          <span style={LABEL}>프로젝트</span>
+          <button style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "5px 12px", borderRadius: 8,
+            border: dropdownVisible ? `1px solid ${T.fg}` : `1px solid ${T.border}`,
+            backgroundColor: "transparent",
+            fontSize: 13, color: T.fg, cursor: "pointer",
+            transition: "border-color 0.2s ease",
+          }}>
+            <Dot color={preset.project.color} size={7} />
+            <span style={{ transition: "color 0.3s ease" }}>{preset.project.name}</span>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.fg} strokeWidth="2"
+              style={{ transition: "transform 0.2s ease", transform: dropdownVisible ? "rotate(180deg)" : "rotate(0)" }}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Recurrence */}
+        <div style={ROW}>
+          <span style={LABEL}>주기</span>
+          <div style={{ display: "flex", gap: 3 }}>
+            {REC_LABELS.map((l, i) => (
+              <span key={l} style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500, backgroundColor: i === preset.recurrence ? "rgba(255,255,255,0.12)" : "transparent", color: i === preset.recurrence ? T.fg : T.mutedFg }}>{l}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Days */}
+        <div style={ROW}>
+          <span style={LABEL}>요일</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            {DAY_LABELS.map((d, i) => (
+              <div key={d} style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 500, backgroundColor: preset.days[i] ? "rgba(255,255,255,0.12)" : "transparent", color: preset.days[i] ? T.fg : T.mutedFg }}>{d}</div>
+            ))}
+          </div>
+        </div>
+
+        {/* Slot */}
+        <div style={ROW}>
+          <span style={LABEL}>슬롯</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+            {PERIOD_LABELS.map((l, i) => (
+              <span key={l} style={{ padding: "6px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500, backgroundColor: i === preset.period ? "rgba(255,255,255,0.12)" : "transparent", color: i === preset.period ? T.fg : T.mutedFg }}>{l}</span>
+            ))}
+            <div style={{ width: 1, height: 18, backgroundColor: T.border, margin: "0 6px" }} />
+            {["1", "2", "3"].map((l, i) => (
+              <span key={l} style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 500, backgroundColor: i === preset.priority ? "rgba(255,255,255,0.12)" : "transparent", color: i === preset.priority ? T.fg : T.mutedFg }}>{l}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Time */}
+        <div style={ROW}>
+          <span style={LABEL}>시간</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ padding: "5px 14px", borderRadius: 8, backgroundColor: T.muted, fontSize: 13, color: T.fg }}>{preset.startTime}</span>
+            <span style={{ fontSize: 12, color: T.mutedFg }}>~</span>
+            <span style={{ padding: "5px 14px", borderRadius: 8, backgroundColor: T.muted, fontSize: 13, color: T.fg }}>{preset.endTime}</span>
+          </div>
+        </div>
+
+        {/* Start date */}
+        <div style={{ ...ROW, borderBottom: "none" }}>
+          <span style={LABEL}>시작일</span>
+          <span style={{ padding: "5px 14px", borderRadius: 8, backgroundColor: T.muted, fontSize: 13, color: T.fg }}>{preset.startDate}</span>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+          <span style={{ padding: "9px 18px", borderRadius: 8, fontSize: 14, color: T.mutedFg }}>취소</span>
+          <span style={{ padding: "9px 24px", borderRadius: 8, fontSize: 14, fontWeight: 600, backgroundColor: T.fg, color: T.bg }}>저장</span>
+        </div>
       </div>
 
-      {/* 투두 + 루틴 */}
-      {data && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {data.todos.slice(0, 2).map((t, i) => <TodoChip key={`t${i}`} item={t} />)}
-          {data.todos.length > 0 && data.routines.length > 0 && (
-            <div style={{ borderTop: `1px solid ${T.borderSubtle}`, margin: "2px 0" }} />
-          )}
-          {data.routines.slice(0, 2).map((r, i) => <RoutineChip key={`r${i}`} item={r} />)}
-          {(data.todos.length > 2 || data.routines.length > 2) && (
-            <span style={{ fontSize: 9, color: T.mutedFg, paddingLeft: 4 }}>
-              +{Math.max(0, data.todos.length - 2) + Math.max(0, data.routines.length - 2)}
-            </span>
-          )}
+      {/* Dropdown — animated open/close */}
+      <div style={{
+        position: "absolute",
+        top: 76, right: -8,
+        width: 180, borderRadius: 12,
+        border: `1px solid ${T.border}`,
+        backgroundColor: T.card,
+        boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03)",
+        overflow: "hidden", zIndex: 20,
+        opacity: dropdownVisible ? 1 : 0,
+        transform: dropdownVisible ? "translateY(0) scale(1)" : "translateY(-4px) scale(0.98)",
+        transformOrigin: "top right",
+        transition: "opacity 0.2s ease, transform 0.2s ease",
+        pointerEvents: dropdownVisible ? "auto" : "none",
+      }}>
+        {ALL_PROJECTS.map((p, i) => {
+          const isHovered = phase === "selecting" && i === selectedIdx;
+          return (
+            <div key={p.name} style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "10px 14px", fontSize: 12, cursor: "pointer",
+              backgroundColor: isHovered ? "rgba(255,110,110,0.06)" : (phase === "dropdown-open" && i === selectedIdx) ? "rgba(255,255,255,0.04)" : "transparent",
+              color: isHovered ? T.accent : (phase === "dropdown-open" && i === selectedIdx) ? T.fg : T.fgDim,
+              fontWeight: isHovered ? 600 : (phase === "dropdown-open" && i === selectedIdx) ? 500 : 400,
+              transition: "background-color 0.3s ease, color 0.3s ease",
+            }}>
+              <Dot color={p.color} size={7} />
+              <span>{p.name}</span>
+            </div>
+          );
+        })}
+        <div style={{ borderTop: `1px solid ${T.border}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", fontSize: 12, color: T.mutedFg }}>
+            <Dot color="#666" size={7} />
+            <span>미분류</span>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
 /* ══════════════════════════════════════
-   PC: 월간 캘린더
+   Right: Monthly Calendar — sparse, clear
    ══════════════════════════════════════ */
 function MonthlyCalendar() {
-  const cells: React.ReactNode[] = [];
+  const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+  const FD = 4, DIM = 31, TODAY = 11;
 
-  // 빈 칸 (5/1 전)
-  for (let i = 0; i < FIRST_DAY; i++) {
+  type Tag = { color: string; title: string; done?: boolean; recurring?: boolean };
+  type DI = { xp?: number; tags?: Tag[] };
+
+  // Sparse data: some days empty, clear distinction between recurring/one-off/past/future
+  const DATA: Record<number, DI> = {
+    // Past — completed
+    2: { xp: 3, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", done: true, recurring: true }] },
+    5: { xp: 6, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", done: true, recurring: true }, { color: "#A78BFA", title: "독서 30분", done: true, recurring: true }] },
+    6: { xp: 4, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }, { color: "#FBBF24", title: "랜딩 카피 수정", done: true }] },
+    7: { xp: 5, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }, { color: "#60A5FA", title: "API 리뷰", done: true }] },
+    8: { xp: 3, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", done: true, recurring: true }] },
+    9: { xp: 2, tags: [{ color: "#34D399", title: "아이 등원", done: true, recurring: true }] },
+    10: { xp: 1, tags: [{ color: "#A78BFA", title: "독서 30분", done: true, recurring: true }] },
+    // Today — mixed
+    11: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }, { color: "#FBBF24", title: "영상 편집 EP.12" }] },
+    // Future — recurring only (sparse)
+    12: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", recurring: true }] },
+    13: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }] },
+    14: { tags: [{ color: "#A78BFA", title: "독서 30분", recurring: true }] },
+    15: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", recurring: true }] },
+    16: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }] },
+    19: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }, { color: "#60A5FA", title: "데일리 스크럼", recurring: true }] },
+    20: { tags: [{ color: "#34D399", title: "아이 등원", recurring: true }] },
+    21: { tags: [{ color: "#A78BFA", title: "독서 30분", recurring: true }] },
+  };
+
+  const cells: React.ReactNode[] = [];
+  for (let i = 0; i < FD; i++) cells.push(<div key={`e-${i}`} style={{ minHeight: 76 }} />);
+
+  for (let d = 1; d <= DIM; d++) {
+    const data = DATA[d];
+    const isToday = d === TODAY;
+    const isPast = d < TODAY;
+    const isFuture = d > TODAY;
+    const hasDone = data?.tags?.some(t => t.done);
+
     cells.push(
-      <div key={`prev-${i}`} style={{
-        minHeight: 72,
-        borderRight: `1px solid ${T.border}`,
+      <div key={d} style={{
+        minHeight: 76, padding: 5,
+        borderRight: (FD + d - 1) % 7 === 6 ? "none" : `1px solid ${T.border}`,
         borderBottom: `1px solid ${T.border}`,
-      }} />
+        backgroundColor: hasDone ? "rgba(34,197,94,0.04)" : undefined,
+        display: "flex", flexDirection: "column", gap: 3,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{
+            fontSize: 11, fontWeight: isToday ? 700 : 400,
+            color: isToday ? T.bg : isPast ? T.fgDim : "#444",
+            ...(isToday ? { width: 20, height: 20, borderRadius: "50%", backgroundColor: T.fg, display: "flex", alignItems: "center", justifyContent: "center" } : {}),
+          }}>{d}</span>
+          {data?.xp && <span style={{ fontSize: 8, fontWeight: 600, color: T.success }}>+{data.xp}</span>}
+        </div>
+        {data?.tags && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {data.tags.map((tag, i) => {
+              const isDone = !!tag.done;
+              const isRecurring = !!tag.recurring;
+              return (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 3,
+                  padding: "2px 5px", borderRadius: 3,
+                  backgroundColor: isDone ? "transparent"
+                    : isFuture && isRecurring ? `${tag.color}08`
+                    : `${tag.color}15`,
+                  fontSize: 9, lineHeight: 1.4,
+                  color: isDone ? T.success
+                    : isFuture ? `${tag.color}` : T.fg,
+                  opacity: isFuture ? 0.5 : 1,
+                }}>
+                  {isDone ? (
+                    <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke={T.success} strokeWidth="3" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12" /></svg>
+                  ) : isRecurring ? (
+                    <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0, opacity: 0.6 }}>
+                      <path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                    </svg>
+                  ) : (
+                    <Dot color={tag.color} size={4} />
+                  )}
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tag.title}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     );
   }
 
-  // 날짜
-  for (let d = 1; d <= DAYS_IN_MONTH; d++) {
-    cells.push(<DayCell key={d} day={d} data={MAY_DATA[d]} />);
-  }
-
   return (
-    <div style={{
-      borderRadius: T.radius,
-      border: `1px solid ${T.border}`,
-      backgroundColor: T.card,
-      overflow: "hidden",
-    }}>
-      {/* 헤더 */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "10px 14px",
-        borderBottom: `1px solid ${T.border}`,
-      }}>
+    <div style={{ borderRadius: 12, overflow: "hidden", border: `1px solid ${T.border}`, backgroundColor: T.card }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", borderBottom: `1px solid ${T.border}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
           <span style={{ fontSize: 13, fontWeight: 600, color: T.fg }}>2026년 5월</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
         </div>
-        <div style={{ display: "flex", gap: 2 }}>
-          {["전체", "투두", "루틴"].map((label, i) => (
-            <span key={label} style={{
-              fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6,
-              backgroundColor: i === 0 ? T.muted : "transparent",
-              color: i === 0 ? T.fg : T.mutedFg,
-            }}>{label}</span>
-          ))}
-          <span style={{ width: 1, backgroundColor: T.border, margin: "0 4px" }} />
-          {["이번주", "이번달"].map((label, i) => (
-            <span key={label} style={{
-              fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6,
-              backgroundColor: i === 1 ? T.muted : "transparent",
-              color: i === 1 ? T.fg : T.mutedFg,
-            }}>{label}</span>
-          ))}
+        <div style={{ display: "flex", gap: 2, padding: 2, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.04)" }}>
+          <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 6, color: T.mutedFg }}>이번주</span>
+          <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 10px", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.08)", color: T.fg }}>이번달</span>
         </div>
       </div>
-
-      {/* 요일 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: `1px solid ${T.border}` }}>
-        {KO_WEEKDAYS.map((day) => (
-          <div key={day} style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "8px 0", fontSize: 11, fontWeight: 600, color: T.mutedFg,
-          }}>{day}</div>
+        {WEEKDAYS.map((d) => (
+          <div key={d} style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "7px 0", fontSize: 11, fontWeight: 600, color: T.mutedFg }}>{d}</div>
         ))}
       </div>
-
-      {/* 그리드 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
-        {cells}
-      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>{cells}</div>
     </div>
   );
 }
 
 /* ══════════════════════════════════════
-   모바일: 오늘 타임테이블
-   ══════════════════════════════════════ */
-function MobileTimetable() {
-  const PERIODS = [
-    { label: "오전", time: "9:00 ~ 12:00" },
-    { label: "오후", time: "12:00 ~ 18:00" },
-  ];
-
-  type SlotItem = { title: string; project?: typeof PROJECTS[0]; done?: boolean; isRoutine?: boolean; xp: number; time?: string };
-
-  const MOBILE_SLOTS: SlotItem[][] = [
-    [
-      { title: "GPT API 연동 테스트", project: PROJECTS[0], done: true, xp: 3, time: "45m" },
-      { title: "채팅 UI 스크롤 버그", project: PROJECTS[0], done: true, xp: 2, time: "30m" },
-      { title: "GitHub 이슈 체크", isRoutine: true, done: true, xp: 1 },
-    ],
-    [
-      { title: "스트리밍 응답 구현", project: PROJECTS[0], xp: 3 },
-      { title: "히어로 카피 작성", project: PROJECTS[1], xp: 2 },
-      { title: "코드 리뷰 30분", isRoutine: true, xp: 1 },
-    ],
-  ];
-
-  return (
-    <div style={{
-      width: 300,
-      aspectRatio: "9 / 16",
-      borderRadius: 28,
-      backgroundColor: T.bg,
-      border: `1px solid ${T.border}`,
-      overflow: "hidden",
-      boxShadow: "0 0 60px rgba(0,0,0,0.6), 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
-      fontFamily: "var(--font-sans)",
-      flexShrink: 0,
-      display: "flex",
-      flexDirection: "column" as const,
-      maskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
-      WebkitMaskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
-    }}>
-      {/* 상단 노치 */}
-      <div style={{
-        display: "flex", justifyContent: "center", padding: "8px 0 4px",
-      }}>
-        <div style={{ width: 80, height: 4, borderRadius: 4, backgroundColor: T.muted }} />
-      </div>
-
-      {/* 골 컴파스 미니 */}
-      <div style={{
-        margin: "6px 12px",
-        padding: "10px 12px",
-        borderRadius: T.radius,
-        backgroundColor: T.card,
-      }}>
-        <span style={{ fontSize: 12, color: T.fg }}>
-          오늘 끝낼 일은 <span style={{ color: T.accent, fontWeight: 600 }}>시간표 UI 완성</span>
-        </span>
-        <div style={{ marginTop: 6 }}>
-          <span style={{ fontSize: 20, fontWeight: 700, color: T.fg, fontFamily: "'Poppins', var(--font-sans)" }}>
-            847<span style={{ fontSize: 11, fontWeight: 600, color: T.mutedFg, marginLeft: 2 }}>xp</span>
-          </span>
-        </div>
-      </div>
-
-      {/* 날짜 헤더 */}
-      <div style={{
-        padding: "6px 14px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: T.fg }}>5월 8일 목</span>
-        <span style={{ fontSize: 10, fontWeight: 700, color: T.success }}>+5 xp</span>
-      </div>
-
-      {/* 시간대별 슬롯 */}
-      <div style={{ padding: "0 8px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
-        {PERIODS.map((period, rowIdx) => (
-          <div key={period.label} style={{ borderRadius: 10, backgroundColor: T.card }}>
-            {/* 헤더 */}
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <div style={{
-                width: 2, alignSelf: "stretch", backgroundColor: LINE_COLORS[rowIdx],
-                marginLeft: 8, borderRadius: 2,
-              }} />
-              <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 8px" }}>
-                <span style={{ fontSize: 10, fontWeight: 600, color: T.fg }}>{period.label}</span>
-                <span style={{ fontSize: 8, color: T.mutedFg }}>{period.time}</span>
-              </div>
-            </div>
-            {/* 슬롯 */}
-            <div style={{ display: "flex" }}>
-              <div style={{
-                width: 2, backgroundColor: LINE_COLORS[rowIdx],
-                marginLeft: 8, borderRadius: 2,
-              }} />
-              <div style={{ flex: 1, padding: "0 8px 8px", display: "flex", flexDirection: "column", gap: 4 }}>
-                {MOBILE_SLOTS[rowIdx].map((item, i) => (
-                  <div key={i} style={{
-                    padding: "6px 8px",
-                    borderRadius: 8,
-                    backgroundColor: item.done ? T.gridBg : T.surfaceInset,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 3,
-                    border: item.isRoutine ? `1px dashed ${T.borderSubtle}` : "1px solid transparent",
-                  }}>
-                    {item.project && (
-                      <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 8, color: item.project.color }}>
-                        <Dot color={item.project.color} size={3} />{item.project.name}
-                      </span>
-                    )}
-                    {item.isRoutine && (
-                      <span style={{ fontSize: 8, color: T.mutedFg }}>루틴</span>
-                    )}
-                    <span style={{
-                      fontSize: 11, fontWeight: 500, lineHeight: 1.3,
-                      color: item.done ? T.mutedFg : T.fg,
-                      textDecoration: item.done ? "line-through" : "none",
-                    }}>{item.title}</span>
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      {item.done && item.time && (
-                        <span style={{ fontSize: 8, color: T.mutedFg, marginRight: 4 }}>
-                          {item.time}
-                        </span>
-                      )}
-                      <span style={{
-                        fontSize: 8, fontWeight: 700,
-                        color: item.done ? T.success : "rgba(255,92,101,0.4)",
-                      }}>
-                        {item.done ? "+" : ""}{item.xp}xp
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 백로그 힌트 + 하단 여백 */}
-      <div style={{ padding: "6px 14px", marginTop: "auto" }}>
-        <div style={{
-          display: "flex", alignItems: "center", gap: 6,
-          padding: "8px 0",
-          borderTop: `1px solid ${T.border}`,
-        }}>
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
-          <span style={{ fontSize: 11, color: T.mutedFg }}>백로그</span>
-          <span style={{ fontSize: 10, color: "#333" }}>3</span>
-        </div>
-      </div>
-
-      {/* 하단 홈바 */}
-      <div style={{ display: "flex", justifyContent: "center", padding: "6px 0 8px" }}>
-        <div style={{ width: 100, height: 4, borderRadius: 4, backgroundColor: T.muted }} />
-      </div>
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════
-   Main
+   MAIN — dropdown animation cycle
    ══════════════════════════════════════ */
 export default function CalendarViewDemo() {
+  const [presetIdx, setPresetIdx] = useState(0);
+  const [phase, setPhase] = useState<"idle" | "dropdown-open" | "selecting" | "selected">("idle");
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+
+    function runCycle() {
+      // 1. idle → dropdown opens
+      timeout = setTimeout(() => {
+        setPhase("dropdown-open");
+
+        // 2. hover/selecting effect
+        timeout = setTimeout(() => {
+          setPhase("selecting");
+
+          // 3. selected → close
+          timeout = setTimeout(() => {
+            setPhase("selected");
+
+            // 4. close dropdown, update preset
+            timeout = setTimeout(() => {
+              setPhase("idle");
+
+              // 5. wait, then advance to next preset and restart
+              timeout = setTimeout(() => {
+                setPresetIdx(prev => (prev + 1) % PRESETS.length);
+                runCycle();
+              }, 1200);
+            }, 400);
+          }, 800);
+        }, 1000);
+      }, DROPDOWN_OPEN_AT);
+    }
+
+    runCycle();
+    return () => clearTimeout(timeout);
+  }, []);
+
   return (
-    <div style={{
-      width: "100%",
-      position: "relative",
-      borderRadius: 16,
-      overflow: "hidden",
-      backgroundColor: "#08080A",
-      fontFamily: "var(--font-sans)",
-    }}>
-      <div style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 0,
-        padding: "20px 0 0 16px",
-        position: "relative",
-      }}>
-        {/* 좌: 모바일 (플로팅, 앞) */}
-        <div style={{
-          position: "relative",
-          zIndex: 10,
-          flexShrink: 0,
-          marginTop: 20,
-        }}>
-          <MobileTimetable />
+    <div style={{ width: "100%", position: "relative", fontFamily: "var(--font-sans)" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 32, minHeight: 520 }}>
+        {/* LEFT */}
+        <div style={{ flexShrink: 0, paddingTop: 8 }}>
+          <RecurrenceModal preset={PRESETS[presetIdx]} phase={phase} />
         </div>
 
-        {/* 우: 월간 캘린더 (뒤, 우측+하단 오버플로) */}
+        {/* RIGHT */}
         <div style={{
-          flex: 1,
-          marginLeft: -20,
-          position: "relative",
-          zIndex: 1,
-          maskImage: "linear-gradient(to bottom, black 60%, transparent 100%), linear-gradient(to left, transparent, black 5%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%), linear-gradient(to left, transparent, black 5%)",
-          maskComposite: "intersect",
-          WebkitMaskComposite: "source-in" as any,
-          maxHeight: 520,
-          overflow: "hidden",
+          flex: 1, minWidth: 0,
+          maxHeight: 580, overflow: "hidden",
+          maskImage: "linear-gradient(to bottom, black 70%, transparent 98%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 70%, transparent 98%)",
+          paddingTop: 8,
         }}>
           <MonthlyCalendar />
         </div>
       </div>
-
-      {/* 하단 페이드 */}
-      <div style={{
-        height: 32,
-        background: "linear-gradient(to bottom, #08080A, transparent)",
-        position: "relative",
-        zIndex: 2,
-      }} />
     </div>
   );
 }

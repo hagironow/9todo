@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 type Lang = "ko" | "en";
 const lang: Lang = "ko";
@@ -9,67 +9,55 @@ const PROJECTS: Record<Lang, { name: string; color: string }[]> = {
   ko: [
     { name: "AI 챗봇 앱", color: "#60A5FA" },
     { name: "포트폴리오...", color: "#A78BFA" },
-    { name: "운동 트래커", color: "#34D399" },
+    { name: "일상/육아", color: "#34D399" },
     { name: "유튜브 채널", color: "#FBBF24" },
+    { name: "독서", color: "#F472B6" },
   ],
   en: [
     { name: "AI Chat App", color: "#60A5FA" },
     { name: "Portfolio", color: "#A78BFA" },
-    { name: "Fitness App", color: "#34D399" },
+    { name: "Life/Parenting", color: "#34D399" },
     { name: "YouTube", color: "#FBBF24" },
+    { name: "Reading", color: "#F472B6" },
   ],
 };
 
 type SlotItem = { title: string; project: { name: string; color: string }; deferCount?: number; completed?: boolean; xp: number; timer?: string };
-type RoutineItem = { title: string; time?: string; completed?: boolean } | null;
 
 const SLOTS: Record<Lang, (SlotItem | null)[][]> = {
   ko: [
     [
       { title: "GPT API 연동 테스트", project: PROJECTS.ko[0], xp: 3, timer: "45m", completed: true },
-      { title: "채팅 UI 스크롤 버그 수정", project: PROJECTS.ko[0], xp: 2, timer: "30m", completed: true },
+      { title: "아이 등원", project: PROJECTS.ko[2], xp: 2, timer: "30m", completed: true },
       { title: "프로젝트 섹션 반응형 수정", project: PROJECTS.ko[1], xp: 1 },
     ],
     [
       { title: "스트리밍 응답 구현", project: PROJECTS.ko[0], xp: 3 },
       { title: "히어로 섹션 카피 작성", project: PROJECTS.ko[1], xp: 2, deferCount: 1 },
-      { title: "영상 편집 — EP.12 인트로", project: PROJECTS.ko[3], xp: 1 },
+      { title: "아이 하원 + 놀이터", project: PROJECTS.ko[2], xp: 1 },
     ],
     [
-      { title: "프롬프트 튜닝 실험", project: PROJECTS.ko[0], xp: 3 },
-      { title: "운동 앱 대시보드 와이어프레임", project: PROJECTS.ko[2], xp: 2 },
-      { title: "썸네일 디자인 — EP.12", project: PROJECTS.ko[3], xp: 1 },
+      { title: "영상 편집 — EP.12", project: PROJECTS.ko[3], xp: 3 },
+      { title: "독서 30분 — 몰입의 기술", project: PROJECTS.ko[4], xp: 2 },
+      null,
     ],
   ],
   en: [
     [
       { title: "GPT API integration test", project: PROJECTS.en[0], xp: 3, timer: "45m", completed: true },
-      { title: "Fix chat UI scroll bug", project: PROJECTS.en[0], xp: 2, timer: "30m", completed: true },
+      { title: "Daycare drop-off", project: PROJECTS.en[2], xp: 2, timer: "30m", completed: true },
       { title: "Fix project section responsive", project: PROJECTS.en[1], xp: 1 },
     ],
     [
       { title: "Implement streaming response", project: PROJECTS.en[0], xp: 3 },
       { title: "Write hero section copy", project: PROJECTS.en[1], xp: 2, deferCount: 1 },
-      { title: "Edit video — EP.12 intro", project: PROJECTS.en[3], xp: 1 },
+      { title: "Daycare pick-up + park", project: PROJECTS.en[2], xp: 1 },
     ],
     [
-      { title: "Prompt tuning experiment", project: PROJECTS.en[0], xp: 3 },
-      { title: "Fitness app dashboard wireframe", project: PROJECTS.en[2], xp: 2 },
-      { title: "Thumbnail design — EP.12", project: PROJECTS.en[3], xp: 1 },
+      { title: "Edit video — EP.12", project: PROJECTS.en[3], xp: 3 },
+      { title: "Read 30min — Deep Work", project: PROJECTS.en[4], xp: 2 },
+      null,
     ],
-  ],
-};
-
-const ROUTINES: Record<Lang, RoutineItem[][]> = {
-  ko: [
-    [null, null, { title: "GitHub 이슈 체크", time: "AM 9:00" }],
-    [null, null, { title: "코드 리뷰 30분" }],
-    [null, null, null],
-  ],
-  en: [
-    [null, null, { title: "GitHub issue check", time: "AM 9:00" }],
-    [null, null, { title: "Code review 30min" }],
-    [null, null, null],
   ],
 };
 
@@ -91,18 +79,37 @@ const SIDEBAR_LABELS: Record<Lang, { views: string; projects: string; unassigned
   ko: { views: "뷰", projects: "프로젝트", unassigned: "미분류", addProject: "프로젝트 이름" },
   en: { views: "Views", projects: "Projects", unassigned: "Unassigned", addProject: "Project name" },
 };
-const GOAL_PREVIEW: Record<Lang, string> = { ko: "오늘 끝내야 할 일을 정해보세요", en: "Set what you must finish today" };
-const ROW_LINE_COLORS = ["#4ADE80", "#F97066", "#F59E0B"];
+const GOAL_PREVIEW: Record<Lang, { label: string; value: string }> = {
+  ko: { label: "이번 주에 꼭 끝낼 것은", value: "MVP 빌드 + 3명 사용성 테스트" },
+  en: { label: "Must finish this week:", value: "MVP build + 3 usability tests" },
+};
 
 /* ── Shared ── */
 function Dot({ color, size = 6 }: { color: string; size?: number }) {
   return <span style={{ width: size, height: size, borderRadius: "50%", backgroundColor: color, flexShrink: 0, display: "inline-block" }} />;
 }
 
-/* ── Card ── */
-function Card({ item }: { item: SlotItem }) {
+/* ── SkipForward icon (lucide SkipForward) ── */
+function SkipForwardIcon({ size = 8, color = "#EF4444" }: { size?: number; color?: string }) {
   return (
-    <div style={{ padding: "8px 10px", borderRadius: 8, backgroundColor: item.completed ? "#0e0e0e" : "#161616", display: "flex", flexDirection: "column", gap: 5, minHeight: 72 }}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="5 4 15 12 5 20 5 4" /><line x1="19" y1="5" x2="19" y2="19" />
+    </svg>
+  );
+}
+
+/* ── Card ── */
+function Card({ item, isHighlighted }: { item: SlotItem; isHighlighted?: boolean }) {
+  return (
+    <div
+      className={isHighlighted && !item.completed ? "hero-highlight" : ""}
+      style={{
+        padding: "8px 10px", borderRadius: 8,
+        backgroundColor: item.completed ? "transparent" : "#161616",
+        display: "flex", flexDirection: "column", gap: 5, minHeight: 72,
+        border: isHighlighted && !item.completed ? "1px solid rgba(255,110,110,0.4)" : "1px solid transparent",
+      }}
+    >
       <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, fontWeight: 500, color: item.project.color, alignSelf: "flex-start" }}>
         <Dot color={item.project.color} size={4} />{item.project.name}
       </span>
@@ -110,7 +117,10 @@ function Card({ item }: { item: SlotItem }) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           {(item.deferCount ?? 0) > 0 && (
-            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 15, height: 15, borderRadius: 8, backgroundColor: "#EF4444", color: "#fff", fontSize: 8, fontWeight: 700, padding: "0 3px" }}>{item.deferCount}</span>
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 2, height: 16, borderRadius: 8, padding: "0 5px", backgroundColor: "rgba(239,68,68,0.15)" }}>
+              <SkipForwardIcon size={8} />
+              <span style={{ fontSize: 8, fontWeight: 700, color: "#EF4444" }}>{item.deferCount}</span>
+            </span>
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -129,35 +139,23 @@ function Card({ item }: { item: SlotItem }) {
   );
 }
 
-/* ── Empty slot with + ── */
+/* ── Empty slot — inline creation style ── */
 function EmptySlot() {
   return (
-    <div style={{ minHeight: 72, borderRadius: 8, backgroundColor: "#0e0e0e", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth="1.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+    <div style={{ minHeight: 72, borderRadius: 8, backgroundColor: "#161616", display: "flex", flexDirection: "column", justifyContent: "center", padding: "8px 10px", gap: 6 }}>
+      {/* Project tag placeholder */}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, color: "#333", alignSelf: "flex-start" }}>
+        <Dot color="#333" size={4} />프로젝트
+      </span>
+      {/* Input placeholder */}
+      <span style={{ fontSize: 11, color: "#2a2a2a" }}>할 일 입력...</span>
     </div>
   );
 }
 
-/* ── Routine slot (dashed) ── */
-function RoutineSlot({ item }: { item: RoutineItem }) {
-  if (!item) {
-    return (
-      <div style={{ minHeight: 36, borderRadius: 8, border: "1px dashed #161616", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-      </div>
-    );
-  }
-  return (
-    <div style={{ minHeight: 36, borderRadius: 8, border: "1px dashed #161616", backgroundColor: "#0e0e0e", display: "flex", alignItems: "center", gap: 6, padding: "4px 8px", opacity: item.completed ? 0.5 : 1 }}>
-      <span style={{ flex: 1, fontSize: 11, color: item.completed ? "#666" : "#888", textDecoration: item.completed ? "line-through" : "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</span>
-      {item.time && <span style={{ fontSize: 9, color: "#333", flexShrink: 0 }}>{item.time}</span>}
-    </div>
-  );
-}
-
-/* ── Period Row ── */
-function PeriodRow({ period, slots, routines, lineColor, isNow }: {
-  period: { label: string; time: string }; slots: (SlotItem | null)[]; routines: RoutineItem[]; lineColor: string; isNow: boolean;
+/* ── Period Row (no routine row) ── */
+function PeriodRow({ period, slots, lineColor, isActive }: {
+  period: { label: string; time: string }; slots: (SlotItem | null)[]; lineColor: string; isActive?: boolean;
 }) {
   return (
     <div style={{ borderRadius: 10, backgroundColor: "#111111" }}>
@@ -169,17 +167,12 @@ function PeriodRow({ period, slots, routines, lineColor, isNow }: {
           <span style={{ fontSize: 10, color: "#333" }}>{period.time}</span>
         </div>
       </div>
-      {/* Content with line */}
+      {/* Content with line — task slots only, no routine row */}
       <div style={{ display: "flex" }}>
         <div style={{ width: 3, backgroundColor: lineColor, flexShrink: 0, marginLeft: 10, borderRadius: 2, transition: "background-color 0.5s ease" }} />
         <div style={{ flex: 1, padding: "0 10px 10px" }}>
-          {/* Task slots */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-            {slots.map((item, i) => item ? <Card key={i} item={item} /> : <EmptySlot key={i} />)}
-          </div>
-          {/* Routine slots */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginTop: 6 }}>
-            {routines.map((item, i) => <RoutineSlot key={i} item={item} />)}
+            {slots.map((item, i) => item ? <Card key={i} item={item} isHighlighted={isActive && i === 0} /> : <EmptySlot key={i} />)}
           </div>
         </div>
       </div>
@@ -187,12 +180,15 @@ function PeriodRow({ period, slots, routines, lineColor, isNow }: {
   );
 }
 
-/* ── Goal mini ── */
+/* ── Goal mini — updated preview format ── */
 function GoalMini({ totalXp }: { totalXp: number }) {
+  const preview = GOAL_PREVIEW[lang];
   return (
     <div style={{ borderRadius: 10, backgroundColor: "#111111", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontSize: 11, color: "#888", margin: 0 }}>{GOAL_PREVIEW[lang]}</p>
+        <p style={{ fontSize: 11, color: "#888", margin: 0 }}>
+          {preview.label} <span style={{ color: "#FF6E6E", fontWeight: 600 }}>{preview.value}</span>
+        </p>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
         <span style={{ fontSize: 16, fontWeight: 700, color: "#e0e0e0", fontFamily: "'Poppins', sans-serif" }}>{totalXp}<sub style={{ fontSize: 10, fontWeight: 600, color: "#888" }}>xp</sub></span>
@@ -245,8 +241,8 @@ function SidebarDemo() {
   );
 }
 
-/* ── Timer Panel (dark mode, accent cycles every 3s) ── */
-const TIMER_COLORS = ["#F97066", "#60A5FA", "#A78BFA", "#34D399", "#FBBF24"];
+/* ── Timer Panel ── */
+const TIMER_COLORS = ["#FF6E6E", "#60A5FA", "#A78BFA", "#34D399", "#FBBF24"];
 
 function TimerPanel({ item }: { item: SlotItem }) {
   const [elapsed, setElapsed] = useState(0);
@@ -289,7 +285,7 @@ function TimerPanel({ item }: { item: SlotItem }) {
           </span>
         </div>
         <div style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
         </div>
       </div>
 
@@ -312,15 +308,23 @@ function TimerPanel({ item }: { item: SlotItem }) {
       </div>
 
       {/* Digital + settings */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 0 8px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 0 4px" }}>
         <span style={{ fontSize: 20, fontWeight: 600, color: color, fontVariantNumeric: "tabular-nums", fontFamily: "'Poppins', sans-serif", transition: "color 0.8s ease" }}>{timeStr}</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+      </div>
+
+      {/* Cycle dots */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 3, padding: "0 0 8px" }}>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: i === 0 ? color : "#2a2a2a", transition: "background-color 0.8s ease" }} />
+        ))}
+        <span style={{ fontSize: 9, color: "#555", marginLeft: 2 }}>1 cycle</span>
       </div>
 
       {/* Action buttons */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "4px 0 16px" }}>
         <span style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round"><polyline points="13 17 18 12 13 7" /><line x1="6" y1="12" x2="18" y2="12" /></svg>
+          <SkipForwardIcon size={14} color="#aaa" />
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "9px 20px", borderRadius: 99, backgroundColor: color, color: "#0a0a0a", fontSize: 12, fontWeight: 600, transition: "background-color 0.8s ease" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
@@ -374,6 +378,16 @@ export default function HeroDemo() {
   const nowItem = slots[1][0] && !slots[1][0].completed ? slots[1][0] : SLOTS[lang][1][0]!;
   const totalXp = slots.flat().filter(Boolean).reduce((sum, item) => sum + (item!.completed ? item!.xp : 0), 0);
 
+  /* Dynamic line colors — green when 1st slot completed */
+  const getLineColor = (rowIdx: number) => {
+    const row = slots[rowIdx];
+    const firstCompleted = row[0]?.completed;
+    if (firstCompleted) return "#4ADE80";
+    if (rowIdx === 0) return "#4ADE80"; // morning already done
+    if (rowIdx === 1) return "#FF6E6E"; // afternoon active
+    return "#3F3F46"; // evening future
+  };
+
   return (
     <div style={{ width: "100%", borderRadius: 16, overflow: "hidden", border: "1px solid #161616", backgroundColor: "#0a0a0a", fontFamily: "var(--font-sans)", display: "flex", position: "relative", boxShadow: "0 32px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)" }}>
       <SidebarDemo />
@@ -383,7 +397,7 @@ export default function HeroDemo() {
         {/* Date header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px 14px", borderBottom: "1px solid #191919" }}>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#e0e0e0" }}>2026{lang === "ko" ? "년" : "."} 5{lang === "ko" ? "월" : "."} 8{lang === "ko" ? "일 금요일" : " Fri"}</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#e0e0e0" }}>2026{lang === "ko" ? "년" : "."} 5{lang === "ko" ? "월" : "."} 11{lang === "ko" ? "일 월요일" : " Mon"}</span>
           <span style={{ fontSize: 10, fontWeight: 600, color: "#4ADE80", backgroundColor: "rgba(74,222,128,0.1)", padding: "1px 6px", borderRadius: 4 }}>+5 XP</span>
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
         </div>
@@ -398,24 +412,17 @@ export default function HeroDemo() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, padding: "0 12px" }}>
               {[1, 2, 3].map((p) => (
                 <div key={p} style={{ textAlign: "center" }}>
-                  <span style={{ fontSize: 24, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.02em", color: p === 1 ? "#F97066" : p === 2 ? "#e0e0e0" : "#666" }}>{p}</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: p === 1 ? "#F97066" : p === 2 ? "#e0e0e0" : "#666" }}>{p === 1 ? "st" : p === 2 ? "nd" : "rd"}</span>
+                  <span style={{ fontSize: 24, fontWeight: 700, lineHeight: 1, letterSpacing: "-0.02em", color: p === 1 ? "#FF6E6E" : p === 2 ? "#e0e0e0" : "#666" }}>{p}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: p === 1 ? "#FF6E6E" : p === 2 ? "#e0e0e0" : "#666" }}>{p === 1 ? "st" : p === 2 ? "nd" : "rd"}</span>
                 </div>
               ))}
             </div>
 
-            {/* Period rows — 오후 라인은 1순위 완료 시 초록으로 전환 */}
+            {/* Period rows — no routine rows */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {PERIODS[lang].map((period, rowIdx) => {
-                let lineColor = ROW_LINE_COLORS[rowIdx];
-                // 오후(idx 1): 1순위 완료되면 코랄→초록
-                if (rowIdx === 1 && slots[1][0]?.completed) {
-                  lineColor = "#4ADE80";
-                }
-                return (
-                  <PeriodRow key={period.label} period={period} slots={slots[rowIdx]} routines={ROUTINES[lang][rowIdx]} lineColor={lineColor} isNow={rowIdx === 2} />
-                );
-              })}
+              {PERIODS[lang].map((period, rowIdx) => (
+                <PeriodRow key={period.label} period={period} slots={slots[rowIdx]} lineColor={getLineColor(rowIdx)} isActive={rowIdx === 1} />
+              ))}
             </div>
 
             {/* Backlog hint */}
