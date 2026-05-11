@@ -80,3 +80,18 @@
 .landing .keep-all {
   word-break: keep-all;
 }
+
+/* NowFocus highlight animation — matches app's animate-highlight */
+@keyframes hero-highlight-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.015); }
+}
+
+@keyframes hero-highlight-border {
+  0%, 100% { border-color: rgba(255, 110, 110, 0.4); }
+  50% { border-color: #FF6E6E; }
+}
+
+.hero-highlight {
+  animation: hero-highlight-pulse 3s ease-in-out infinite, hero-highlight-border 3s ease-in-out infinite;
+}
