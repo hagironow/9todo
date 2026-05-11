@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useLocale } from '@/i18n/context';
 import {
   DndContext,
   DragEndEvent,
@@ -67,17 +68,18 @@ function ProjectRenameModal({
   onSave: (name: string) => void;
   onClose: () => void;
 }) {
+  const { t } = useLocale();
   const [value, setValue] = useState(project.name);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius)] p-5 shadow-xl w-80 flex flex-col gap-4">
-        <p className="font-semibold text-[var(--foreground)]">프로젝트 이름 변경</p>
+        <p className="font-semibold text-[var(--foreground)]">{t.projectRename}</p>
         <input
           autoFocus
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') { const t = value.trim(); if (t) onSave(t); }
+            if (e.key === 'Enter') { const trimmed = value.trim(); if (trimmed) onSave(trimmed); }
             if (e.key === 'Escape') onClose();
           }}
           className="px-3 py-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
@@ -87,13 +89,13 @@ function ProjectRenameModal({
             onClick={onClose}
             className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
           >
-            취소
+            {t.cancel}
           </button>
           <button
-            onClick={() => { const t = value.trim(); if (t) onSave(t); }}
+            onClick={() => { const trimmed = value.trim(); if (trimmed) onSave(trimmed); }}
             className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity"
           >
-            저장
+            {t.save}
           </button>
         </div>
       </div>
@@ -136,6 +138,7 @@ export default function Home() {
     removeRetrospective,
   } = useAppData();
 
+  const { t } = useLocale();
   const currentPeriod = useCurrentPeriod();
   const [today, setToday] = useState<string>(getToday);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -558,6 +561,9 @@ export default function Home() {
       const coord = over.data.current?.coord as SlotCoord | undefined;
       if (!coord) return;
 
+      // 반복 슬롯에는 일반 투두 드롭 차단
+      if (over.data.current?.isRoutineSlot) return;
+
       const itemId = String(active.id);
       const itemData = active.data.current;
 
@@ -705,7 +711,7 @@ export default function Home() {
       <div className="flex h-screen items-center justify-center bg-[var(--background)]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-[var(--muted-foreground)]">로딩 중...</p>
+          <p className="text-sm text-[var(--muted-foreground)]">{t.loading}</p>
         </div>
       </div>
     );
@@ -898,7 +904,7 @@ export default function Home() {
             if (selectedProject || isUnassignedView) {
               const proj = selectedProject ?? {
                 id: '__unassigned__' as string,
-                name: '미분류',
+                name: t.uncategorized,
                 color: '#8A8A8A',
                 colorIndex: 0,
                 archived: false,
@@ -1025,22 +1031,22 @@ export default function Home() {
       </DragOverlay>
 
       {/* 미루기 확인 */}
-      <Dialog open={!!deferTarget} onClose={() => setDeferTarget(null)} title="미루기" width="sm">
+      <Dialog open={!!deferTarget} onClose={() => setDeferTarget(null)} title={t.defer} width="sm">
         <p className="text-[13px] text-[var(--muted-foreground)] mb-4">
-          &ldquo;{deferTarget?.title}&rdquo;을(를) 백로그로 보낼까요?
+          {t.deferConfirm(deferTarget?.title ?? '')}
         </p>
         <div className="flex gap-2 justify-end">
           <button
             onClick={() => setDeferTarget(null)}
             className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors"
           >
-            취소
+            {t.cancel}
           </button>
           <button
             onClick={() => { if (deferTarget) { deferTask(deferTarget.id); setDeferTarget(null); } }}
             className="px-4 py-1.5 rounded-[var(--radius-sm)] text-[12px] font-semibold bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity"
           >
-            미루기
+            {t.defer}
           </button>
         </div>
       </Dialog>
@@ -1051,8 +1057,8 @@ export default function Home() {
         onClose={() => { setSlotPickerOpen(false); setSlotPickerIsRepeat(false); }}
         slots={slots}
         onSelect={handleSlotPick}
-        title={slotPickerIsRepeat ? '또하기' : undefined}
-        description={slotPickerIsRepeat ? '다 못 끝냈나요? 이어서 할 슬롯을 선택하세요.' : undefined}
+        title={slotPickerIsRepeat ? t.redoSlotTitle : undefined}
+        description={slotPickerIsRepeat ? t.redoSlotDesc : undefined}
       />
 
       <ProjectCreateModal
@@ -1117,39 +1123,39 @@ export default function Home() {
       <StorageConsentBanner />
 
       {/* 태스크 삭제 확인 */}
-      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="삭제할까요?" width="sm">
+      <Dialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={t.deleteConfirm} width="sm">
         <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
-          삭제한 항목은 복구할 수 없습니다.
+          {t.deleteCannotRecover}
         </p>
         {deleteTarget && (deleteTarget.recurrenceParentId || deleteTarget.recurrence) ? (
           <div className="flex flex-col gap-2 pt-1">
             <button onClick={() => {
               removeTask(deleteTarget.id);
               setDeleteTarget(null);
-            }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--muted)] transition-colors">이 투두만 삭제</button>
+            }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--muted)] transition-colors">{t.deleteThisOnly}</button>
             <button onClick={() => {
               removeTaskWithRecurrence(deleteTarget.id);
               setDeleteTarget(null);
-            }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">반복 전체 삭제</button>
-            <button onClick={() => setDeleteTarget(null)} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+            }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">{t.deleteAllRecurrence}</button>
+            <button onClick={() => setDeleteTarget(null)} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">{t.cancel}</button>
           </div>
         ) : (
           <div className="flex items-center gap-2 pt-1">
-            <button onClick={() => setDeleteTarget(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+            <button onClick={() => setDeleteTarget(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">{t.cancel}</button>
             <button onClick={() => {
               if (deleteTarget) {
                 removeTask(deleteTarget.id);
               }
               setDeleteTarget(null);
-            }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
+            }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">{t.delete}</button>
           </div>
         )}
       </Dialog>
 
       {/* 반복 투두 제목 수정 범위 선택 */}
-      <Dialog open={!!recurrenceEditTarget} onClose={() => setRecurrenceEditTarget(null)} title="어떻게 수정할까요?" width="sm">
+      <Dialog open={!!recurrenceEditTarget} onClose={() => setRecurrenceEditTarget(null)} title={t.editTitle} width="sm">
         <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
-          반복 투두의 제목을 수정합니다.
+          {t.editTitleDesc}
         </p>
         <div className="flex flex-col gap-2 pt-1">
           <button onClick={() => {
@@ -1157,49 +1163,49 @@ export default function Home() {
               updateTaskTitle(recurrenceEditTarget.item.id, recurrenceEditTarget.title);
               setRecurrenceEditTarget(null);
             }
-          }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--muted)] transition-colors">이 투두만 수정</button>
+          }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--muted)] transition-colors">{t.editThisOnly}</button>
           <button onClick={() => {
             if (recurrenceEditTarget) {
               updateTaskTitleWithRecurrence(recurrenceEditTarget.item.id, recurrenceEditTarget.title);
               setRecurrenceEditTarget(null);
             }
-          }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] transition-opacity hover:opacity-85">반복 전체 수정</button>
-          <button onClick={() => setRecurrenceEditTarget(null)} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+          }} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] transition-opacity hover:opacity-85">{t.editAllRecurrence}</button>
+          <button onClick={() => setRecurrenceEditTarget(null)} className="w-full px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">{t.cancel}</button>
         </div>
       </Dialog>
 
       {/* 프로젝트 삭제 확인 */}
-      <Dialog open={!!deleteProjectId} onClose={() => setDeleteProjectId(null)} title="삭제할까요?" width="sm">
+      <Dialog open={!!deleteProjectId} onClose={() => setDeleteProjectId(null)} title={t.deleteConfirm} width="sm">
         <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
-          프로젝트에 포함된 할 일과 루틴이 모두 삭제됩니다.<br />삭제한 항목은 복구할 수 없습니다.
+          {t.deleteProjectConfirm.split('\n').map((line, i) => (<span key={i}>{line}{i === 0 ? <br/> : null}</span>))}
         </p>
         <div className="flex items-center gap-2 pt-1">
-          <button onClick={() => setDeleteProjectId(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+          <button onClick={() => setDeleteProjectId(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">{t.cancel}</button>
           <button onClick={() => {
             if (deleteProjectId) removeProject(deleteProjectId);
             setDeleteProjectId(null);
-          }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
+          }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">{t.delete}</button>
         </div>
       </Dialog>
 
       {/* 데이터 삭제 확인 */}
-      <Dialog open={resetConfirmOpen} onClose={() => setResetConfirmOpen(false)} title="모든 데이터를 삭제할까요?" width="sm">
+      <Dialog open={resetConfirmOpen} onClose={() => setResetConfirmOpen(false)} title={t.resetDataTitle} width="sm">
         <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
-          삭제한 데이터는 복구할 수 없습니다.
+          {t.resetDataDesc}
         </p>
         <div className="flex items-center gap-2 pt-1">
-          <button onClick={() => setResetConfirmOpen(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
-          <button onClick={() => { localStorage.removeItem('9todo_state'); batchUpdate(() => EMPTY_STATE); setResetConfirmOpen(false); }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">삭제</button>
+          <button onClick={() => setResetConfirmOpen(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">{t.cancel}</button>
+          <button onClick={() => { localStorage.removeItem('9todo_state'); batchUpdate(() => EMPTY_STATE); setResetConfirmOpen(false); }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85">{t.delete}</button>
         </div>
       </Dialog>
 
       {/* 가져오기 오류 */}
-      <Dialog open={importErrorOpen} onClose={() => setImportErrorOpen(false)} title="가져오기 실패" width="sm">
+      <Dialog open={importErrorOpen} onClose={() => setImportErrorOpen(false)} title={t.importFailed} width="sm">
         <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
-          유효하지 않은 파일입니다.
+          {t.importFailedDesc}
         </p>
         <div className="flex items-center gap-2 pt-1">
-          <button onClick={() => setImportErrorOpen(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] transition-opacity hover:opacity-85">확인</button>
+          <button onClick={() => setImportErrorOpen(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] transition-opacity hover:opacity-85">{t.confirm}</button>
         </div>
       </Dialog>
       {/* <MarketingInjector /> */}

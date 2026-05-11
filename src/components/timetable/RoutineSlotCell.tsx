@@ -6,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Check, Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
 import { ScheduledItem, SlotCoord, Project } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
+import { useLocale } from '@/i18n/context';
 
 interface RoutineSlotCellProps {
   coord: SlotCoord;
@@ -41,6 +42,7 @@ export default function RoutineSlotCell({
   isReadOnly,
   projects,
 }: RoutineSlotCellProps) {
+  const { t } = useLocale();
   const [inputting, setInputting] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -140,7 +142,7 @@ export default function RoutineSlotCell({
                 if (e.key === 'Enter' && !e.nativeEvent.isComposing) commitInput();
                 if (e.key === 'Escape') cancelInput();
               }}
-              placeholder="루틴 입력..."
+              placeholder={t.taskInputPlaceholder}
               className="flex-1 text-[var(--fs-item)] text-[var(--foreground)] bg-transparent outline-none placeholder:text-[var(--muted-foreground)]"
             />
           </div>
@@ -150,7 +152,7 @@ export default function RoutineSlotCell({
           <button
             onClick={openInput}
             className="w-full min-h-[40px] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] rounded-lg transition-colors duration-150 cursor-pointer"
-            aria-label="루틴 추가"
+            aria-label={t.routine}
           >
             <Plus size={14} strokeWidth={1.5} />
           </button>
@@ -212,7 +214,7 @@ export default function RoutineSlotCell({
             onClick={(e) => { e.stopPropagation(); onUncomplete(item); }}
             className="text-[11px] font-medium text-[var(--muted-foreground)] pointer-events-auto cursor-pointer"
           >
-            완료 취소
+            {t.undoComplete}
           </button>
         </div>
       )}
@@ -232,7 +234,7 @@ export default function RoutineSlotCell({
           <div
             {...listeners}
             className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)] hover:text-[var(--foreground)] transition-colors pointer-events-auto cursor-grab active:cursor-grabbing"
-            title="드래그하여 이동"
+            title={t.dragToMove}
           >
             <GripVertical size={11} />
           </div>
@@ -240,7 +242,7 @@ export default function RoutineSlotCell({
             <button
               onClick={(e) => { e.stopPropagation(); onEditRoutine(item); }}
               className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
-              title="수정"
+              title={t.edit}
             >
               <Pencil size={11} />
             </button>
@@ -248,7 +250,7 @@ export default function RoutineSlotCell({
           <button
             onClick={(e) => { e.stopPropagation(); onComplete(item); }}
             className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity pointer-events-auto"
-            title="완료"
+            title={t.complete}
           >
             <Check size={12} strokeWidth={2.5} />
           </button>
@@ -256,7 +258,7 @@ export default function RoutineSlotCell({
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(item); }}
               className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--g-error)]/10 hover:text-[var(--g-error)] transition-colors pointer-events-auto"
-              title="삭제"
+              title={t.delete}
             >
               <Trash2 size={11} />
             </button>

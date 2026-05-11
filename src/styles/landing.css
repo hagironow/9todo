@@ -234,3 +234,123 @@
     padding-top: 0 !important;
   }
 }
+
+/* ══════════════════════════════════════
+   Playke 공통 Footer
+   ══════════════════════════════════════ */
+.playke-footer {
+  background: var(--color-bg-void);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.playke-footer .footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-8);
+  padding-top: var(--space-12);
+  padding-bottom: var(--space-12);
+}
+
+.playke-footer .footer-logo {
+  display: flex;
+  align-items: center;
+}
+
+.playke-footer .footer-logo-img {
+  height: 18px;
+  width: auto;
+}
+
+.playke-footer .footer-desc {
+  font-size: 14px;
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-4);
+}
+
+.playke-footer .footer-mid {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--space-8);
+  padding-bottom: var(--space-8);
+  display: flex;
+  gap: var(--space-16);
+  font-size: 13px;
+}
+
+.playke-footer .footer-services,
+.playke-footer .footer-sns {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.playke-footer .footer-mid-label {
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+  margin-right: var(--space-2);
+}
+
+.playke-footer .footer-mid a {
+  color: var(--color-text-ghost);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-default);
+}
+
+.playke-footer .footer-mid a:hover {
+  color: var(--color-text-primary);
+}
+
+.playke-footer .footer-business {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: 12px;
+  color: var(--color-text-ghost);
+  line-height: var(--line-height-body);
+}
+
+.playke-footer .footer-business p {
+  margin: 0;
+}
+
+.playke-footer .footer-business a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.playke-footer .footer-business a:hover {
+  color: var(--color-text-tertiary);
+}
+
+.playke-footer .footer-biz-label {
+  color: var(--color-text-tertiary);
+  margin-right: var(--space-2);
+}
+
+.playke-footer .footer-bottom {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-block: var(--space-6);
+  margin-top: var(--space-8);
+  text-align: center;
+}
+
+.playke-footer .footer-copyright {
+  font-size: 12px;
+  color: var(--color-text-ghost);
+  letter-spacing: var(--tracking-body);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .playke-footer .footer-top {
+    flex-direction: column;
+    gap: var(--space-8);
+  }
+
+  .playke-footer .footer-mid {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+}

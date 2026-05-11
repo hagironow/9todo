@@ -1,9 +1,13 @@
+'use client';
+
 /**
  * TodayViewDemo — 9todo 타임테이블 오전 1행 정밀 목업
  *
  * 구조: Priority 헤더(1st/2nd/3rd) → 오전 row → 카드 2개 + 인라인 입력(3rd) → 오후/저녁 접힘
  * 루틴 행 제거 — 앱 현재 상태 반영
  */
+
+import { useLocale } from '@/i18n/context';
 
 const T = {
   bg: "#0a0a0a",
@@ -18,11 +22,6 @@ const T = {
   success: "#22C55E",
   gridBg: "#0e0e0e",
 };
-
-const PROJECTS = [
-  { name: "나인투두", color: "#60A5FA" },
-  { name: "파티룸", color: "#A78BFA" },
-];
 
 /* ── Dot ── */
 function Dot({ color, size = 5 }: { color: string; size?: number }) {
@@ -41,7 +40,7 @@ function SkipForwardIcon({ size = 10, color = "#EF4444" }: { size?: number; colo
 /* ── Task Card ── */
 function TaskCard({ title, project, xp, deferCount, done }: {
   title: string;
-  project: typeof PROJECTS[0];
+  project: { name: string; color: string };
   xp: number;
   deferCount?: number;
   done?: boolean;
@@ -96,6 +95,7 @@ function TaskCard({ title, project, xp, deferCount, done }: {
 
 /* ── Inline Creation Slot — matches actual SlotCell input mode ── */
 function InlineCreateSlot() {
+  const { locale } = useLocale();
   return (
     <div style={{
       minHeight: 90,
@@ -117,7 +117,7 @@ function InlineCreateSlot() {
         cursor: "pointer",
       }}>
         <Dot color="#8A8A8A" size={5} />
-        <span>미분류</span>
+        <span>{locale === 'ko' ? '미분류' : 'Uncategorized'}</span>
       </button>
 
       {/* 하단: 텍스트 입력 + 반복 아이콘 */}
@@ -135,7 +135,7 @@ function InlineCreateSlot() {
             marginRight: 2,
             animation: "cursor-blink 1s step-end infinite",
           }} />
-          <span style={{ fontSize: 14, color: T.mutedFg }}>할 일 입력...</span>
+          <span style={{ fontSize: 14, color: T.mutedFg }}>{locale === 'ko' ? '할 일 입력...' : 'Enter a task...'}</span>
         </div>
         {/* Repeat icon button */}
         <div style={{
@@ -158,6 +158,12 @@ function InlineCreateSlot() {
    Main
    ══════════════════════════════════════ */
 export default function TodayViewDemo() {
+  const { locale } = useLocale();
+
+  const PROJECTS = locale === 'ko'
+    ? [{ name: "나인투두", color: "#60A5FA" }, { name: "파티룸", color: "#A78BFA" }]
+    : [{ name: "9todo", color: "#60A5FA" }, { name: "Party Room", color: "#A78BFA" }];
+
   return (
     <div style={{
       width: "100%",
@@ -208,7 +214,7 @@ export default function TodayViewDemo() {
           <div style={{ display: "flex", alignItems: "center" }}>
             <div style={{ width: 3, alignSelf: "stretch", backgroundColor: "#4ADE80", marginLeft: 12, borderRadius: 2 }} />
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px" }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: T.fg }}>오전</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: T.fg }}>{locale === 'ko' ? '오전' : 'AM'}</span>
               <span style={{ fontSize: 12, color: T.mutedFg }}>9:00 ~ 12:00</span>
             </div>
           </div>
@@ -217,8 +223,18 @@ export default function TodayViewDemo() {
             <div style={{ flex: 1, padding: "0 12px 12px" }}>
               {/* Task slots only — no routine row */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                <TaskCard title="랜딩 페이지 워딩 수정 완료" project={PROJECTS[0]} xp={3} deferCount={1} done />
-                <TaskCard title="파티룸 청소" project={PROJECTS[1]} xp={2} />
+                <TaskCard
+                  title={locale === 'ko' ? "랜딩 페이지 워딩 수정 완료" : "Landing page copy revision done"}
+                  project={PROJECTS[0]}
+                  xp={3}
+                  deferCount={1}
+                  done
+                />
+                <TaskCard
+                  title={locale === 'ko' ? "파티룸 청소" : "Clean party room"}
+                  project={PROJECTS[1]}
+                  xp={2}
+                />
                 <InlineCreateSlot />
               </div>
             </div>
@@ -241,7 +257,7 @@ export default function TodayViewDemo() {
           gap: 8,
         }}>
           <div style={{ width: 3, height: 20, backgroundColor: T.accent, borderRadius: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: 14, fontWeight: 600, color: T.fg }}>오후</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: T.fg }}>{locale === 'ko' ? '오후' : 'PM'}</span>
           <span style={{ fontSize: 12, color: T.mutedFg }}>12:00 ~ 18:00</span>
           <div style={{ flex: 1 }} />
           <div style={{ display: "flex", gap: 4 }}>
@@ -267,7 +283,7 @@ export default function TodayViewDemo() {
           gap: 8,
         }}>
           <div style={{ width: 3, height: 20, backgroundColor: "#3F3F46", borderRadius: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: 14, fontWeight: 600, color: T.mutedFg }}>저녁</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: T.mutedFg }}>{locale === 'ko' ? '저녁' : 'EVE'}</span>
           <span style={{ fontSize: 12, color: "#444" }}>18:00 ~</span>
           <div style={{ flex: 1 }} />
           <div style={{ display: "flex", gap: 4 }}>

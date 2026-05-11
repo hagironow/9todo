@@ -8,6 +8,7 @@ import { Check, SkipForward, Repeat, RefreshCw, Trash2, Clock, Pencil, GripVerti
 import { ScheduledItem, Project } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import Badge from '@/components/ui/Badge';
+import { useLocale } from '@/i18n/context';
 
 interface ItemCardProps {
   item: ScheduledItem;
@@ -48,6 +49,7 @@ export default function ItemCard({
   onEditRecurrence,
   isHighlighted,
 }: ItemCardProps) {
+  const { t } = useLocale();
   const isRecurring = !!item.recurrenceParentId || !!item.recurrence;
   const isCompleted = !!item.completedAt;
 
@@ -162,7 +164,7 @@ export default function ItemCard({
               style={project ? { backgroundColor: 'var(--surface-hover)', color: project.color } : { backgroundColor: 'var(--muted)' }}
             >
               <ColorDot color={project?.color ?? '#8A8A8A'} size="sm" />
-              <span className="truncate max-w-[60px]">{project?.name ?? '미분류'}</span>
+              <span className="truncate max-w-[60px]">{project?.name ?? t.uncategorized}</span>
             </button>
           ) : project ? (
             <span
@@ -181,7 +183,7 @@ export default function ItemCard({
               style={{ backgroundColor: 'var(--muted)' }}
             >
               <span className="w-[6px] h-[6px] rounded-full bg-[var(--muted-foreground)] inline-block" />
-              <span>미분류</span>
+              <span>{t.uncategorized}</span>
             </span>
           )}
 
@@ -197,7 +199,7 @@ export default function ItemCard({
               ].join(' ')}
               style={{ top: dropdownPos.top, left: dropdownPos.left }}
               role="listbox"
-              aria-label="프로젝트 변경"
+              aria-label={t.changeProject}
             >
               {activeProjects.map((p) => (
                 <button
@@ -235,7 +237,7 @@ export default function ItemCard({
                 aria-selected={!project}
               >
                 <span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] inline-block" />
-                <span>미분류</span>
+                <span>{t.uncategorized}</span>
               </button>
             </div>,
             document.body,
@@ -270,7 +272,7 @@ export default function ItemCard({
                         ? 'text-[var(--accent)] bg-[var(--accent)]/10'
                         : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]',
                     ].join(' ')}
-                    title="반복 설정"
+                    title={t.recurrenceSettings}
                   >
                     <Repeat size={13} strokeWidth={2} />
                   </button>
@@ -301,7 +303,7 @@ export default function ItemCard({
               <Badge count={deferCount} continueCount={continueCount} origin={origin} />
             )}
             {isRecurring && (
-              <span title="반복"><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
+              <span title={t.repeat}><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
             )}
           </div>
           <div className="flex items-center gap-1.5">
@@ -330,9 +332,9 @@ export default function ItemCard({
             'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
             'bg-[var(--surface-inset)]/80 backdrop-blur-sm',
           ].join(' ')}
-          title="완료 취소"
+          title={t.undoComplete}
         >
-          <span className="text-[12px] font-medium text-[var(--muted-foreground)]">완료 취소</span>
+          <span className="text-[12px] font-medium text-[var(--muted-foreground)]">{t.undoComplete}</span>
         </button>
       )}
 
@@ -351,7 +353,7 @@ export default function ItemCard({
             <button
               onClick={(e) => { e.stopPropagation(); startEdit(); }}
               className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
-              title="수정"
+              title={t.edit}
             >
               <Pencil size={13} />
             </button>
@@ -360,7 +362,7 @@ export default function ItemCard({
             <button
               onClick={(e) => { e.stopPropagation(); onDefer(item); }}
               className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
-              title="미루기"
+              title={t.defer}
             >
               <SkipForward size={14} />
             </button>
@@ -368,7 +370,7 @@ export default function ItemCard({
           <button
             onClick={(e) => { e.stopPropagation(); onComplete(item); }}
             className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity pointer-events-auto"
-            title="완료"
+            title={t.complete}
           >
             <Check size={14} strokeWidth={2.5} />
           </button>
@@ -376,7 +378,7 @@ export default function ItemCard({
             <button
               onClick={(e) => { e.stopPropagation(); onRepeat(item); }}
               className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)] transition-colors pointer-events-auto"
-              title="또하기"
+              title={t.redo}
             >
               <RefreshCw size={13} />
             </button>
@@ -385,7 +387,7 @@ export default function ItemCard({
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(item); }}
               className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--g-error)]/10 hover:text-[var(--g-error)] transition-colors pointer-events-auto"
-              title="삭제"
+              title={t.delete}
             >
               <Trash2 size={13} />
             </button>
@@ -395,7 +397,7 @@ export default function ItemCard({
               {...listeners}
               {...attributes}
               className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)] hover:text-[var(--foreground)] transition-colors pointer-events-auto cursor-grab active:cursor-grabbing"
-              title="드래그하여 이동"
+              title={t.dragToMove}
             >
               <GripVertical size={14} />
             </div>

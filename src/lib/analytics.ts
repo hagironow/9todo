@@ -14,11 +14,15 @@ declare global {
   }
 }
 
+function isAdmin() {
+  return typeof window !== 'undefined' && localStorage.getItem('9todo_admin') === 'true';
+}
+
 export function trackEvent(
   eventName: string,
   params?: Record<string, string | number | boolean>,
 ) {
-  if (typeof window !== 'undefined' && window.gtag) {
+  if (typeof window !== 'undefined' && window.gtag && !isAdmin()) {
     window.gtag('event', eventName, params);
   }
 }

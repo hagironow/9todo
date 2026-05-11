@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { BookOpen } from 'lucide-react';
 import type { RetroScope, EnergyLevel } from '@/lib/types';
 import EnergyLevelInput from './EnergyLevelInput';
+import { useLocale } from '@/i18n/context';
 
 interface RetroInputProps {
   scope: RetroScope;
@@ -22,10 +23,13 @@ export default function RetroInput({
   initialContent,
   initialEnergyLevel,
   onSave,
-  placeholder = '회고를 남겨보세요...',
+  placeholder,
   label,
   compact = false,
 }: RetroInputProps) {
+  const { t } = useLocale();
+  const resolvedPlaceholder = placeholder ?? t.retroPlaceholder;
+
   const [value, setValue] = useState(initialContent);
   const [energyLevel, setEnergyLevel] = useState<EnergyLevel | undefined>(initialEnergyLevel);
   const [editing, setEditing] = useState(false);
@@ -109,7 +113,7 @@ export default function RetroInput({
               setEditing(false);
             }
           }}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           rows={compact ? 2 : 3}
           className="w-full px-3 py-2.5 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] text-[13px] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:border-[var(--accent)] resize-none leading-relaxed transition-colors"
         />
@@ -119,13 +123,13 @@ export default function RetroInput({
               onClick={() => { setValue(initialContent); setEditing(false); }}
               className="px-2.5 py-1 rounded-[var(--radius-sm)] text-[12px] text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
             >
-              취소
+              {t.cancel}
             </button>
             <button
               onClick={handleSave}
               className="px-2.5 py-1 rounded-[var(--radius-sm)] text-[12px] font-medium bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity"
             >
-              저장
+              {t.save}
             </button>
           </div>
         )}

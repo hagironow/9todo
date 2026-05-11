@@ -12,6 +12,7 @@ import ProjectStatsView from './ProjectStatsView';
 import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
 import { calculateDailyXP } from '@/lib/xp';
 import { getToday } from '@/lib/date';
+import { useLocale } from '@/i18n/context';
 
 interface CalendarViewProps {
   tasks: Task[];
@@ -28,8 +29,6 @@ interface CalendarViewProps {
 }
 
 type ViewMode = 'week' | 'month';
-
-const KO_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
 function toDateString(d: Date): string {
   const y = d.getFullYear();
@@ -154,6 +153,7 @@ function DayCellInput({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const { t } = useLocale();
   const activeProjects = projects.filter((p) => !p.archived);
 
   useEffect(() => {
@@ -200,7 +200,7 @@ function DayCellInput({
         ].join(' ')}
       >
         <ColorDot color={selectedProject?.color ?? '#8A8A8A'} size="sm" />
-        <span className="truncate max-w-[60px]">{selectedProject?.name ?? '미분류'}</span>
+        <span className="truncate max-w-[60px]">{selectedProject?.name ?? t.uncategorized}</span>
       </button>
 
       {dropdownOpen && dropdownPos && createPortal(
@@ -238,7 +238,7 @@ function DayCellInput({
             ].join(' ')}
           >
             <span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] inline-block" />
-            <span>미분류</span>
+            <span>{t.uncategorized}</span>
           </button>
         </div>,
         document.body,
@@ -252,7 +252,7 @@ function DayCellInput({
           if (e.key === 'Enter' && !e.nativeEvent.isComposing) commit();
           if (e.key === 'Escape') onClose();
         }}
-        placeholder="할 일 입력..."
+        placeholder={t.taskInputPlaceholder}
         className="w-full text-[12px] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--border)] focus:border-[var(--foreground)] placeholder:text-[var(--muted-foreground)] py-0.5"
       />
     </div>
@@ -269,6 +269,7 @@ export default function CalendarView({
   retrospectives = [],
   onSaveRetro,
 }: CalendarViewProps) {
+  const { t } = useLocale();
   const todayStr = getToday();
   const [todayY, todayM] = todayStr.split('-').map(Number);
 
@@ -455,13 +456,14 @@ export default function CalendarView({
   const weekLabel = useMemo(() => {
     const start = new Date(weekDates[0] + 'T00:00:00');
     const end = new Date(weekDates[6] + 'T00:00:00');
+    const sY = start.getFullYear();
     const sM = start.getMonth() + 1;
     const sD = start.getDate();
     const eM = end.getMonth() + 1;
     const eD = end.getDate();
-    if (sM === eM) return `${start.getFullYear()}년 ${sM}월 ${sD}일 ~ ${eD}일`;
-    return `${sM}월 ${sD}일 ~ ${eM}월 ${eD}일`;
-  }, [weekDates]);
+    if (sM === eM) return `${t.monthYear(sY, sM)} ${sD} ~ ${eD}`;
+    return `${sM}/${sD} ~ ${eM}/${eD}`;
+  }, [weekDates, t]);
 
   // 투두 아이템 렌더
   function renderTodoItem(t: Task) {
@@ -522,7 +524,7 @@ export default function CalendarView({
             onClick={() => setExpandedDate(null)}
             className="text-[12px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] px-1 text-left transition-colors mt-0.5"
           >
-            접기
+            {t.collapse}
           </button>
         )}
       </div>
@@ -550,8 +552,8 @@ export default function CalendarView({
 
   // 요일 라벨 순서 (weekStartDay 반영)
   const orderedWeekdays = weekStartDay === 1
-    ? ['월', '화', '수', '목', '금', '토', '일']
-    : KO_WEEKDAYS;
+    ? t.weekdayShortMon
+    : t.weekdaysSingle;
 
   return (
     <div className="flex flex-col gap-4">
@@ -565,7 +567,7 @@ export default function CalendarView({
             <ChevronLeft size={16} strokeWidth={1.8} />
           </button>
           <span className="text-sm font-semibold text-[var(--foreground)] min-w-[180px] text-center">
-            {viewMode === 'week' ? weekLabel : `${viewYear}년 ${viewMonth + 1}월`}
+            {viewMode === 'week' ? weekLabel : t.monthYear(viewYear, viewMonth + 1)}
           </span>
           <button
             onClick={viewMode === 'week' ? nextWeek : nextMonth}
@@ -578,7 +580,7 @@ export default function CalendarView({
               onClick={goToday}
               className="ml-1 px-2.5 py-1 rounded-[var(--radius-sm)] text-[12px] font-semibold text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
             >
-              오늘
+              {t.today}
             </button>
           )}
           {/* 에너지 평균 뱃지 */}
@@ -596,7 +598,7 @@ export default function CalendarView({
             'ml-2 text-[11px] font-medium',
             streak > 0 ? 'text-[var(--g-success)]' : 'text-[var(--muted-foreground)]',
           ].join(' ')}>
-            {streak > 0 ? `${streak}일 연속 완주` : '연속 완주 0일'}
+            {streak > 0 ? t.consecutiveCompletion(streak) : t.consecutiveCompletion(0)}
           </span>
         </div>
 
@@ -620,10 +622,10 @@ export default function CalendarView({
               ) : calProjectFilter === '__uncategorized__' ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] inline-block" />
-                  <span>미분류</span>
+                  <span>{t.uncategorized}</span>
                 </>
               ) : (
-                <span>전체</span>
+                <span>{t.all}</span>
               )}
             </button>
             {calProjectDropOpen && (
@@ -636,7 +638,7 @@ export default function CalendarView({
                     'text-[var(--foreground)]',
                   ].join(' ')}
                 >
-                  전체
+                  {t.all}
                 </button>
                 {activeProjects.map((p) => (
                   <button
@@ -662,7 +664,7 @@ export default function CalendarView({
                   ].join(' ')}
                 >
                   <span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] inline-block" />
-                  <span>미분류</span>
+                  <span>{t.uncategorized}</span>
                 </button>
               </div>
             )}
@@ -678,17 +680,17 @@ export default function CalendarView({
                   ? 'text-[var(--foreground)] bg-[var(--surface-hover)]'
                   : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)]',
               ].join(' ')}
-              title="캘린더 설정"
+              title={t.calendarSettings}
             >
               <Settings size={12} />
-              <span>{timeRange.startHour}:00~{timeRange.endHour}:00 · {weekStartDay === 1 ? '월' : '일'}요일 시작</span>
+              <span>{t.calendarTimeRange(timeRange.startHour, timeRange.endHour, weekStartDay === 1 ? t.weekStartMon : t.weekStartSun)}</span>
             </button>
 
             {calSettingsOpen && (
               <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--popover)] shadow-lg p-3 flex flex-col gap-3 animate-[status-appear_0.1s_ease_forwards]">
                 {/* 표시 범위 */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[12px] text-[var(--muted-foreground)]">표시 범위</span>
+                  <span className="text-[12px] text-[var(--muted-foreground)]">{t.displayRange}</span>
                   <div className="flex items-center gap-1.5">
                     <select
                       value={timeRange.startHour}
@@ -722,7 +724,7 @@ export default function CalendarView({
 
                 {/* 주 시작일 */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[12px] text-[var(--muted-foreground)]">주 시작일</span>
+                  <span className="text-[12px] text-[var(--muted-foreground)]">{t.weekStartDay}</span>
                   <div className="flex items-center bg-[var(--muted)] rounded-full p-0.5">
                     <button
                       onClick={() => { setWeekStartDay(1); localStorage.setItem('9todo_week_start', '1'); }}
@@ -730,21 +732,21 @@ export default function CalendarView({
                         'px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-colors',
                         weekStartDay === 1 ? 'bg-[var(--foreground)] text-[var(--background)]' : 'text-[var(--muted-foreground)]',
                       ].join(' ')}
-                    >월</button>
+                    >{t.weekStartMon}</button>
                     <button
                       onClick={() => { setWeekStartDay(0); localStorage.setItem('9todo_week_start', '0'); }}
                       className={[
                         'px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-colors',
                         weekStartDay === 0 ? 'bg-[var(--foreground)] text-[var(--background)]' : 'text-[var(--muted-foreground)]',
                       ].join(' ')}
-                    >일</button>
+                    >{t.weekStartSun}</button>
                   </div>
                 </div>
 
                 {/* 전체 보기 (먼슬리) */}
                 {viewMode === 'month' && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[12px] text-[var(--muted-foreground)]">전체 보기</span>
+                    <span className="text-[12px] text-[var(--muted-foreground)]">{t.fullView}</span>
                     <button
                       onClick={() => setShowAll(!showAll)}
                       className={[
@@ -774,7 +776,7 @@ export default function CalendarView({
                   : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]',
               ].join(' ')}
             >
-              이번주
+              {t.thisWeek}
             </button>
             <button
               onClick={() => { setViewMode('month'); onViewModeChange?.('month'); }}
@@ -785,7 +787,7 @@ export default function CalendarView({
                   : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]',
               ].join(' ')}
             >
-              이번달
+              {t.thisMonth}
             </button>
           </div>
         </div>
@@ -828,8 +830,8 @@ export default function CalendarView({
                 )}
               </div>
               <span className="text-[11px] text-[var(--muted-foreground)] whitespace-nowrap">
-                {weekSummary.completed}/{weekSummary.total} 완료
-                {weekSummary.missed > 0 && <span className="text-[var(--g-error)]"> · {weekSummary.missed} 미완료</span>}
+                {t.completed(weekSummary.completed, weekSummary.total)}
+                {weekSummary.missed > 0 && <span className="text-[var(--g-error)]"> · {t.missed(weekSummary.missed)}</span>}
               </span>
             </div>
           )}
@@ -845,8 +847,8 @@ export default function CalendarView({
                   initialContent={existing?.content ?? ''}
                   initialEnergyLevel={existing?.energyLevel}
                   onSave={onSaveRetro}
-                  label="이번 주 회고"
-                  placeholder="이번 주는 어떤 한 주였나요?"
+                  label={t.weekRetroTitle}
+                  placeholder={t.weekRetroPlaceholder}
                   compact
                 />
               </div>
@@ -858,7 +860,7 @@ export default function CalendarView({
               tasks={tasks}
               projects={projects}
               dateRange={weekDates}
-              label="이번 주"
+              label={t.thisWeek}
             />
           </div>
         </>
@@ -956,8 +958,8 @@ export default function CalendarView({
                   initialContent={existing?.content ?? ''}
                   initialEnergyLevel={existing?.energyLevel}
                   onSave={onSaveRetro}
-                  label="이번 달 회고"
-                  placeholder="이번 달은 어떤 한 달이었나요?"
+                  label={t.monthRetroTitle}
+                  placeholder={t.monthRetroPlaceholder}
                   compact
                 />
               </div>
@@ -976,7 +978,7 @@ export default function CalendarView({
                   tasks={tasks}
                   projects={projects}
                   dateRange={monthDates}
-                  label="이번 달"
+                  label={t.thisMonth}
                 />
               </div>
             );

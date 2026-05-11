@@ -7,6 +7,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SlotCoord, ScheduledItem, Project } from '@/lib/types';
 import ItemCard from './ItemCard';
 import ColorDot from '@/components/ui/ColorDot';
+import { useLocale } from '@/i18n/context';
 
 interface SlotCellProps {
   coord: SlotCoord;
@@ -47,6 +48,7 @@ export default function SlotCell({
   onCreateRoutine,
   isHighlighted,
 }: SlotCellProps) {
+  const { t } = useLocale();
   const droppableId = `${coord.period}-${coord.priority}`;
   const { isOver, setNodeRef } = useDroppable({ id: droppableId, data: { coord }, disabled: isReadOnly });
 
@@ -70,7 +72,7 @@ export default function SlotCell({
   const openInput = () => {
     if (item) return;
     if (isReadOnly) return;
-    setSelectedProject(null); // 기본: 미분류
+    setSelectedProject(null); // 기본: uncategorized
     setInputValue('');
     setInputting(true);
     setDropdownOpen(false);
@@ -198,7 +200,7 @@ export default function SlotCell({
                 size="sm"
               />
               <span className="truncate max-w-[80px]">
-                {selectedProject?.name ?? '미분류'}
+                {selectedProject?.name ?? t.uncategorized}
               </span>
             </button>
 
@@ -215,7 +217,7 @@ export default function SlotCell({
                 style={{ top: dropdownPos.top, left: dropdownPos.left }}
                 onMouseLeave={() => setDropdownOpen(false)}
                 role="listbox"
-                aria-label="프로젝트 선택"
+                aria-label={t.selectProject}
               >
                 {activeProjects.map((p) => (
                   <button
@@ -251,7 +253,7 @@ export default function SlotCell({
                   aria-selected={selectedProject === null}
                 >
                   <span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] inline-block" />
-                  <span>미분류</span>
+                  <span>{t.uncategorized}</span>
                 </button>
               </div>,
               document.body,
@@ -270,7 +272,7 @@ export default function SlotCell({
               }}
               rows={1}
               onInput={(e) => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }}
-              placeholder="할 일 입력..."
+              placeholder={t.taskInputPlaceholder}
               className="flex-1 text-[var(--fs-item)] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--accent)] placeholder:text-[var(--muted-foreground)] py-1 resize-none"
             />
             {onCreateRoutine && (
@@ -287,7 +289,7 @@ export default function SlotCell({
                   onCreateRoutine(title, coord);
                 }}
                 className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-[var(--radius)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-                title="반복 설정"
+                title={t.recurrenceSettings}
               >
                 <Repeat size={13} strokeWidth={2} />
               </button>
@@ -305,7 +307,7 @@ export default function SlotCell({
             'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]',
             'transition-colors duration-150 cursor-pointer',
           ].join(' ')}
-          aria-label="슬롯에 항목 추가"
+          aria-label={t.addToSlot}
         >
           <Plus size={16} strokeWidth={1.5} />
         </button>

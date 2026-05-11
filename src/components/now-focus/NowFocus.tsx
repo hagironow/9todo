@@ -5,6 +5,7 @@ import { Play, CirclePause, Pause, Check, SkipForward, Settings, Sun, Moon, Stic
 import { ScheduledItem, Project, Note } from '@/lib/types';
 import Dialog from '@/components/ui/Dialog';
 import RepeatCountIcon from '@/components/ui/RepeatCountIcon';
+import { useLocale } from '@/i18n/context';
 
 interface NowFocusProps {
   items: (ScheduledItem | null)[];
@@ -75,16 +76,17 @@ function useTimer(itemId: string | undefined, durationMin: number) {
 type ConfirmType = 'defer' | 'continue';
 
 function ConfirmModal({ type, onConfirm, onCancel }: { type: ConfirmType; onConfirm: () => void; onCancel: () => void }) {
+  const { t } = useLocale();
   const isDefer = type === 'defer';
   return (
-    <Dialog open onClose={onCancel} title={isDefer ? '이 태스크를 미루시겠어요?' : '아직 완료되지 않았나요?'} width="sm">
+    <Dialog open onClose={onCancel} title={isDefer ? t.deferDialogTitle : t.continueDialogTitle} width="sm">
       <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
-        {isDefer ? '백로그에 미룬 일과 미룬 횟수가 저장돼요.' : '백로그에 진행할 일과 진행 횟수가 저장돼요.'}
+        {isDefer ? t.deferDialogDesc : t.continueDialogDesc}
       </p>
       <div className="flex items-center gap-2 pt-1">
-        <button onClick={onCancel} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
+        <button onClick={onCancel} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">{t.cancel}</button>
         <button onClick={onConfirm} className={['flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold transition-opacity hover:opacity-85', isDefer ? 'bg-[var(--g-error)] text-white' : 'bg-blue-500 text-white'].join(' ')}>
-          {isDefer ? '미루기' : '또하기'}
+          {isDefer ? t.defer : t.redo}
         </button>
       </div>
     </Dialog>
@@ -92,13 +94,14 @@ function ConfirmModal({ type, onConfirm, onCancel }: { type: ConfirmType; onConf
 }
 
 function DurationSettingModal({ current, onSelect, onClose }: { current: number; onSelect: (min: number) => void; onClose: () => void }) {
+  const { t } = useLocale();
   return (
-    <Dialog open onClose={onClose} title="타이머 시간 설정" width="sm">
+    <Dialog open onClose={onClose} title={t.timerSetting} width="sm">
       <div className="grid grid-cols-4 gap-2">
         {DURATION_OPTIONS.map((min) => (
           <button key={min} onClick={() => onSelect(min)}
             className={['px-3 py-2.5 rounded-[var(--radius-sm)] text-sm font-semibold transition-colors', min === current ? 'bg-[var(--accent)] text-white' : 'bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]'].join(' ')}>
-            {min}분
+            {t.minutes(min)}
           </button>
         ))}
       </div>
@@ -304,6 +307,7 @@ function QuickNotePanel({
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const activeProjects = projects.filter((p) => !p.archived);
 
+  const { t } = useLocale();
   const recentNotes = [...notes]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
@@ -324,7 +328,7 @@ function QuickNotePanel({
       <div className="flex-1 overflow-y-auto px-5 pt-2 min-h-0">
         {recentNotes.length === 0 ? (
           <p className="text-sm text-center py-12" style={{ color: 'var(--timer-muted)' }}>
-            아직 노트가 없습니다
+            {t.noNotesYet}
           </p>
         ) : (
           <div className="flex flex-col">
@@ -419,7 +423,7 @@ function QuickNotePanel({
                 handleSubmit();
               }
             }}
-            placeholder="메모를 남겨보세요..."
+            placeholder={t.noteInputPlaceholder}
             rows={1}
             className="w-full bg-transparent text-[14px] outline-none resize-none"
             style={{ color: 'var(--timer-fg)', maxHeight: '160px', overflowY: content.split('\n').length > 5 ? 'auto' : 'hidden' }}
@@ -435,7 +439,7 @@ function QuickNotePanel({
               className="appearance-none bg-transparent text-[12px] outline-none cursor-pointer min-w-0"
               style={{ color: 'var(--timer-muted)', fontSize: '14px' }}
             >
-              <option value="__unassigned__">미분류</option>
+              <option value="__unassigned__">{t.uncategorized}</option>
               {activeProjects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
@@ -458,13 +462,13 @@ function QuickNotePanel({
 
       {/* 삭제 확인 모달 */}
       {deleteTargetId && (
-        <Dialog open onClose={() => setDeleteTargetId(null)} title="노트를 삭제할까요?" width="sm">
+        <Dialog open onClose={() => setDeleteTargetId(null)} title={t.deleteNoteConfirm} width="sm">
           <p className="text-sm text-[var(--muted-foreground)] leading-relaxed">
-            삭제한 노트는 복구할 수 없습니다.
+            {t.deleteNoteWarning}
           </p>
           <div className="flex items-center gap-2 pt-1">
-            <button onClick={() => setDeleteTargetId(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">취소</button>
-            <button onClick={() => { onRemove(deleteTargetId); setDeleteTargetId(null); }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--g-error)] text-white transition-opacity hover:opacity-85">삭제</button>
+            <button onClick={() => setDeleteTargetId(null)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors">{t.cancel}</button>
+            <button onClick={() => { onRemove(deleteTargetId); setDeleteTargetId(null); }} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--g-error)] text-white transition-opacity hover:opacity-85">{t.delete}</button>
           </div>
         </Dialog>
       )}
@@ -474,6 +478,7 @@ function QuickNotePanel({
 
 // ── Main ──
 export default function NowFocus({ items, projects, onComplete, onDefer, onRepeat, isReadOnly, notes, onAddNote, onRemoveNote, onUpdateNote, lastUsedProjectId, onClose }: NowFocusProps) {
+  const { t } = useLocale();
   const [mode, setMode] = useState<PanelMode>('timer');
   const [confirm, setConfirm] = useState<ConfirmType | null>(null);
   const [durationMin, setDurationMin] = useState(25);
@@ -529,7 +534,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
                 boxShadow: mode === 'timer' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
               }}
             >
-              <Timer size={12} />타이머
+              <Timer size={12} />{t.timer}
             </button>
             <button
               onClick={() => setMode('note')}
@@ -540,14 +545,14 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
                 boxShadow: mode === 'note' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
               }}
             >
-              <StickyNote size={12} />노트
+              <StickyNote size={12} />{t.notes}
             </button>
           </div>
           <button
             onClick={() => setTimerDark((v) => !v)}
             className="w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:opacity-80 shrink-0"
             style={{ color: 'var(--timer-muted)', backgroundColor: 'var(--timer-muted-bg)' }}
-            title={timerDark ? '라이트 모드' : '다크 모드'}
+            title={timerDark ? t.lightMode : t.darkMode}
           >
             {timerDark ? <Sun size={14} /> : <Moon size={14} />}
           </button>
@@ -556,7 +561,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
               onClick={onClose}
               className="w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:opacity-80 shrink-0"
               style={{ color: 'var(--timer-muted)', backgroundColor: 'var(--timer-muted-bg)' }}
-              title="닫기"
+              title={t.close}
             >
               <X size={14} />
             </button>
@@ -586,7 +591,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
                     )}
                   </>
                 ) : (
-                  <p className="text-sm" style={{ color: 'var(--timer-muted)' }}>1순위 슬롯에 배치하세요</p>
+                  <p className="text-sm" style={{ color: 'var(--timer-muted)' }}>{t.placeIn1st}</p>
                 )}
               </div>
 
@@ -606,7 +611,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
                 <button onClick={() => setSettingOpen(true)}
                   className="w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:opacity-80"
                   style={{ color: 'var(--timer-muted)', backgroundColor: 'var(--timer-muted-bg)' }}
-                  title="타이머 설정">
+                  title={t.timerSettings}>
                   <Settings size={20} />
                 </button>
               </div>
@@ -620,28 +625,28 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
                   {primaryTimer.cycle > 8 && (
                     <span className="text-[10px] ml-0.5" style={{ color: 'var(--timer-muted)' }}>+{primaryTimer.cycle - 8}</span>
                   )}
-                  <span className="text-[11px] ml-1" style={{ color: 'var(--timer-muted)', fontFamily: "'Poppins', sans-serif" }}>{primaryTimer.cycle}사이클</span>
+                  <span className="text-[11px] ml-1" style={{ color: 'var(--timer-muted)', fontFamily: "'Poppins', sans-serif" }}>{t.cycleCount(primaryTimer.cycle)}</span>
                 </div>
               )}
 
               {/* 액션 바 */}
               {primary ? (
                 <div className="flex items-center justify-center gap-3 mt-4">
-                  <ExpandButton icon={<SkipForward size={18} />} label="미루기" badge={deferCount} badgeColor="var(--g-error)" onClick={() => setConfirm('defer')} disabled={isReadOnly} />
+                  <ExpandButton icon={<SkipForward size={18} />} label={t.defer} badge={deferCount} badgeColor="var(--g-error)" onClick={() => setConfirm('defer')} disabled={isReadOnly} />
                   <button
                     onClick={() => { const t = primaryTimer.elapsed; primaryTimer.reset(); onComplete(primary, t > 0 ? t : undefined); }}
                     disabled={isReadOnly}
                     className="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-40"
                     style={{ backgroundColor: accentColor }}>
-                    <Check size={16} strokeWidth={2.5} />완료
+                    <Check size={16} strokeWidth={2.5} />{t.complete}
                   </button>
-                  <ExpandButton icon={<RepeatCountIcon count={continueCount} size={18} />} label="또하기" onClick={() => setConfirm('continue')} disabled={isReadOnly} />
+                  <ExpandButton icon={<RepeatCountIcon count={continueCount} size={18} />} label={t.redo} onClick={() => setConfirm('continue')} disabled={isReadOnly} />
                 </div>
               ) : (
                 <div className="mt-4">
                   <span className="flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm"
                     style={{ backgroundColor: 'var(--timer-muted-bg)', color: 'var(--timer-muted)' }}>
-                    <Play size={13} fill="currentColor" />대기 중
+                    <Play size={13} fill="currentColor" />{t.waiting}
                   </span>
                 </div>
               )}

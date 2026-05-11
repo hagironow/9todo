@@ -6,6 +6,7 @@ import { Project } from '@/lib/types';
 import { COLOR_THEMES, resolveColor } from '@/lib/colors';
 import Dialog from '@/components/ui/Dialog';
 import ColorDot from '@/components/ui/ColorDot';
+import { useLocale } from '@/i18n/context';
 
 interface ProjectSelectModalProps {
   open: boolean;
@@ -26,11 +27,12 @@ export default function ProjectSelectModal({
   onSkip,
   colorTheme,
 }: ProjectSelectModalProps) {
+  const { t } = useLocale();
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColorIndex, setNewColorIndex] = useState(0);
 
-  const theme = COLOR_THEMES.find((t) => t.id === colorTheme) ?? COLOR_THEMES[0];
+  const theme = COLOR_THEMES.find((th) => th.id === colorTheme) ?? COLOR_THEMES[0];
 
   const handleCreate = () => {
     const trimmed = newName.trim();
@@ -48,7 +50,7 @@ export default function ProjectSelectModal({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} title="프로젝트 선택" width="sm">
+    <Dialog open={open} onClose={handleClose} title={t.selectProject} width="sm">
       {!creating ? (
         <>
           {/* Skip option */}
@@ -56,7 +58,7 @@ export default function ProjectSelectModal({
             onClick={() => { onSkip(); handleClose(); }}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors text-left"
           >
-            미분류로 유지
+            {t.keepUncategorized}
           </button>
 
           {/* Existing projects */}
@@ -77,7 +79,7 @@ export default function ProjectSelectModal({
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors text-left"
           >
             <Plus size={14} />
-            <span>새 프로젝트</span>
+            <span>{t.newProject}</span>
           </button>
         </>
       ) : (
@@ -88,7 +90,7 @@ export default function ProjectSelectModal({
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); if (e.key === 'Escape') setCreating(false); }}
-            placeholder="프로젝트 이름"
+            placeholder={t.projectName}
             className="w-full px-3 py-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-[var(--fs-item)] outline-none focus:border-[var(--foreground)]"
           />
           <div className="flex gap-2 flex-wrap">
@@ -109,13 +111,13 @@ export default function ProjectSelectModal({
               onClick={() => setCreating(false)}
               className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
             >
-              취소
+              {t.cancel}
             </button>
             <button
               onClick={handleCreate}
               className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity"
             >
-              만들기
+              {t.create}
             </button>
           </div>
         </>

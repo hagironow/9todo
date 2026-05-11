@@ -6,6 +6,7 @@ import type { RetrospectiveEntry, RetroScope, EnergyLevel } from '@/lib/types';
 import RetroInput from './RetroInput';
 import EnergyLevelInput from './EnergyLevelInput';
 import Dialog from '@/components/ui/Dialog';
+import { useLocale } from '@/i18n/context';
 
 interface RetrospectiveListViewProps {
   retrospectives: RetrospectiveEntry[];
@@ -13,34 +14,35 @@ interface RetrospectiveListViewProps {
   onDelete: (retroId: string) => void;
 }
 
-const SCOPE_LABELS: Record<RetroScope, string> = {
-  day: '일간',
-  week: '주간',
-  month: '월간',
-};
-
-function formatScopeKey(scope: RetroScope, scopeKey: string): string {
-  if (scope === 'day') {
-    const [y, m, d] = scopeKey.split('-');
-    return `${y}년 ${parseInt(m)}월 ${parseInt(d)}일`;
-  }
-  if (scope === 'week') {
-    // YYYY-Www
-    const [y, w] = scopeKey.split('-W');
-    return `${y}년 ${parseInt(w)}주차`;
-  }
-  // month: YYYY-MM
-  const [y, m] = scopeKey.split('-');
-  return `${y}년 ${parseInt(m)}월`;
-}
-
 export default function RetrospectiveListView({
   retrospectives,
   onSave,
   onDelete,
 }: RetrospectiveListViewProps) {
+  const { t } = useLocale();
   const [filterScope, setFilterScope] = useState<RetroScope | 'all'>('all');
   const [deleteTarget, setDeleteTarget] = useState<RetrospectiveEntry | null>(null);
+
+  const SCOPE_LABELS: Record<RetroScope, string> = {
+    day: t.scopeDaily,
+    week: t.scopeWeekly,
+    month: t.scopeMonthly,
+  };
+
+  function formatScopeKey(scope: RetroScope, scopeKey: string): string {
+    if (scope === 'day') {
+      const [y, m, d] = scopeKey.split('-');
+      return t.dateShort(Number(y), parseInt(m), parseInt(d));
+    }
+    if (scope === 'week') {
+      // YYYY-Www
+      const [y, w] = scopeKey.split('-W');
+      return t.weekNumber(Number(y), parseInt(w));
+    }
+    // month: YYYY-MM
+    const [y, m] = scopeKey.split('-');
+    return t.monthYear(Number(y), parseInt(m));
+  }
 
   const filtered = useMemo(() => {
     const list = (retrospectives ?? [])
@@ -56,18 +58,18 @@ export default function RetrospectiveListView({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <BookOpen size={18} strokeWidth={1.8} className="text-[var(--foreground)]" />
-          <h2 className="text-base font-semibold text-[var(--foreground)]">회고</h2>
-          <span className="text-[12px] text-[var(--muted-foreground)]">{filtered.length}개</span>
+          <h2 className="text-base font-semibold text-[var(--foreground)]">{t.retrospective}</h2>
+          <span className="text-[12px] text-[var(--muted-foreground)]">{t.retroCount(filtered.length)}</span>
         </div>
       </div>
 
       {/* 필터 탭 */}
       <div className="flex items-center bg-[var(--card)] rounded-[var(--radius-sm)] p-0.5 self-start border border-[var(--border)]">
         {([
-          { key: 'all', label: '전체' },
-          { key: 'day', label: '일간' },
-          { key: 'week', label: '주간' },
-          { key: 'month', label: '월간' },
+          { key: 'all', label: t.all },
+          { key: 'day', label: t.scopeDaily },
+          { key: 'week', label: t.scopeWeekly },
+          { key: 'month', label: t.scopeMonthly },
         ] as { key: RetroScope | 'all'; label: string }[]).map(({ key, label }) => (
           <button
             key={key}
@@ -88,53 +90,61 @@ export default function RetrospectiveListView({
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-[var(--muted-foreground)]">
           <BookOpen size={32} strokeWidth={1.2} className="mb-3 opacity-40" />
-          <p className="text-sm">아직 작성된 회고가 없습니다</p>
-          <p className="text-[12px] mt-1 opacity-60">대시보드나 캘린더에서 회고를 남겨보세요</p>
+          <p className="text-sm">{t.noRetroYet}</p>
+          <p className="text-[12px] mt-1 opacity-60">{t.noRetroHint}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {filtered.map((retro) => (
-            <div
-              key={retro.id}
-              className="group bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius)] p-4 flex flex-col gap-2"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={[
-                    'px-1.5 py-0.5 rounded text-[10px] font-semibold',
-                    retro.scope === 'day' ? 'bg-[var(--accent)]/10 text-[var(--accent)]' :
-                    retro.scope === 'week' ? 'bg-[var(--g-success)]/10 text-[var(--g-success)]' :
-                    'bg-[var(--g-warning)]/10 text-[var(--g-warning)]',
-                  ].join(' ')}>
-                    {SCOPE_LABELS[retro.scope]}
-                  </span>
-                  <span className="text-[13px] font-medium text-[var(--foreground)]">
-                    {formatScopeKey(retro.scope, retro.scopeKey)}
-                  </span>
-                  {retro.energyLevel && (
-                    <EnergyLevelInput
-                      value={retro.energyLevel}
-                      onChange={(level) => onSave(retro.scope, retro.scopeKey, retro.content, level)}
-                      compact
-                    />
-                  )}
+          {filtered.map((retro) => {
+            const updatedDate = new Date(retro.updatedAt);
+            const [uy, um, ud] = [
+              updatedDate.getFullYear(),
+              updatedDate.getMonth() + 1,
+              updatedDate.getDate(),
+            ];
+            return (
+              <div
+                key={retro.id}
+                className="group bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius)] p-4 flex flex-col gap-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={[
+                      'px-1.5 py-0.5 rounded text-[10px] font-semibold',
+                      retro.scope === 'day' ? 'bg-[var(--accent)]/10 text-[var(--accent)]' :
+                      retro.scope === 'week' ? 'bg-[var(--g-success)]/10 text-[var(--g-success)]' :
+                      'bg-[var(--g-warning)]/10 text-[var(--g-warning)]',
+                    ].join(' ')}>
+                      {SCOPE_LABELS[retro.scope]}
+                    </span>
+                    <span className="text-[13px] font-medium text-[var(--foreground)]">
+                      {formatScopeKey(retro.scope, retro.scopeKey)}
+                    </span>
+                    {retro.energyLevel && (
+                      <EnergyLevelInput
+                        value={retro.energyLevel}
+                        onChange={(level) => onSave(retro.scope, retro.scopeKey, retro.content, level)}
+                        compact
+                      />
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setDeleteTarget(retro)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--g-error)]"
+                    title={t.delete}
+                  >
+                    <Trash2 size={13} strokeWidth={1.8} />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setDeleteTarget(retro)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--g-error)]"
-                  title="삭제"
-                >
-                  <Trash2 size={13} strokeWidth={1.8} />
-                </button>
+                <p className="text-[13px] text-[var(--foreground)] whitespace-pre-wrap leading-relaxed">
+                  {retro.content}
+                </p>
+                <span className="text-[11px] text-[var(--muted-foreground)]">
+                  {t.editedAt(t.dateShort(uy, um, ud))}
+                </span>
               </div>
-              <p className="text-[13px] text-[var(--foreground)] whitespace-pre-wrap leading-relaxed">
-                {retro.content}
-              </p>
-              <span className="text-[11px] text-[var(--muted-foreground)]">
-                {new Date(retro.updatedAt).toLocaleDateString('ko-KR')} 수정
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -142,7 +152,7 @@ export default function RetrospectiveListView({
       <Dialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        title="회고를 삭제할까요?"
+        title={t.deleteRetroConfirm}
         width="sm"
       >
         {deleteTarget && (
@@ -151,14 +161,14 @@ export default function RetrospectiveListView({
               <span className="font-medium text-[var(--foreground)]">
                 {formatScopeKey(deleteTarget.scope, deleteTarget.scopeKey)}
               </span>
-              의 {SCOPE_LABELS[deleteTarget.scope]} 회고를 삭제합니다. 삭제한 회고는 복구할 수 없습니다.
+              {t.deleteRetroWarning(SCOPE_LABELS[deleteTarget.scope])}
             </p>
             <div className="flex items-center gap-2 pt-1">
               <button
                 onClick={() => setDeleteTarget(null)}
                 className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
               >
-                취소
+                {t.cancel}
               </button>
               <button
                 onClick={() => {
@@ -167,7 +177,7 @@ export default function RetrospectiveListView({
                 }}
                 className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--destructive)] text-white transition-opacity hover:opacity-85"
               >
-                삭제
+                {t.delete}
               </button>
             </div>
           </>

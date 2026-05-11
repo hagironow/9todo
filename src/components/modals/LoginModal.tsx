@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
 import Dialog from '@/components/ui/Dialog';
 import Button from '@/components/ui/Button';
+import { useLocale } from '@/i18n/context';
 
 /**
  * 사보이어 Fake Door + SITG 계단식 검증
@@ -13,20 +14,6 @@ type Step = 'ask' | 'price' | 'regret' | 'profile' | 'commit' | 'thanks-yes' | '
 
 const STEP_ORDER: Step[] = ['ask', 'price', 'regret', 'profile', 'commit'];
 
-const PRICE_OPTIONS = [
-  { value: '4500_monthly', price: '₩4,500/월',           features: '클라우드 동기화, AI 비서, 모바일 앱, 통계 — 모든 기능 포함', badge: null },
-  { value: '29800_yearly',  price: '₩29,800/년',          features: '월간 대비 45% 할인, 모든 기능 동일',                      badge: '추천' },
-  { value: '35500_lifetime', price: '₩35,500 평생 결제',   features: '개인 클라우드 동기화, 업데이트 포함',                      badge: null },
-] as const;
-
-const REGRET_OPTIONS = [
-  { value: 'very',        label: '매우 아쉬울 것 같아요', emoji: '😢' },
-  { value: 'somewhat',    label: '조금 아쉬워요',         emoji: '😐' },
-  { value: 'alternative', label: '다른 대안이 있어요',     emoji: '🤷' },
-] as const;
-
-const AGE_OPTIONS = ['10대', '20대', '30대', '40대', '50대+'] as const;
-const JOB_OPTIONS = ['개발자', '디자이너', '기획자/PM', '마케터', '학생', '프리랜서/1인 창업', '기타'] as const;
 
 interface SurveyData {
   interest: 'yes' | 'maybe' | 'no';
@@ -163,6 +150,23 @@ const INPUT_CLASS = [
 ].join(' ');
 
 export default function LoginModal({ open, onClose }: LoginModalProps) {
+  const { t } = useLocale();
+
+  const PRICE_OPTIONS = [
+    { value: '4500_monthly',   price: t.loginPricing.monthly,  features: t.loginPricing.monthlyDesc,  badge: null },
+    { value: '29800_yearly',   price: t.loginPricing.yearly,   features: t.loginPricing.yearlyDesc,   badge: t.loginPricing.yearlyBadge },
+    { value: '35500_lifetime', price: t.loginPricing.lifetime, features: t.loginPricing.lifetimeDesc, badge: null },
+  ] as const;
+
+  const REGRET_OPTIONS = [
+    { value: 'very',        label: t.loginRegretHigh, emoji: '😢' },
+    { value: 'somewhat',    label: t.loginRegretMid,  emoji: '😐' },
+    { value: 'alternative', label: t.loginRegretLow,  emoji: '🤷' },
+  ] as const;
+
+  const AGE_OPTIONS = t.loginAges;
+  const JOB_OPTIONS = t.loginJobs;
+
   const [step, setStep] = useState<Step>('ask');
   const [survey, setSurvey] = useState<SurveyData>(EMPTY_SURVEY);
   const jobInputRef = useRef<HTMLInputElement>(null);
@@ -237,14 +241,16 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
     setStep('thanks-yes');
   };
 
+  const otherJob = JOB_OPTIONS[JOB_OPTIONS.length - 1];
+
   // 기타 선택 시 인풋 자동 포커스
   useEffect(() => {
-    if (survey.job === '기타') {
+    if (survey.job === otherJob) {
       jobInputRef.current?.focus();
     }
-  }, [survey.job]);
+  }, [survey.job, otherJob]);
 
-  const profileValid = survey.ageGroup && (survey.job === '기타' ? survey.jobCustom.trim() : survey.job);
+  const profileValid = survey.ageGroup && (survey.job === otherJob ? survey.jobCustom.trim() : survey.job);
 
   return (
     <Dialog open={open} onClose={handleClose} width="md">
@@ -254,7 +260,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
           <button
             onClick={handleBack}
             className="w-8 h-8 flex items-center justify-center rounded-[var(--radius)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-            aria-label="뒤로"
+            aria-label={t.back}
           >
             <ArrowLeft size={16} strokeWidth={2} />
           </button>
@@ -279,7 +285,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
         <button
           onClick={handleClose}
           className="w-8 h-8 flex items-center justify-center rounded-[var(--radius)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
-          aria-label="닫기"
+          aria-label={t.close}
         >
           <X size={16} strokeWidth={2} />
         </button>
@@ -290,22 +296,22 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
         <div className="flex flex-col py-2">
           <div className="text-center">
             <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-              이 제품을 계속해서 사용하고 싶으신가요?
+              {t.loginContinueUse}
             </h2>
             <p className="text-[var(--fs-tag)] text-[var(--muted-foreground)]">
-              아직 로그인 기능은 준비 중이에요.<br />
-              여러분의 관심이 개발 우선순위를 결정합니다.
+              {t.loginFeatureNotReady}<br />
+              {t.loginInterestMsg}
             </p>
           </div>
           <div className="flex flex-col gap-2 mt-14">
             <button onClick={() => handleAnswer('yes')} className={LIST_BTN}>
-              <span className="text-[var(--fs-item)] font-medium text-[var(--foreground)]">네, 계속 쓰고 싶어요</span>
+              <span className="text-[var(--fs-item)] font-medium text-[var(--foreground)]">{t.loginYes}</span>
             </button>
             <button onClick={() => handleAnswer('maybe')} className={LIST_BTN}>
-              <span className="text-[var(--fs-item)] font-medium text-[var(--foreground)]">모르겠어요</span>
+              <span className="text-[var(--fs-item)] font-medium text-[var(--foreground)]">{t.loginMaybe}</span>
             </button>
             <button onClick={() => handleAnswer('no')} className={LIST_BTN}>
-              <span className="text-[var(--fs-item)] font-medium text-[var(--foreground)]">아니오</span>
+              <span className="text-[var(--fs-item)] font-medium text-[var(--foreground)]">{t.loginNo}</span>
             </button>
           </div>
         </div>
@@ -316,10 +322,10 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
         <div className="flex flex-col py-2">
           <div className="text-center">
             <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
-              클라우드 백업, 모바일 앱,<br />AI 비서 기능이 지원된다면?
+              {t.loginIfFeatures}
             </h2>
             <p className="text-[var(--fs-tag)] text-[var(--muted-foreground)]">
-              월 얼마까지 내실 수 있나요?
+              {t.loginPriceQuestion}
             </p>
           </div>
 
@@ -344,7 +350,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
           </div>
 
           <p className="text-center text-[var(--fs-tag)] text-[var(--muted-foreground)] mt-2">
-            실제 결제가 아닙니다. 개발 방향 참고용이에요.
+            {t.loginPriceNote}
           </p>
         </div>
       )}
@@ -354,10 +360,10 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
         <div className="flex flex-col py-2">
           <div className="text-center">
             <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
-              만약 이 서비스가 개발되지 않는다면?
+              {t.loginChurnQuestion}
             </h2>
             <p className="text-[var(--fs-tag)] text-[var(--muted-foreground)]">
-              얼마나 아쉬울까요?
+              {t.loginRegretLevel}
             </p>
           </div>
 
@@ -381,14 +387,14 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
         <div className="flex flex-col py-2">
           <div className="text-center">
             <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
-              마지막으로 두 가지만!
+              {t.loginFinalQuestions}
             </h2>
           </div>
 
           {/* 연령대 */}
           <div className="flex flex-col gap-2.5 mt-14">
             <span className="text-[var(--fs-tag)] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-              연령대
+              {t.loginAge}
             </span>
             <div className="flex flex-wrap gap-2">
               {AGE_OPTIONS.map((age) => (
@@ -406,26 +412,26 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
           {/* 직업군 */}
           <div className="flex flex-col gap-2.5 mt-6">
             <span className="text-[var(--fs-tag)] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-              직업군
+              {t.loginJob}
             </span>
             <div className="flex flex-wrap gap-2">
               {JOB_OPTIONS.map((job) => (
                 <button
                   key={job}
-                  onClick={() => setSurvey((s) => ({ ...s, job, jobCustom: job === '기타' ? s.jobCustom : '' }))}
+                  onClick={() => setSurvey((s) => ({ ...s, job, jobCustom: job === otherJob ? s.jobCustom : '' }))}
                   className={survey.job === job ? CHIP_ACTIVE : CHIP_DEFAULT}
                 >
                   {job}
                 </button>
               ))}
             </div>
-            {survey.job === '기타' && (
+            {survey.job === otherJob && (
               <input
                 ref={jobInputRef}
                 type="text"
                 value={survey.jobCustom}
                 onChange={(e) => setSurvey((s) => ({ ...s, jobCustom: e.target.value }))}
-                placeholder="직업을 입력해 주세요"
+                placeholder={t.loginJobPlaceholder}
                 className={INPUT_CLASS}
               />
             )}
@@ -438,7 +444,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
             disabled={!profileValid}
             className="w-full mt-6"
           >
-            다음
+            {t.next}
           </Button>
         </div>
       )}
@@ -448,18 +454,18 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
         <div className="flex flex-col py-2">
           <div className="text-center">
             <h2 className="text-lg font-semibold text-[var(--foreground)] mb-1">
-              거의 다 됐어요!
+              {t.loginAlmostDone}
             </h2>
             <p className="text-[var(--fs-tag)] text-[var(--muted-foreground)]">
-              이메일을 남겨주시면{' '}
-              <strong className="text-[var(--accent)]">3개월 이용권</strong>을 드려요.
+              {t.loginEmailIncentive1}{' '}
+              <strong className="text-[var(--accent)]">{t.loginEmailIncentive2}</strong>{t.loginEmailIncentive3}
             </p>
           </div>
 
           <div className="flex flex-col gap-3 mt-14">
             <label className="flex flex-col gap-1.5">
               <span className="text-[var(--fs-tag)] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-                이메일
+                {t.loginEmail}
               </span>
               <input
                 type="email"
@@ -494,13 +500,13 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
               </div>
               <div>
                 <span className="text-[var(--fs-item)] font-medium text-[var(--foreground)]">
-                  줌 인터뷰 참여 (50분 소요 예상)
+                  {t.loginZoomInterview}
                 </span>
                 <span className="text-[var(--accent)] font-semibold ml-1.5">
-                  1년 무료 이용권
+                  {t.loginFreeYear}
                 </span>
                 <p className="text-[var(--fs-tag)] text-[var(--muted-foreground)] mt-0.5">
-                  사용 패턴과 불편한 점을 직접 들려주세요.
+                  {t.loginZoomDesc}
                 </p>
               </div>
             </button>
@@ -508,7 +514,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
 
           <div className="flex gap-2 mt-6">
             <Button variant="ghost" size="lg" onClick={handleClose} className="flex-1">
-              나중에
+              {t.loginLater}
             </Button>
             <Button
               variant="primary"
@@ -517,7 +523,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
               disabled={!survey.email.trim()}
               className="flex-1"
             >
-              완료
+              {t.done}
             </Button>
           </div>
         </div>
@@ -531,19 +537,19 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-              감사합니다!
+              {t.loginThankYou}
             </h2>
             <p className="text-[var(--fs-item)] text-[var(--muted-foreground)] mb-3">
               {survey.interview
-                ? '인터뷰 참여까지 감사합니다! 1년 무료 이용권을 드릴게요.'
-                : '3개월 이용권이 제공될 예정이에요.'}
+                ? t.loginThankYouInterview
+                : t.loginThankYou3Month}
             </p>
             <p className="text-[var(--fs-tag)] text-[var(--muted-foreground)]">
-              로그인 기능이 준비되면 이메일로 안내드릴게요.
+              {t.loginThankYouNotify}
             </p>
           </div>
           <Button variant="primary" size="lg" onClick={handleClose} className="w-full">
-            확인
+            {t.confirm}
           </Button>
         </div>
       )}
@@ -556,14 +562,14 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
           </div>
           <div>
             <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">
-              괜찮아요!
+              {t.loginOkay}
             </h2>
             <p className="text-[var(--fs-item)] text-[var(--muted-foreground)]">
-              의견 감사합니다. 데이터 내보내기로 언제든 보관할 수 있어요.
+              {t.loginNoThanksMsg}
             </p>
           </div>
           <Button variant="ghost" size="lg" onClick={handleClose} className="w-full">
-            닫기
+            {t.close}
           </Button>
         </div>
       )}

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import type { Task, Project } from '@/lib/types';
+import { useLocale } from '@/i18n/context';
 
 interface ProjectStatsViewProps {
   tasks: Task[];
@@ -21,36 +22,37 @@ interface ProjectStat {
 const UNCATEGORIZED_COLOR = '#888888';
 
 export default function ProjectStatsView({ tasks, projects, dateRange, label }: ProjectStatsViewProps) {
+  const { t } = useLocale();
   const stats = useMemo(() => {
     const periodTasks = tasks.filter(
-      (t) => t.date && dateRange.includes(t.date) && t.slot && !t.recurrence
+      (task) => task.date && dateRange.includes(task.date) && task.slot && !task.recurrence
     );
     if (periodTasks.length === 0) return [];
 
     const map = new Map<string, { total: number; completed: number }>();
-    for (const t of periodTasks) {
+    for (const task of periodTasks) {
       // 반복 인스턴스의 projectId가 null이면 부모의 projectId를 폴백
-      let pid = t.projectId;
-      if (!pid && t.recurrenceParentId) {
-        const parent = tasks.find((p) => p.id === t.recurrenceParentId);
+      let pid = task.projectId;
+      if (!pid && task.recurrenceParentId) {
+        const parent = tasks.find((p) => p.id === task.recurrenceParentId);
         if (parent) pid = parent.projectId;
       }
       const key = pid ?? '__uncategorized__';
       const entry = map.get(key) ?? { total: 0, completed: 0 };
       entry.total++;
-      if (t.completedAt) entry.completed++;
+      if (task.completedAt) entry.completed++;
       map.set(key, entry);
     }
 
     const result: ProjectStat[] = [];
     for (const [projectId, { total, completed }] of map.entries()) {
       if (projectId === '__uncategorized__') {
-        result.push({ id: '__uncategorized__', name: '미분류', color: UNCATEGORIZED_COLOR, total, completed });
+        result.push({ id: '__uncategorized__', name: t.uncategorized, color: UNCATEGORIZED_COLOR, total, completed });
       } else {
         const project = projects.find((p) => p.id === projectId);
         result.push({
           id: projectId,
-          name: project?.name ?? '삭제된 프로젝트',
+          name: project?.name ?? t.deletedProject,
           color: project?.color ?? UNCATEGORIZED_COLOR,
           total,
           completed,
@@ -59,7 +61,7 @@ export default function ProjectStatsView({ tasks, projects, dateRange, label }: 
     }
     result.sort((a, b) => b.total - a.total);
     return result;
-  }, [tasks, projects, dateRange]);
+  }, [tasks, projects, dateRange, t]);
 
   const grandTotal = stats.reduce((sum, s) => sum + s.total, 0);
 
@@ -79,7 +81,7 @@ export default function ProjectStatsView({ tasks, projects, dateRange, label }: 
   return (
     <div className="flex flex-col gap-4">
       <h3 className="text-[13px] font-semibold text-[var(--foreground)]">
-        {label} 프로젝트 통계
+        {t.projectStats(label)}
       </h3>
 
       {/* 파이 차트 (중앙 배치) */}
@@ -128,7 +130,7 @@ export default function ProjectStatsView({ tasks, projects, dateRange, label }: 
             {grandTotal}
           </text>
           <text x="50" y="58" textAnchor="middle" className="fill-[var(--muted-foreground)]" fontSize="7">
-            태스크
+            {t.tasks}
           </text>
         </svg>
 

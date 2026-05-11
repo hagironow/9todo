@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import type { GoalCompass as GoalCompassType, GoalTask, GoalPeriod } from '@/lib/types';
 import { GOAL_COMPLETE_XP } from '@/lib/xp';
+import { useLocale } from '@/i18n/context';
 import GoalCompassIdentity from './GoalCompassIdentity';
 import GoalCompassGoals from './GoalCompassGoals';
 import GoalCompassAffirmation from './GoalCompassAffirmation';
@@ -30,15 +31,6 @@ interface GoalCompassProps {
   onRemoveGoalTask: (id: string) => void;
 }
 
-const PREVIEW_CONFIG: Record<GoalKey, { prefix: string; empty: string }> = {
-  today: { prefix: '오늘 끝낼 일은', empty: '오늘 끝내야 할 일을 정해보세요' },
-  week: { prefix: '이번 주에 꼭 끝낼 것은', empty: '이번 주에 꼭 끝낼 것을 정해보세요' },
-  month: { prefix: '이번 달 집중 방향은', empty: '이번 달 집중 방향을 정해보세요' },
-  quarter: { prefix: '이번 분기,', empty: '이번 분기 방향을 정해보세요' },
-  oneYear: { prefix: '올해,', empty: '올해 방향을 정해보세요' },
-  fiveYear: { prefix: '5년 뒤,', empty: '북극성을 정해보세요' },
-};
-
 const TASK_BASED_KEYS: GoalKey[] = ['today', 'week', 'month'];
 
 export default function GoalCompass({
@@ -58,7 +50,17 @@ export default function GoalCompass({
   onUpdateGoalTaskTitle,
   onRemoveGoalTask,
 }: GoalCompassProps) {
+  const { t } = useLocale();
   const [expanded, setExpanded] = useState(false);
+
+  const PREVIEW_CONFIG: Record<GoalKey, { prefix: string; empty: string }> = {
+    today: t.goalToday,
+    week: t.goalWeek,
+    month: t.goalMonth,
+    quarter: t.goalQuarter,
+    oneYear: t.goalOneYear,
+    fiveYear: t.goalFiveYear,
+  };
 
   const config = PREVIEW_CONFIG[previewKey];
 
@@ -125,7 +127,7 @@ export default function GoalCompass({
                     onCompleteGoalTask(previewGoalTask!.id);
                   }}
                   className="flex items-center gap-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)] active:scale-95 transition-all duration-150 cursor-pointer"
-                  title={`완료 (+${GOAL_COMPLETE_XP}xp)`}
+                  title={t.goalCompleteLabel(GOAL_COMPLETE_XP)}
                 >
                   <span className="text-[12px] font-semibold">{GOAL_COMPLETE_XP}xp</span>
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none">

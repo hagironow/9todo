@@ -8,6 +8,7 @@ import { Task, RoutineInstance, Project } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ColorDot from '@/components/ui/ColorDot';
+import { useLocale } from '@/i18n/context';
 
 type BacklogEntry = Task | RoutineInstance;
 
@@ -34,6 +35,7 @@ export default function BacklogItem({
   onDelete,
   isReadOnly,
 }: BacklogItemProps) {
+  const { t } = useLocale();
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
   const editRef = useRef<HTMLTextAreaElement>(null);
@@ -91,14 +93,14 @@ export default function BacklogItem({
       {/* 프로젝트 태그 + 제목 + 배지 */}
       <div className="flex-1 min-w-0 flex items-center gap-1.5">
         {isRoutine ? (
-          <span title="루틴" className="flex-shrink-0"><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
+          <span title={t.routine} className="flex-shrink-0"><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
         ) : (
           <span
             className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium"
             style={project ? { backgroundColor: 'var(--surface-hover)', color: project.color } : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
           >
             <ColorDot color={project?.color ?? '#8A8A8A'} size="sm" />
-            <span className="max-w-[60px] truncate">{project?.name ?? '미분류'}</span>
+            <span className="max-w-[60px] truncate">{project?.name ?? t.uncategorized}</span>
           </span>
         )}
         {editing ? (
@@ -134,13 +136,13 @@ export default function BacklogItem({
             onClick={() => onPlaceInSlot(item)}
             className="flex-shrink-0 text-[var(--fs-tag)] bg-[var(--muted)]"
           >
-            슬롯 배치
+            {t.slotArrange}
           </Button>
           {onUpdateTitle && (
             <button
               onClick={(e) => { e.stopPropagation(); setEditValue(title); setEditing(true); }}
               className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--border)] transition-colors"
-              title="수정"
+              title={t.edit}
             >
               <Pencil size={12} />
             </button>
@@ -149,7 +151,7 @@ export default function BacklogItem({
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(item); }}
               className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--g-error)] hover:bg-[var(--g-error)]/10 transition-colors"
-              title="삭제"
+              title={t.delete}
             >
               <Trash2 size={12} />
             </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { useLocale } from '@/i18n/context';
 
 /* ── Theme ── */
 const T = {
@@ -16,29 +17,9 @@ const T = {
   success: "#22C55E",
 };
 
-const PROJECTS = [
-  { name: "AI 챗봇 앱", color: "#60A5FA" },
-  { name: "포트폴리오", color: "#A78BFA" },
-  { name: "일상/육아", color: "#34D399" },
-  { name: "유튜브 채널", color: "#FBBF24" },
-  { name: "독서", color: "#F472B6" },
-];
-
 function Dot({ color, size = 4 }: { color: string; size?: number }) {
   return <span style={{ width: size, height: size, borderRadius: "50%", backgroundColor: color, flexShrink: 0, display: "inline-block" }} />;
 }
-
-/* ── Data ── */
-const GOALS = [
-  { key: "today", label: "오늘", value: "시간표 UI 완성" },
-  { key: "week", label: "이번주", value: "MVP 빌드 + 3명 사용성 테스트" },
-  { key: "month", label: "이번달", value: "베타 런칭" },
-  { key: "quarter", label: "분기", value: "유료 전환 구조 검증" },
-  { key: "oneYear", label: "1년", value: "MAU 1,000명" },
-  { key: "fiveYear", label: "5년", value: "자체 생산성 SaaS 3개 운영" },
-];
-const IDENTITY = "세상에 쓸모 있는 도구를 만드는 메이커";
-const AFFIRMATION = "출시하지 않으면 아무것도 아니다.\n완벽보다 완료.";
 
 const CYCLE_KEYS = ["today", "week", "month"];
 const CYCLE_MS = 4500;
@@ -47,6 +28,36 @@ const CYCLE_MS = 4500;
    Left: GoalCompass Panel
    ══════════════════════════════════════ */
 function GoalCompassPanel({ activeKey }: { activeKey: string }) {
+  const { locale } = useLocale();
+
+  const GOALS = locale === 'ko' ? [
+    { key: "today",   label: "오늘",   value: "시간표 UI 완성" },
+    { key: "week",    label: "이번주", value: "MVP 빌드 + 3명 사용성 테스트" },
+    { key: "month",   label: "이번달", value: "베타 런칭" },
+    { key: "quarter", label: "분기",   value: "유료 전환 구조 검증" },
+    { key: "oneYear", label: "1년",    value: "MAU 1,000명" },
+    { key: "fiveYear",label: "5년",    value: "자체 생산성 SaaS 3개 운영" },
+  ] : [
+    { key: "today",   label: "Today",     value: "Finish timetable UI" },
+    { key: "week",    label: "This week",  value: "MVP build + 3 usability tests" },
+    { key: "month",   label: "This month", value: "Beta launch" },
+    { key: "quarter", label: "Quarter",    value: "Validate paid conversion" },
+    { key: "oneYear", label: "1 Year",     value: "1,000 MAU" },
+    { key: "fiveYear",label: "5 Years",    value: "Run 3 productivity SaaS products" },
+  ];
+
+  const IDENTITY = locale === 'ko'
+    ? "세상에 쓸모 있는 도구를 만드는 메이커"
+    : "A maker who builds useful tools for the world";
+
+  const AFFIRMATION = locale === 'ko'
+    ? "출시하지 않으면 아무것도 아니다.\n완벽보다 완료."
+    : "If you don't ship, it's nothing.\nDone beats perfect.";
+
+  const labelText = locale === 'ko'
+    ? (activeKey === "today" ? "오늘 끝낼 일은" : activeKey === "week" ? "이번 주에 꼭 끝낼 것은" : "이번 달 목표는")
+    : (activeKey === "today" ? "Today's focus:" : activeKey === "week" ? "Must finish this week:" : "This month's goal:");
+
   return (
     <div style={{
       width: 320, flexShrink: 0,
@@ -58,7 +69,7 @@ function GoalCompassPanel({ activeKey }: { activeKey: string }) {
     }}>
       <div style={{ padding: "20px 24px 16px" }}>
         <span style={{ fontSize: 14, lineHeight: 1.5, color: T.fgDim, display: "block" }}>
-          {activeKey === "today" ? "오늘 끝낼 일은" : activeKey === "week" ? "이번 주에 꼭 끝낼 것은" : "이번 달 목표는"}
+          {labelText}
         </span>
         <span style={{ fontSize: 15, fontWeight: 600, color: T.fg, display: "block", marginTop: 2, transition: "opacity 0.6s ease" }}>
           {GOALS.find(g => g.key === activeKey)?.value}
@@ -71,9 +82,10 @@ function GoalCompassPanel({ activeKey }: { activeKey: string }) {
       <div style={{ height: 1, backgroundColor: T.border }} />
 
       <div style={{ padding: "14px 24px", display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${T.border}` }}>
-        <span style={{ fontSize: 13, color: T.mutedFg, flexShrink: 0 }}>나는</span>
+        {locale === 'ko' && <span style={{ fontSize: 13, color: T.mutedFg, flexShrink: 0 }}>나는</span>}
+        {locale === 'en' && <span style={{ fontSize: 13, color: T.mutedFg, flexShrink: 0 }}>I am</span>}
         <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: T.fg, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{IDENTITY}</span>
-        <span style={{ fontSize: 13, color: T.mutedFg, flexShrink: 0 }}>이다</span>
+        {locale === 'ko' && <span style={{ fontSize: 13, color: T.mutedFg, flexShrink: 0 }}>이다</span>}
       </div>
 
       <div style={{ padding: "10px 12px" }}>
@@ -95,7 +107,9 @@ function GoalCompassPanel({ activeKey }: { activeKey: string }) {
 
       <div style={{ padding: "6px 24px 20px", borderTop: `1px solid ${T.border}` }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 14, paddingTop: 12 }}>
-          <span style={{ width: 44, textAlign: "right", fontSize: 11, fontWeight: 500, flexShrink: 0, color: T.mutedFg, paddingTop: 1 }}>다짐</span>
+          <span style={{ width: 44, textAlign: "right", fontSize: 11, fontWeight: 500, flexShrink: 0, color: T.mutedFg, paddingTop: 1 }}>
+            {locale === 'ko' ? '다짐' : 'Pledge'}
+          </span>
           <p style={{ flex: 1, fontSize: 13, color: "rgba(255,255,255,0.35)", margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.6 }}>{AFFIRMATION}</p>
         </div>
       </div>
@@ -108,23 +122,64 @@ function GoalCompassPanel({ activeKey }: { activeKey: string }) {
    — matches actual TimetableGrid + TimetableRow
    ══════════════════════════════════════ */
 function TimetableBg() {
-  const PERIODS = [
-    { label: "오전", time: "9:00 ~ 12:00", color: "#4ADE80", slots: [
-      { title: "GPT API 연동 테스트", p: 0, done: true }, { title: "아이 등원", p: 2, done: true }, { title: "반응형 수정", p: 1, done: false },
+  const { locale } = useLocale();
+
+  const PROJECTS = locale === 'ko' ? [
+    { name: "AI 챗봇 앱",  color: "#60A5FA" },
+    { name: "포트폴리오",  color: "#A78BFA" },
+    { name: "일상/육아",   color: "#34D399" },
+    { name: "유튜브 채널", color: "#FBBF24" },
+    { name: "독서",        color: "#F472B6" },
+  ] : [
+    { name: "AI Chatbot App", color: "#60A5FA" },
+    { name: "Portfolio",      color: "#A78BFA" },
+    { name: "Life/Parenting", color: "#34D399" },
+    { name: "YouTube",        color: "#FBBF24" },
+    { name: "Reading",        color: "#F472B6" },
+  ];
+
+  const PERIODS = locale === 'ko' ? [
+    { label: "오전", time: "9:00 ~ 12:00",      color: "#4ADE80", slots: [
+      { title: "GPT API 연동 테스트",         p: 0, done: true  },
+      { title: "아이 등원",                   p: 2, done: true  },
+      { title: "반응형 수정",                 p: 1, done: false },
     ]},
-    { label: "오후", time: "12:00 ~ 18:00", color: T.accent, slots: [
-      { title: "스트리밍 응답 구현", p: 0, done: false }, { title: "히어로 카피 작성", p: 1, done: false }, { title: "아이 하원 + 놀이터", p: 2, done: false },
+    { label: "오후", time: "12:00 ~ 18:00",     color: T.accent, slots: [
+      { title: "스트리밍 응답 구현",           p: 0, done: false },
+      { title: "히어로 카피 작성",             p: 1, done: false },
+      { title: "아이 하원 + 놀이터",           p: 2, done: false },
     ]},
     { label: "저녁", time: "18:00 ~ 새벽 5:00", color: "#3F3F46", slots: [
-      { title: "영상 편집 — EP.12", p: 3, done: false }, { title: "독서 30분 — 몰입의 기술", p: 4, done: false }, null,
+      { title: "영상 편집 — EP.12",           p: 3, done: false },
+      { title: "독서 30분 — 몰입의 기술",     p: 4, done: false },
+      null,
+    ]},
+  ] : [
+    { label: "AM",  time: "9:00 ~ 12:00",  color: "#4ADE80", slots: [
+      { title: "GPT API integration test",  p: 0, done: true  },
+      { title: "Daycare drop-off",          p: 2, done: true  },
+      { title: "Fix responsive layout",     p: 1, done: false },
+    ]},
+    { label: "PM",  time: "12:00 ~ 18:00", color: T.accent, slots: [
+      { title: "Implement streaming",       p: 0, done: false },
+      { title: "Write hero copy",           p: 1, done: false },
+      { title: "Pick up kids + park",       p: 2, done: false },
+    ]},
+    { label: "EVE", time: "18:00 ~ 5:00",  color: "#3F3F46", slots: [
+      { title: "Edit video — EP.12",        p: 3, done: false },
+      { title: "Read 30min — Deep Work",    p: 4, done: false },
+      null,
     ]},
   ];
+
+  const goalLabel = locale === 'ko' ? '오늘 끝낼 일은' : "Today's focus:";
+  const goalValue = locale === 'ko' ? '시간표 UI 완성' : 'Finish timetable UI';
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {/* GoalMini */}
       <div style={{ borderRadius: 10, backgroundColor: T.card, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ flex: 1, fontSize: 11, color: T.fgDim }}>오늘 끝낼 일은 <span style={{ color: T.accent, fontWeight: 600 }}>시간표 UI 완성</span></span>
+        <span style={{ flex: 1, fontSize: 11, color: T.fgDim }}>{goalLabel} <span style={{ color: T.accent, fontWeight: 600 }}>{goalValue}</span></span>
         <span style={{ fontSize: 16, fontWeight: 700, color: T.fg, fontFamily: "'Poppins', sans-serif" }}>847<sub style={{ fontSize: 10, color: T.mutedFg }}>xp</sub></span>
       </div>
       {/* Priority header */}
@@ -174,39 +229,82 @@ function TimetableBg() {
    — matches actual WeeklyTimelineView + ProjectStatsView
    ══════════════════════════════════════ */
 function WeeklyBg() {
-  const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
+  const { locale } = useLocale();
+
+  const DAYS = locale === 'ko'
+    ? ["월", "화", "수", "목", "금", "토", "일"]
+    : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
   const DATES = [5, 6, 7, 8, 9, 10, 11];
   const TODAY_IDX = 6;
+
   type Block = { title: string; pIdx: number; startH: number; dur: number; done?: boolean };
-  const BLOCKS: Block[][] = [
-    [{ title: "DB 설계", pIdx: 0, startH: 9, dur: 2, done: true }, { title: "아이 등원", pIdx: 2, startH: 8, dur: 0.5, done: true }],
-    [{ title: "채팅 UI", pIdx: 0, startH: 10, dur: 1.5, done: true }, { title: "독서 30분", pIdx: 4, startH: 21, dur: 0.5, done: true }],
-    [{ title: "API 연동", pIdx: 0, startH: 9, dur: 3, done: true }, { title: "아이 하원", pIdx: 2, startH: 17, dur: 1, done: true }],
-    [{ title: "스트리밍", pIdx: 0, startH: 9, dur: 2 }, { title: "카피 작성", pIdx: 1, startH: 13, dur: 1.5 }, { title: "독서 30분", pIdx: 4, startH: 21, dur: 0.5 }],
-    [{ title: "프롬프트 튜닝", pIdx: 0, startH: 10, dur: 2 }, { title: "아이 등원", pIdx: 2, startH: 8, dur: 0.5 }],
-    [{ title: "썸네일", pIdx: 3, startH: 11, dur: 1 }],
+
+  const BLOCKS: Block[][] = locale === 'ko' ? [
+    [{ title: "DB 설계",      pIdx: 0, startH: 9,  dur: 2,   done: true }, { title: "아이 등원", pIdx: 2, startH: 8, dur: 0.5, done: true }],
+    [{ title: "채팅 UI",      pIdx: 0, startH: 10, dur: 1.5, done: true }, { title: "독서 30분", pIdx: 4, startH: 21, dur: 0.5, done: true }],
+    [{ title: "API 연동",     pIdx: 0, startH: 9,  dur: 3,   done: true }, { title: "아이 하원", pIdx: 2, startH: 17, dur: 1,   done: true }],
+    [{ title: "스트리밍",     pIdx: 0, startH: 9,  dur: 2   }, { title: "카피 작성",      pIdx: 1, startH: 13, dur: 1.5 }, { title: "독서 30분", pIdx: 4, startH: 21, dur: 0.5 }],
+    [{ title: "프롬프트 튜닝",pIdx: 0, startH: 10, dur: 2   }, { title: "아이 등원",      pIdx: 2, startH: 8,  dur: 0.5 }],
+    [{ title: "썸네일",       pIdx: 3, startH: 11, dur: 1   }],
+    [],
+  ] : [
+    [{ title: "DB design",       pIdx: 0, startH: 9,  dur: 2,   done: true }, { title: "School drop-off", pIdx: 2, startH: 8,  dur: 0.5, done: true }],
+    [{ title: "Chat UI",         pIdx: 0, startH: 10, dur: 1.5, done: true }, { title: "Read 30min",      pIdx: 4, startH: 21, dur: 0.5, done: true }],
+    [{ title: "API integration", pIdx: 0, startH: 9,  dur: 3,   done: true }, { title: "School pick-up",  pIdx: 2, startH: 17, dur: 1,   done: true }],
+    [{ title: "Streaming",       pIdx: 0, startH: 9,  dur: 2   }, { title: "Write copy",      pIdx: 1, startH: 13, dur: 1.5 }, { title: "Read 30min", pIdx: 4, startH: 21, dur: 0.5 }],
+    [{ title: "Prompt tuning",   pIdx: 0, startH: 10, dur: 2   }, { title: "School drop-off", pIdx: 2, startH: 8,  dur: 0.5 }],
+    [{ title: "Thumbnail",       pIdx: 3, startH: 11, dur: 1   }],
     [],
   ];
+
+  const PROJECTS = locale === 'ko' ? [
+    { name: "AI 챗봇 앱",  color: "#60A5FA" },
+    { name: "포트폴리오",  color: "#A78BFA" },
+    { name: "일상/육아",   color: "#34D399" },
+    { name: "유튜브 채널", color: "#FBBF24" },
+    { name: "독서",        color: "#F472B6" },
+  ] : [
+    { name: "AI Chatbot App", color: "#60A5FA" },
+    { name: "Portfolio",      color: "#A78BFA" },
+    { name: "Life/Parenting", color: "#34D399" },
+    { name: "YouTube",        color: "#FBBF24" },
+    { name: "Reading",        color: "#F472B6" },
+  ];
+
   const SH = 8, EH = 22, TH = EH - SH, RH = 22;
 
   /* Pie chart data */
-  const PIE = [
-    { name: "AI 챗봇 앱", color: PROJECTS[0].color, total: 12, completed: 7 },
-    { name: "일상/육아", color: PROJECTS[2].color, total: 7, completed: 5 },
-    { name: "포트폴리오", color: PROJECTS[1].color, total: 5, completed: 3 },
-    { name: "독서", color: PROJECTS[4].color, total: 4, completed: 3 },
-    { name: "유튜브 채널", color: PROJECTS[3].color, total: 3, completed: 1 },
+  const PIE = locale === 'ko' ? [
+    { name: "AI 챗봇 앱",  color: PROJECTS[0].color, total: 12, completed: 7 },
+    { name: "일상/육아",   color: PROJECTS[2].color, total: 7,  completed: 5 },
+    { name: "포트폴리오",  color: PROJECTS[1].color, total: 5,  completed: 3 },
+    { name: "독서",        color: PROJECTS[4].color, total: 4,  completed: 3 },
+    { name: "유튜브 채널", color: PROJECTS[3].color, total: 3,  completed: 1 },
+  ] : [
+    { name: "AI Chatbot App", color: PROJECTS[0].color, total: 12, completed: 7 },
+    { name: "Life/Parenting", color: PROJECTS[2].color, total: 7,  completed: 5 },
+    { name: "Portfolio",      color: PROJECTS[1].color, total: 5,  completed: 3 },
+    { name: "Reading",        color: PROJECTS[4].color, total: 4,  completed: 3 },
+    { name: "YouTube",        color: PROJECTS[3].color, total: 3,  completed: 1 },
   ];
   const pieTotal = PIE.reduce((s, p) => s + p.total, 0);
+
+  const dateRangeLabel = locale === 'ko' ? '2026년 5월 5일 ~ 11일' : 'May 5 – 11, 2026';
+  const streakLabel    = locale === 'ko' ? '5일 연속 완주' : '5-day streak';
+  const doneLabel      = locale === 'ko' ? '14/24 완료' : '14/24 done';
+  const missedLabel    = locale === 'ko' ? '4 미완료' : '4 missed';
+  const statsTitle     = locale === 'ko' ? '이번 주 프로젝트 통계' : 'Weekly project stats';
+  const tasksLabel     = locale === 'ko' ? '태스크' : 'Tasks';
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
-        <span style={{ fontSize: 12, fontWeight: 600, color: T.fg }}>2026년 5월 5일 ~ 11일</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: T.fg }}>{dateRangeLabel}</span>
         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
-        <span style={{ fontSize: 10, fontWeight: 600, color: T.success, marginLeft: 4 }}>5일 연속 완주</span>
+        <span style={{ fontSize: 10, fontWeight: 600, color: T.success, marginLeft: 4 }}>{streakLabel}</span>
       </div>
 
       {/* Timeline */}
@@ -246,12 +344,12 @@ function WeeklyBg() {
           <div style={{ width: "58%", backgroundColor: T.success, borderRadius: 3 }} />
           <div style={{ width: "17%", backgroundColor: "rgba(255,110,110,0.6)" }} />
         </div>
-        <span style={{ fontSize: 10, color: T.fgDim }}>14/24 완료 <span style={{ color: "rgba(255,110,110,0.6)" }}>· 4 미완료</span></span>
+        <span style={{ fontSize: 10, color: T.fgDim }}>{doneLabel} <span style={{ color: "rgba(255,110,110,0.6)" }}>· {missedLabel}</span></span>
       </div>
 
       {/* Project Stats — matches actual ProjectStatsView */}
       <div style={{ borderRadius: 10, border: `1px solid ${T.border}`, backgroundColor: T.card, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: T.fg }}>이번 주 프로젝트 통계</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: T.fg }}>{statsTitle}</span>
         <div style={{ display: "flex", justifyContent: "center" }}>
           <svg width="120" height="120" viewBox="0 0 100 100">
             {(() => {
@@ -268,7 +366,7 @@ function WeeklyBg() {
               });
             })()}
             <text x="50" y="47" textAnchor="middle" style={{ fill: T.fg, fontSize: 13, fontWeight: 600 }}>{pieTotal}</text>
-            <text x="50" y="58" textAnchor="middle" style={{ fill: T.mutedFg, fontSize: 7 }}>태스크</text>
+            <text x="50" y="58" textAnchor="middle" style={{ fill: T.mutedFg, fontSize: 7 }}>{tasksLabel}</text>
           </svg>
         </div>
         {/* Legend */}
@@ -306,7 +404,16 @@ function WeeklyBg() {
    — matches actual CalendarView month mode
    ══════════════════════════════════════ */
 function MonthlyBg() {
-  const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+  const { locale } = useLocale();
+
+  const WEEKDAYS = locale === 'ko'
+    ? ["일", "월", "화", "수", "목", "금", "토"]
+    : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const calendarTaskNames = locale === 'ko'
+    ? ["API 연동", "채팅 UI", "DB 설계", "포트폴리오", "영상 편집"]
+    : ["API integration", "Chat UI", "DB design", "Portfolio", "Edit video"];
+
   const FD = 4, DIM = 31, TODAY = 11;
   type DI = { xp: number; done: number; total: number; energy?: number };
   const DATA: Record<number, DI> = {
@@ -314,6 +421,12 @@ function MonthlyBg() {
     6:{xp:7,done:5,total:6,energy:5}, 7:{xp:8,done:6,total:7,energy:4}, 8:{xp:5,done:4,total:6,energy:3},
     9:{xp:3,done:2,total:3,energy:3}, 10:{xp:4,done:3,total:4,energy:4}, 11:{xp:0,done:0,total:3},
   };
+
+  const monthLabel     = locale === 'ko' ? '2026년 5월' : 'May 2026';
+  const thisWeekLabel  = locale === 'ko' ? '이번주' : 'This week';
+  const thisMonthLabel = locale === 'ko' ? '이번달' : 'This month';
+  const retroTitle     = locale === 'ko' ? '이번 달 회고' : 'Monthly retro';
+  const retroPlaceholder = locale === 'ko' ? '이번 달은 어떤 한 달이었나요?' : 'How was your month?';
 
   const cells: React.ReactNode[] = [];
   for (let i = 0; i < FD; i++) cells.push(<div key={`e-${i}`} style={{ minHeight: 52 }} />);
@@ -344,7 +457,7 @@ function MonthlyBg() {
             {Array.from({ length: Math.min(data.done, 2) }, (_, i) => (
               <div key={`d${i}`} style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 8, color: T.success }}>
                 <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{["API 연동", "채팅 UI", "DB 설계", "포트폴리오", "영상 편집"][i % 5]}</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{calendarTaskNames[i % 5]}</span>
               </div>
             ))}
             {data.total > 2 && <span style={{ fontSize: 7, color: T.mutedFg, paddingLeft: 2 }}>+{data.total - 2}</span>}
@@ -360,11 +473,11 @@ function MonthlyBg() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderBottom: `1px solid ${T.border}` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
-            <span style={{ fontSize: 12, fontWeight: 600, color: T.fg }}>2026년 5월</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: T.fg }}>{monthLabel}</span>
             <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={T.mutedFg} strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
           </div>
           <div style={{ display: "flex", gap: 2 }}>
-            {["이번주", "이번달"].map((l, i) => (
+            {[thisWeekLabel, thisMonthLabel].map((l, i) => (
               <span key={l} style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 5, backgroundColor: i===1 ? T.muted : "transparent", color: i===1 ? T.fg : T.mutedFg }}>{l}</span>
             ))}
           </div>
@@ -379,8 +492,8 @@ function MonthlyBg() {
 
       {/* Monthly retro input */}
       <div style={{ borderRadius: 10, border: `1px solid ${T.border}`, backgroundColor: T.card, padding: 14 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: T.mutedFg, display: "block", marginBottom: 8 }}>이번 달 회고</span>
-        <div style={{ minHeight: 36, borderRadius: 8, backgroundColor: T.surfaceInset, padding: "8px 12px", fontSize: 12, color: "#333" }}>이번 달은 어떤 한 달이었나요?</div>
+        <span style={{ fontSize: 11, fontWeight: 600, color: T.mutedFg, display: "block", marginBottom: 8 }}>{retroTitle}</span>
+        <div style={{ minHeight: 36, borderRadius: 8, backgroundColor: T.surfaceInset, padding: "8px 12px", fontSize: 12, color: "#333" }}>{retroPlaceholder}</div>
       </div>
     </div>
   );

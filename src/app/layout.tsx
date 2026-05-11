@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
+import { LocaleProvider } from "@/i18n/context";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -93,7 +94,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[var(--background)]">
         <GoogleAnalytics />
-        {children}
+        <LocaleProvider>
+          {children}
+        </LocaleProvider>
       </body>
     </html>
   );
