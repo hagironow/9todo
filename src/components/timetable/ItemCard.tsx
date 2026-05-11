@@ -54,7 +54,7 @@ export default function ItemCard({
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
     data: { item, isRoutineInstance: false },
-    disabled: isReadOnly || isCompleted,
+    disabled: isReadOnly || isCompleted || isRecurring,
   });
 
   const style = {
@@ -386,14 +386,16 @@ export default function ItemCard({
               <Trash2 size={13} />
             </button>
           )}
-          <div
-            {...listeners}
-            {...attributes}
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)] hover:text-[var(--foreground)] transition-colors pointer-events-auto cursor-grab active:cursor-grabbing"
-            title="드래그하여 이동"
-          >
-            <GripVertical size={14} />
-          </div>
+          {!isRecurring && (
+            <div
+              {...listeners}
+              {...attributes}
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)] hover:text-[var(--foreground)] transition-colors pointer-events-auto cursor-grab active:cursor-grabbing"
+              title="드래그하여 이동"
+            >
+              <GripVertical size={14} />
+            </div>
+          )}
         </div>
       )}
     </div>

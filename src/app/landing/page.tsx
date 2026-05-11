@@ -46,45 +46,65 @@ function Hero() {
       position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center',
       background: 'var(--color-bg-void)', overflow: 'hidden', paddingTop: 'var(--nav-height)',
     }}>
-      {/* Glow */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 40%, transparent 70%)',
-        filter: 'blur(60px)', pointerEvents: 'none', zIndex: 0,
-        animation: 'hero-glow 16s ease-in-out infinite alternate',
-      }} />
-
-      {/* Title */}
+      {/* Title — large, generous whitespace above */}
       <div className="container" data-hero-label style={{
         position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        textAlign: 'center', paddingTop: 'clamp(64px, 10vh, 120px)', paddingBottom: 'var(--space-12)',
+        textAlign: 'center',
+        paddingTop: 'clamp(100px, 18vh, 220px)',
+        paddingBottom: 'clamp(48px, 6vh, 80px)',
       }}>
         <h1 data-hero-title style={{
-          fontSize: 'var(--font-size-h1)', fontWeight: 'var(--font-weight-semibold)',
-          lineHeight: 'var(--line-height-heading)', color: 'var(--color-text-primary)',
-          margin: 0, wordBreak: 'keep-all', maxWidth: 700,
+          fontSize: 'clamp(44px, 6vw, 72px)',
+          fontWeight: 'var(--font-weight-semibold)',
+          lineHeight: 1.15,
+          letterSpacing: '-0.03em',
+          color: 'var(--color-text-primary)',
+          margin: 0, wordBreak: 'keep-all', maxWidth: 800,
         }}>
-          <span style={{ fontWeight: 300 }}>Priority by constraints,</span><br />for multitaskers.
+          <span style={{ fontWeight: 300, color: 'var(--color-text-secondary)' }}>Priority by constraints,</span>
+          <br />
+          <span>for multitaskers.</span>
         </h1>
         <p className="keep-all" data-hero-sub style={{
-          fontSize: 'var(--font-size-body-lg)', fontWeight: 'var(--font-weight-regular)',
-          lineHeight: 'var(--line-height-body)', color: 'var(--color-text-secondary)',
-          margin: 'var(--space-3) 0 0', maxWidth: 600,
+          fontSize: '16px',
+          fontWeight: 'var(--font-weight-regular)',
+          lineHeight: 'var(--line-height-body)',
+          color: 'var(--color-text-tertiary)',
+          margin: 'var(--space-4) 0 0', maxWidth: 480,
         }}>
           제약이 세우는 우선순위. 멀티태스커를 위한 타임 박스 플래너 시스템.
         </p>
       </div>
 
-      {/* Dashboard */}
+      {/* Dashboard — width matches GNB container, emerges from darkness */}
       <div data-hero-visual style={{
-        position: 'relative', zIndex: 1, width: '100%', maxWidth: 'var(--container-wide, 1400px)',
+        position: 'relative', zIndex: 1, width: '100%',
+        maxWidth: 'var(--container-max, 1200px)',
         paddingInline: 'var(--container-padding)', marginInline: 'auto',
       }}>
-        <HeroDemo />
-        {/* Bottom fade */}
+        {/* Ambient top light — subtle 3D depth */}
         <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: 80,
-          background: 'linear-gradient(to bottom, transparent, var(--color-bg-void))',
+          position: 'absolute', top: -40, left: '15%', right: '15%', height: 80,
+          background: 'radial-gradient(ellipse 80% 100% at 50% 100%, rgba(255,255,255,0.025), transparent)',
+          pointerEvents: 'none', zIndex: 1,
+        }} />
+        {/* Dashboard with top-light gradient for dimension */}
+        <div style={{
+          position: 'relative', borderRadius: 16, overflow: 'hidden',
+          boxShadow: '0 0 0 1px rgba(255,255,255,0.04)',
+        }}>
+          {/* Top edge highlight — simulates light hitting the top edge */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+            background: 'linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.08) 50%, transparent 90%)',
+            zIndex: 3,
+          }} />
+          <HeroDemo />
+        </div>
+        {/* Deep bottom fade — 160px, dissolves into void */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 160,
+          background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-void) 100%)',
           pointerEvents: 'none', zIndex: 2,
         }} />
       </div>
