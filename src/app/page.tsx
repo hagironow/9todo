@@ -53,6 +53,7 @@ import ProjectDetailView from '@/components/project-detail/ProjectDetailView';
 import SearchView from '@/components/search/SearchView';
 import Dialog from '@/components/ui/Dialog';
 import { importStateFromJSON, EMPTY_STATE } from '@/hooks/useAppData';
+import MarketingInjector from '@/components/dev/MarketingInjector';
 
 // PERIOD_LABELS removed — Play Section에서 시간대 레이블 불필요
 
@@ -563,6 +564,10 @@ export default function Home() {
       const draggedCurrentSlot: SlotCoord | null =
         draggedItem && 'slot' in draggedItem ? (draggedItem.slot as SlotCoord | null) : null;
 
+      // 반복 인스턴스는 드래그 이동 차단 — 반복 설정에서 슬롯 변경
+      const isRecurring = draggedItem && ('recurrenceParentId' in draggedItem && draggedItem.recurrenceParentId || 'recurrence' in draggedItem && draggedItem.recurrence);
+      if (isRecurring) return;
+
       const targetItem = slots[coord.period][coord.priority];
 
       if (!targetItem) {
@@ -1069,9 +1074,9 @@ export default function Home() {
         colorTheme={state.colorTheme}
         initialProjectId={
           editingRecurrenceTask?.projectId ??
-          (state.activeProjectFilter && state.activeProjectFilter !== '__unassigned__' && state.activeProjectFilter !== '__calendar__'
+          (state.activeProjectFilter && state.activeProjectFilter !== '__unassigned__' && state.activeProjectFilter !== '__calendar__' && state.activeProjectFilter !== '__retrospective__'
             ? state.activeProjectFilter
-            : null)
+            : state.lastUsedProjectId ?? null)
         }
         onCreateProject={(name, colorIndex) => addProject(name, colorIndex)}
       />
@@ -1173,6 +1178,7 @@ export default function Home() {
           <button onClick={() => setImportErrorOpen(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] transition-opacity hover:opacity-85">확인</button>
         </div>
       </Dialog>
+      <MarketingInjector />
     </DndContext>
   );
 }

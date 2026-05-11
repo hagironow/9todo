@@ -1,0 +1,10 @@
+# UTM 리다이렉트 — Cloudflare Pages
+# 형식: /경로 목적지URL 상태코드
+
+/m1 https://9todo.app?utm_source=meta&utm_medium=paid&utm_campaign=pmf_w1 302
+/th1 https://9todo.app?utm_source=threads&utm_medium=organic&utm_campaign=pmf_w1 302
+/l1 https://9todo.app?utm_source=linkedin&utm_medium=organic&utm_campaign=pmf_w1 302
+/rd1 https://9todo.app?utm_source=reddit&utm_medium=organic&utm_campaign=pmf_w1 302
+/d1 https://9todo.app?utm_source=disquiet&utm_medium=organic&utm_campaign=pmf_w1 302
+/inf1 https://9todo.app?utm_source=influencer&utm_medium=dm&utm_campaign=pmf_w1 302
+/k1 https://9todo.app?utm_source=kakao&utm_medium=dm&utm_campaign=pmf_w1 302
