@@ -244,21 +244,28 @@ function WhyNine({ t }: { t: Translations }) {
   return (
     <section data-section="why-nine" style={{ background: 'var(--color-bg-void)', paddingBlock: 'var(--section-gap)' }}>
       <div className="container">
-        <div style={{ marginBottom: 'var(--space-24)' }}>
-          <h2 className="keep-all" style={{
-            fontSize: 'var(--font-size-h2)', fontWeight: 'var(--font-weight-semibold)',
-            letterSpacing: 'var(--tracking-h2)', color: 'var(--color-text-primary)',
-            lineHeight: 'var(--line-height-heading)', margin: 0,
-          }}>
-            {t.whyNineTitle.split('\n').map((line, i, arr) => (
-              <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
-            ))}
-          </h2>
-        </div>
+        {t.whyNineTitle && (
+          <div style={{ marginBottom: 'var(--space-24)' }}>
+            <h2 className="keep-all" style={{
+              fontSize: 'var(--font-size-h2)', fontWeight: 'var(--font-weight-semibold)',
+              letterSpacing: 'var(--tracking-h2)', color: 'var(--color-text-primary)',
+              lineHeight: 'var(--line-height-heading)', margin: 0,
+            }}>
+              {t.whyNineTitle.split('\n').map((line, i, arr) => (
+                <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+              ))}
+            </h2>
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--section-gap)' }}>
           {VIEWS.map((view) => (
             <article key={view.num} style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(32px, 4vw, 56px)' }}>
+              {/* Divider line */}
+              <div>
+                <hr style={{ border: 'none', borderTop: '1px solid var(--color-border-subtle)', margin: 0 }} />
+                <div style={{ height: 30 }} />
+              </div>
               {/* Top — two-column: big title left, desc right */}
               <div className="view-header" style={{ display: 'flex', gap: 'clamp(32px, 5vw, 80px)', alignItems: 'flex-start' }}>
                 {/* Left — number + title */}
@@ -275,12 +282,16 @@ function WhyNine({ t }: { t: Translations }) {
                       textTransform: 'uppercase', fontFamily: 'var(--font-display)',
                     }}>{view.label}</span>
                   </div>
-                  <h3 className="keep-all" style={{
-                    fontSize: 'clamp(24px, 3.5vw, 40px)', fontWeight: 'var(--font-weight-semibold)',
-                    color: 'var(--color-text-primary)', lineHeight: 1.2,
-                    letterSpacing: '-0.02em', margin: 0,
-                    fontFamily: 'var(--font-display)',
-                  }}>{view.title}</h3>
+                  {view.title && (
+                    <h3 className="keep-all" style={{
+                      fontSize: 'clamp(24px, 3.5vw, 40px)', fontWeight: 'var(--font-weight-semibold)',
+                      color: 'var(--color-text-primary)', lineHeight: 1.2,
+                      letterSpacing: '-0.02em', margin: 0,
+                      fontFamily: 'var(--font-display)',
+                    }}>{view.title.split('\n').map((line, i, arr) => (
+                      <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+                    ))}</h3>
+                  )}
                 </div>
                 {/* Right — description */}
                 <div style={{ flex: '1 1 50%', minWidth: 0, paddingTop: 'var(--space-10, 2.5rem)' }}>
