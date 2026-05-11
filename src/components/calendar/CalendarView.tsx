@@ -71,6 +71,59 @@ function getWeekDates(dateStr: string, weekStartDay: 0 | 1 = 1): string[] {
 // 슬롯 시간 순서
 const PERIOD_ORDER = { morning: 0, afternoon: 1, evening: 2 } as const;
 
+// ── 게이미피케이션 헬퍼 ──
+type SlotStatus = 'done' | 'missed' | 'pending' | 'empty';
+
+function getDayStats(todos: Task[], dateStr: string, today: string) {
+  const periods = ['morning', 'afternoon', 'evening'] as const;
+  const priorities = [1, 2, 3] as const;
+  const grid: SlotStatus[][] = periods.map(period =>
+    priorities.map(priority => {
+      const task = todos.find(t => t.slot?.period === period && t.slot?.priority === priority);
+      if (!task) return 'empty';
+      if (task.completedAt) return 'done';
+      if (dateStr < today) return 'missed';
+      return 'pending';
+    })
+  );
+  const slotted = todos.filter(t => t.slot);
+  const completed = slotted.filter(t => t.completedAt).length;
+  const total = slotted.length;
+  const rate = total > 0 ? completed / total : -1;
+  return { grid, total, completed, rate };
+}
+
+function getHeatmapBg(rate: number, dateStr: string, today: string): string | undefined {
+  if (rate === -1 || dateStr > today) return undefined;
+  if (rate === 1) return 'rgba(34, 197, 94, 0.10)';
+  if (rate >= 0.8) return 'rgba(34, 197, 94, 0.06)';
+  if (rate >= 0.5) return 'rgba(34, 197, 94, 0.03)';
+  if (rate === 0) return 'rgba(255, 110, 110, 0.06)';
+  return undefined;
+}
+
+function MiniSlotGrid({ grid }: { grid: SlotStatus[][] }) {
+  const hasAny = grid.some(row => row.some(s => s !== 'empty'));
+  if (!hasAny) return null;
+  return (
+    <div className="grid grid-cols-3 gap-[1.5px]">
+      {grid.flat().map((status, i) => (
+        <div
+          key={i}
+          className="w-[4px] h-[4px] rounded-[1px]"
+          style={{
+            backgroundColor:
+              status === 'done' ? 'var(--g-success)' :
+              status === 'missed' ? 'var(--g-error)' :
+              status === 'pending' ? 'var(--border)' :
+              'transparent',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 interface DayData {
   todos: Task[];
   routineList: never[];
@@ -250,8 +303,16 @@ export default function CalendarView({
   const calFilterProject = calProjectFilter ? projects.find((p) => p.id === calProjectFilter) : null;
 
   function buildDayData(dateStr: string): DayData {
+    const seen = new Set<string>();
     const todos = filteredTasks
       .filter((t) => t.date === dateStr && !t.recurrence) // 반복 부모 제외
+      .filter((t) => {
+        // 같은 제목+프로젝트의 반복 인스턴스 중복 제거
+        const titleKey = `${t.title}__${t.projectId ?? ''}`;
+        if (t.recurrenceParentId && seen.has(titleKey)) return false;
+        seen.add(titleKey);
+        return true;
+      })
       .sort((a, b) => {
         const pa = a.slot ? PERIOD_ORDER[a.slot.period] * 10 + a.slot.priority : 99;
         const pb = b.slot ? PERIOD_ORDER[b.slot.period] * 10 + b.slot.priority : 99;
@@ -279,6 +340,40 @@ export default function CalendarView({
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewYear, viewMonth, tasks]);
+
+  // 연속 streak: 하나라도 완료한 날 기준 (어제부터 역순, 오늘은 완료 있으면 +1)
+  const streak = useMemo(() => {
+    let count = 0;
+    const d = new Date(todayStr + 'T00:00:00');
+    d.setDate(d.getDate() - 1); // 어제부터 시작
+    for (let i = 0; i < 365; i++) {
+      const dateStr = toDateString(d);
+      const dayTasks = tasks.filter(t => t.date === dateStr && t.slot && !t.recurrence);
+      if (dayTasks.length > 0) {
+        if (dayTasks.some(t => t.completedAt)) count++;
+        else break;
+      }
+      d.setDate(d.getDate() - 1);
+    }
+    // 오늘 하나라도 완료했으면 +1
+    const todayTasks = tasks.filter(t => t.date === todayStr && t.slot && !t.recurrence);
+    if (todayTasks.length > 0 && todayTasks.some(t => t.completedAt)) count++;
+    return count;
+  }, [tasks, todayStr]);
+
+  // 주간 요약
+  const weekSummary = useMemo(() => {
+    let completed = 0, missed = 0, pending = 0;
+    for (const dateStr of weekDates) {
+      const dayTasks = filteredTasks.filter(t => t.date === dateStr && t.slot && !t.recurrence);
+      for (const t of dayTasks) {
+        if (t.completedAt) completed++;
+        else if (dateStr < todayStr) missed++;
+        else pending++;
+      }
+    }
+    return { completed, missed, pending, total: completed + missed + pending };
+  }, [weekDates, filteredTasks, todayStr]);
 
   // 네비게이션
   const prevWeek = () => {
@@ -352,7 +447,7 @@ export default function CalendarView({
       <div
         key={`t-${t.id}`}
         className={[
-          'flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[14px] leading-tight truncate',
+          'flex items-start gap-1 px-1.5 py-0.5 rounded-[4px] text-[12px] leading-snug',
           isDone
             ? 'text-[var(--g-success)]'
             : isPastIncomplete
@@ -361,11 +456,11 @@ export default function CalendarView({
         ].join(' ')}
         title={t.title}
       >
-        {isDone && <Check size={8} strokeWidth={3} className="flex-shrink-0" />}
+        {isDone && <Check size={8} strokeWidth={3} className="flex-shrink-0 mt-[3px]" />}
         {project && (
-          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: project.color }} />
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-[3px]" style={{ backgroundColor: project.color }} />
         )}
-        <span className="truncate">{t.title}</span>
+        <span>{t.title}</span>
       </div>
     );
   }
@@ -472,6 +567,12 @@ export default function CalendarView({
               <EnergyBadge level={monthEnergyAvg} />
             </div>
           )}
+          <span className={[
+            'ml-2 text-[11px] font-medium',
+            streak > 0 ? 'text-[var(--g-success)]' : 'text-[var(--muted-foreground)]',
+          ].join(' ')}>
+            {streak > 0 ? `${streak}일 연속 완주` : '연속 완주 0일'}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -659,6 +760,36 @@ export default function CalendarView({
             onUpdateTask={onUpdateTask}
             onCreateTask={onCreateTask}
           />
+          {/* 주간 요약 바 */}
+          {weekSummary.total > 0 && (
+            <div className="flex items-center gap-3 px-1">
+              <div className="flex-1 h-[6px] rounded-full overflow-hidden bg-[var(--muted)] flex">
+                {weekSummary.completed > 0 && (
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${(weekSummary.completed / weekSummary.total) * 100}%`,
+                      backgroundColor: 'var(--g-success)',
+                    }}
+                  />
+                )}
+                {weekSummary.missed > 0 && (
+                  <div
+                    className="h-full transition-all duration-300"
+                    style={{
+                      width: `${(weekSummary.missed / weekSummary.total) * 100}%`,
+                      backgroundColor: 'var(--g-error)',
+                      opacity: 0.6,
+                    }}
+                  />
+                )}
+              </div>
+              <span className="text-[11px] text-[var(--muted-foreground)] whitespace-nowrap">
+                {weekSummary.completed}/{weekSummary.total} 완료
+                {weekSummary.missed > 0 && <span className="text-[var(--g-error)]"> · {weekSummary.missed} 미완료</span>}
+              </span>
+            </div>
+          )}
           {/* 주간 회고 */}
           {onSaveRetro && (() => {
             const weekKey = getWeekScopeKey(weekAnchor);
@@ -708,6 +839,8 @@ export default function CalendarView({
               const isToday = dateStr === todayStr;
               const data = monthData[dateStr];
               const dayOfWeek = (firstDayOfMonth + i) % 7;
+              const stats = data ? getDayStats(data.todos, dateStr, todayStr) : null;
+              const heatmapBg = stats ? getHeatmapBg(stats.rate, dateStr, todayStr) : undefined;
 
               return (
                 <div
@@ -717,18 +850,21 @@ export default function CalendarView({
                     'border-r border-b border-[var(--border)]',
                     dayOfWeek === 6 ? 'border-r-0' : '',
                   ].join(' ')}
+                  style={heatmapBg ? { backgroundColor: heatmapBg } : undefined}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span
-                      className={[
-                        'text-[14px] leading-none',
-                        isToday
-                          ? 'w-6 h-6 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] font-bold'
-                          : 'text-[var(--muted-foreground)]',
-                      ].join(' ')}
-                    >
-                      {day}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={[
+                          'text-[14px] leading-none',
+                          isToday
+                            ? 'w-6 h-6 flex items-center justify-center rounded-full bg-[var(--foreground)] text-[var(--background)] font-bold'
+                            : 'text-[var(--muted-foreground)]',
+                        ].join(' ')}
+                      >
+                        {day}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-1.5">
                       {(() => {
                         const dayRetro = (retrospectives ?? []).find((r) => r.scope === 'day' && r.scopeKey === dateStr);

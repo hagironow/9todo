@@ -105,7 +105,15 @@ export default function WeeklyTimelineView({
   const tasksByDate = useMemo(() => {
     const map: Record<string, Task[]> = {};
     for (const d of weekDates) {
-      map[d] = tasks.filter((t) => t.date === d && t.slot !== null);
+      const seen = new Set<string>();
+      map[d] = tasks
+        .filter((t) => t.date === d && t.slot !== null && !t.recurrence)
+        .filter((t) => {
+          const titleKey = `${t.title}__${t.projectId ?? ''}`;
+          if (t.recurrenceParentId && seen.has(titleKey)) return false;
+          seen.add(titleKey);
+          return true;
+        });
     }
     return map;
   }, [tasks, weekDates]);
@@ -371,6 +379,7 @@ export default function WeeklyTimelineView({
 
                     const project = getProject(task.projectId);
                     const isDone = !!task.completedAt;
+                    const isPastIncomplete = !isDone && dateStr < todayStr;
                     const canDrag = !!onUpdateTask && !isDone;
 
                     return (
@@ -379,7 +388,7 @@ export default function WeeklyTimelineView({
                         className={[
                           'absolute left-0.5 right-0.5 z-10 rounded-[4px] px-1.5 py-0.5 overflow-hidden',
                           'border-l-[3px] transition-opacity group/block',
-                          isDone ? 'opacity-50' : 'opacity-100',
+                          isDone ? 'opacity-60' : 'opacity-100',
                           isDragging ? 'opacity-75 ring-1 ring-[var(--accent)]' : '',
                           canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default',
                         ].join(' ')}
@@ -387,8 +396,16 @@ export default function WeeklyTimelineView({
                           top: `${topPct}%`,
                           height: `${Math.max(heightPct, 2)}%`,
                           minHeight: '18px',
-                          backgroundColor: project?.color ? `${project.color}18` : 'var(--muted)',
-                          borderLeftColor: project?.color ?? 'var(--muted-foreground)',
+                          backgroundColor: isDone
+                            ? 'rgba(34, 197, 94, 0.08)'
+                            : isPastIncomplete
+                            ? 'rgba(255, 110, 110, 0.08)'
+                            : project?.color ? `${project.color}18` : 'var(--muted)',
+                          borderLeftColor: isDone
+                            ? 'var(--g-success)'
+                            : isPastIncomplete
+                            ? 'var(--g-error)'
+                            : project?.color ?? 'var(--muted-foreground)',
                         }}
                         title={`${task.title}${task.scheduledStartTime ? ` (${task.scheduledStartTime}${task.scheduledEndTime ? `~${task.scheduledEndTime}` : ''})` : ''}`}
                         onPointerDown={canDrag ? (e) => handlePointerDown(e, task.id, 'move') : undefined}
