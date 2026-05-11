@@ -22,6 +22,7 @@ interface CalendarViewProps {
   onViewModeChange?: (mode: ViewMode) => void;
   onCreateTask?: (title: string, date: string, projectId: string | null) => void;
   onUpdateTask?: (taskId: string, updates: { scheduledStartTime?: string; scheduledEndTime?: string; date?: string }) => void;
+  onEditRecurrence?: (task: Task) => void;
   retrospectives?: RetrospectiveEntry[];
   onSaveRetro?: (scope: RetroScope, scopeKey: string, content: string, energyLevel?: EnergyLevel) => void;
 }
@@ -264,6 +265,7 @@ export default function CalendarView({
   onViewModeChange,
   onCreateTask,
   onUpdateTask,
+  onEditRecurrence,
   retrospectives = [],
   onSaveRetro,
 }: CalendarViewProps) {
@@ -799,6 +801,7 @@ export default function CalendarView({
             timeRange={timeRange}
             onUpdateTask={onUpdateTask}
             onCreateTask={onCreateTask}
+            onEditRecurrence={onEditRecurrence}
           />
           {/* 주간 요약 바 */}
           {weekSummary.total > 0 && (
@@ -921,25 +924,11 @@ export default function CalendarView({
                         return <EnergyBadge level={dayRetro.energyLevel} size="xs" />;
                       })()}
                       {data && renderXP(data.xp)}
-                      {onCreateTask && inputDate !== dateStr && (
-                        <button
-                          onClick={() => setInputDate(dateStr)}
-                          className="text-[var(--muted-foreground)] opacity-0 group-hover/cell:opacity-100 transition-opacity duration-150 hover:text-[var(--foreground)]"
-                        >
-                          <Plus size={12} strokeWidth={1.5} />
-                        </button>
-                      )}
+                      {/* 태스크 생성 버튼 — 비활성화 */}
                     </div>
                   </div>
                   {data && renderDaySections(data, dateStr, true)}
-                  {inputDate === dateStr && onCreateTask && (
-                    <DayCellInput
-                      date={dateStr}
-                      projects={projects}
-                      onSubmit={onCreateTask}
-                      onClose={() => setInputDate(null)}
-                    />
-                  )}
+                  {/* 인라인 입력 — 비활성화 */}
                 </div>
               );
             })}

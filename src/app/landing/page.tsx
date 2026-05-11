@@ -55,6 +55,7 @@ function Hero() {
       }}>
         <h1 data-hero-title style={{
           fontSize: 'clamp(44px, 6vw, 72px)',
+          fontFamily: 'var(--font-display)',
           fontWeight: 'var(--font-weight-semibold)',
           lineHeight: 1.15,
           letterSpacing: '-0.03em',
@@ -82,28 +83,47 @@ function Hero() {
         maxWidth: 'var(--container-max, 1200px)',
         paddingInline: 'var(--container-padding)', marginInline: 'auto',
       }}>
-        {/* Ambient top light — subtle 3D depth */}
+        {/* ── Depth lines behind dashboard — stacked boards effect ── */}
+        {/* Line 3 (deepest, widest offset) */}
         <div style={{
-          position: 'absolute', top: -40, left: '15%', right: '15%', height: 80,
-          background: 'radial-gradient(ellipse 80% 100% at 50% 100%, rgba(255,255,255,0.025), transparent)',
-          pointerEvents: 'none', zIndex: 1,
+          position: 'absolute', top: 14, left: 48, right: 48, height: '100%',
+          borderRadius: 16,
+          border: '1px solid rgba(255,255,255,0.03)',
+          pointerEvents: 'none', zIndex: 0,
         }} />
-        {/* Dashboard with top-light gradient for dimension */}
+        {/* Line 2 */}
+        <div style={{
+          position: 'absolute', top: 8, left: 32, right: 32, height: '100%',
+          borderRadius: 16,
+          border: '1px solid rgba(255,255,255,0.04)',
+          pointerEvents: 'none', zIndex: 0,
+        }} />
+        {/* Line 1 (closest, least offset) */}
+        <div style={{
+          position: 'absolute', top: 3, left: 16, right: 16, height: '100%',
+          borderRadius: 16,
+          border: '1px solid rgba(255,255,255,0.05)',
+          pointerEvents: 'none', zIndex: 0,
+        }} />
+
+        {/* Dashboard card */}
         <div style={{
           position: 'relative', borderRadius: 16, overflow: 'hidden',
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          zIndex: 1,
         }}>
-          {/* Top edge highlight — simulates light hitting the top edge */}
+          {/* Top edge highlight — light hitting the top edge */}
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-            background: 'linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.08) 50%, transparent 90%)',
+            background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.1) 50%, transparent 95%)',
             zIndex: 3,
           }} />
           <HeroDemo />
         </div>
-        {/* Deep bottom fade — 160px, dissolves into void */}
+
+        {/* Deep bottom fade */}
         <div style={{
-          position: 'absolute', bottom: 0, left: 0, right: 0, height: 160,
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: 180,
           background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-void) 100%)',
           pointerEvents: 'none', zIndex: 2,
         }} />
@@ -209,18 +229,18 @@ function WhyNine() {
                 <span style={{
                   fontSize: 'var(--font-size-small)', fontWeight: 'var(--font-weight-medium)',
                   color: 'var(--color-accent)', letterSpacing: 'var(--tracking-label)',
-                  textTransform: 'uppercase', fontFamily: 'var(--font-mono)', marginBottom: 'var(--space-1)',
+                  textTransform: 'uppercase', fontFamily: 'var(--font-display)', marginBottom: 'var(--space-1)',
                 }}>{view.num}</span>
                 <span style={{
                   fontSize: 'var(--font-size-small)', fontWeight: 'var(--font-weight-medium)',
                   color: 'var(--color-text-tertiary)', letterSpacing: 'var(--tracking-label)',
-                  textTransform: 'uppercase', marginBottom: 'var(--space-6)',
+                  textTransform: 'uppercase', fontFamily: 'var(--font-display)', marginBottom: 'var(--space-6)',
                 }}>{view.label}</span>
                 <h3 className="keep-all" style={{
                   fontSize: 'var(--font-size-h3)', fontWeight: 'var(--font-weight-semibold)',
                   color: 'var(--color-text-primary)', lineHeight: 'var(--line-height-sub)',
                   letterSpacing: 'var(--tracking-h3)', margin: '0 0 var(--space-4)',
-                  fontFamily: 'var(--font-sans)',
+                  fontFamily: 'var(--font-display)',
                 }}>{view.title}</h3>
                 <p className="keep-all" style={{
                   fontSize: 'var(--font-size-body)', color: 'var(--color-text-secondary)',

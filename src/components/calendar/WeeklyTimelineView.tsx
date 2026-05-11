@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useState as useLocalState } from 'react';
-import { Check, Plus } from 'lucide-react';
+import { Check, Plus, Repeat } from 'lucide-react';
 import type { Task, Project, TimePeriod, Priority } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import { getToday } from '@/lib/date';
@@ -16,6 +16,7 @@ interface WeeklyTimelineViewProps {
   timeRange?: { startHour: number; endHour: number };
   onUpdateTask?: (taskId: string, updates: { scheduledStartTime?: string; scheduledEndTime?: string; date?: string }) => void;
   onCreateTask?: (title: string, date: string, projectId: string | null) => void;
+  onEditRecurrence?: (task: Task) => void;
 }
 
 const KO_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -82,6 +83,7 @@ export default function WeeklyTimelineView({
   timeRange,
   onUpdateTask,
   onCreateTask,
+  onEditRecurrence,
 }: WeeklyTimelineViewProps) {
   const todayStr = getToday();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -430,6 +432,15 @@ export default function WeeklyTimelineView({
                           ].join(' ')}>
                             {task.title}
                           </span>
+                          {(task.recurrenceParentId || task.recurrence) && (
+                            <button
+                              className="flex-shrink-0 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+                              onClick={(e) => { e.stopPropagation(); onEditRecurrence?.(task); }}
+                              title="반복 설정"
+                            >
+                              <Repeat size={9} strokeWidth={2} />
+                            </button>
+                          )}
                         </div>
                         {heightPct > 5 && (
                           <span className="text-[9px] text-[var(--muted-foreground)] leading-none">
@@ -449,53 +460,7 @@ export default function WeeklyTimelineView({
                   })}
 
                   {/* 시간대별 호버 + 버튼 (태스크 생성) */}
-                  {onCreateTask && !dragState && hourLabels.map((h) => {
-                    const topPct = ((h - startHour) / totalHours) * 100;
-                    const heightPct = (1 / totalHours) * 100;
-                    const isHovered = hoverSlot?.dateIdx === colIdx && hoverSlot?.hour === h;
-                    const isInputting = inputSlot?.dateStr === dateStr && inputSlot?.hour === h;
-
-                    return (
-                      <div
-                        key={`hover-${h}`}
-                        className="absolute left-0 right-0 z-[5]"
-                        style={{ top: `${topPct}%`, height: `${heightPct}%` }}
-                        onMouseEnter={() => setHoverSlot({ dateIdx: colIdx, hour: h })}
-                        onMouseLeave={() => setHoverSlot(null)}
-                      >
-                        {isInputting ? (
-                          <div className="absolute inset-0.5 z-20 flex items-center px-1.5 bg-[var(--muted)] rounded-[4px] border border-[var(--border)]">
-                            <input
-                              ref={inputRef}
-                              value={inputValue}
-                              onChange={(e) => setInputValue(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleCreateSubmit();
-                                if (e.key === 'Escape') { setInputSlot(null); setInputValue(''); }
-                              }}
-                              onBlur={() => { if (!inputValue.trim()) { setInputSlot(null); setInputValue(''); } }}
-                              placeholder={`${String(h).padStart(2, '0')}:00 할 일...`}
-                              className="flex-1 text-[11px] text-[var(--foreground)] bg-transparent outline-none placeholder:text-[var(--muted-foreground)]"
-                              autoFocus
-                            />
-                          </div>
-                        ) : isHovered ? (
-                          <button
-                            onClick={() => {
-                              setInputSlot({ dateStr, hour: h });
-                              setInputValue('');
-                              setHoverSlot(null);
-                            }}
-                            className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer"
-                          >
-                            <div className="w-5 h-5 rounded-full bg-[var(--muted)] flex items-center justify-center hover:bg-[var(--border)] transition-colors">
-                              <Plus size={12} className="text-[var(--muted-foreground)]" />
-                            </div>
-                          </button>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+                  {/* 태스크 생성 호버 — 비활성화 */}
 
                   {/* 드래그로 이 열에 들어온 태스크 (다른 날짜에서 이동) */}
                   {dragState && dragState.currentDateIdx === colIdx && dragState.origDateIdx !== colIdx && (() => {
