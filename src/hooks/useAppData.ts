@@ -208,7 +208,13 @@ export function useAppData() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = resolveProjectColors(JSON.parse(raw) as AppState);
+        let parsed = resolveProjectColors(JSON.parse(raw) as AppState);
+        // 마케팅 테스트 데이터 정리 (일회성)
+        const before = parsed.tasks.length;
+        parsed = { ...parsed, tasks: parsed.tasks.filter((t) => !t.id.startsWith('item_mkt_') && !t.id.startsWith('item_setup_')) };
+        if (parsed.tasks.length < before) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+        }
         setState(migrateGoalCompassToTasks(migrateBacklogDates(migrateRoutinesToTasks(parsed))));
       }
     } catch (err) {
