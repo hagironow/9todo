@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import '@/styles/landing.css';
+import { trackEvent } from '@/lib/analytics';
 
 /* Demo components — dynamic import to avoid SSR issues */
 const HeroDemo = dynamic(() => import('@/components/landing/HeroDemo'), { ssr: false });
@@ -12,7 +13,7 @@ const CalendarViewDemo = dynamic(() => import('@/components/landing/CalendarView
 const ProjectViewDemo = dynamic(() => import('@/components/landing/ProjectViewDemo'), { ssr: false });
 
 /* ── Nav ── */
-function Nav() {
+function Nav({ onCtaClick }: { onCtaClick?: () => void }) {
   return (
     <nav style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
@@ -28,7 +29,7 @@ function Nav() {
         <a href="/landing" style={{ textDecoration: 'none' }}>
           <img src="/9todo.svg" alt="9todo" style={{ height: 32, width: 'auto' }} />
         </a>
-        <a href="#cta" className="btn-primary" style={{
+        <a href="#cta" className="btn-primary" onClick={onCtaClick} style={{
           height: 36, padding: '0 var(--space-4)', fontSize: 'var(--font-size-small)',
         }}>
           지금 시작하기
@@ -41,7 +42,7 @@ function Nav() {
 /* ── Hero ── */
 function Hero() {
   return (
-    <section style={{
+    <section data-section="hero" style={{
       position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center',
       background: 'var(--color-bg-void)', overflow: 'hidden', paddingTop: 'var(--nav-height)',
     }}>
@@ -72,9 +73,6 @@ function Hero() {
         }}>
           제약이 세우는 우선순위. 멀티태스커를 위한 타임 박스 플래너 시스템.
         </p>
-        <div data-hero-cta style={{ marginTop: 'var(--space-8)' }}>
-          <a href="#cta" className="btn-primary">지금 시작하기</a>
-        </div>
       </div>
 
       {/* Dashboard */}
@@ -97,7 +95,7 @@ function Hero() {
 /* ── Empathy ── */
 function Empathy() {
   return (
-    <section style={{ background: 'var(--color-bg-void)', paddingBlock: 'var(--space-12, 3rem)' }}>
+    <section data-section="empathy" style={{ background: 'var(--color-bg-void)', paddingBlock: 'var(--space-12, 3rem)' }}>
       <div className="container" style={{ paddingBlock: 'var(--space-10, 2.5rem)' }}>
         <p className="keep-all" style={{
           maxWidth: 900, fontSize: 'clamp(1.5rem, 3vw, 2.25rem)',
@@ -172,7 +170,7 @@ function DemoComponent({ type }: { type: string }) {
 
 function WhyNine() {
   return (
-    <section style={{ background: 'var(--color-bg-void)', paddingBlock: 'var(--section-gap)' }}>
+    <section data-section="why-nine" style={{ background: 'var(--color-bg-void)', paddingBlock: 'var(--section-gap)' }}>
       <div className="container">
         <div style={{ marginBottom: 'var(--space-24)' }}>
           <h2 className="keep-all" style={{
@@ -232,7 +230,7 @@ const TOOLS = [
 
 function Tools() {
   return (
-    <section className="section-pad" style={{ background: 'var(--color-bg-primary)' }}>
+    <section data-section="tools" className="section-pad" style={{ background: 'var(--color-bg-primary)' }}>
       <div className="container">
         <div style={{ marginBottom: 'var(--space-12)' }}>
           <h2 className="keep-all" style={{
@@ -280,7 +278,7 @@ function Tools() {
 /* ── Persona ── */
 function Persona() {
   return (
-    <section className="section-pad" style={{ background: 'var(--color-bg-void)' }}>
+    <section data-section="persona" className="section-pad" style={{ background: 'var(--color-bg-void)' }}>
       <div className="container">
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--grid-gutter)',
@@ -335,9 +333,9 @@ function Persona() {
 }
 
 /* ── CTA ── */
-function Cta() {
+function Cta({ onCtaClick }: { onCtaClick?: () => void }) {
   return (
-    <section id="cta" className="section-pad-lg" style={{
+    <section data-section="cta" id="cta" className="section-pad-lg" style={{
       background: 'var(--color-bg-primary)', position: 'relative', overflow: 'hidden',
     }}>
       <div style={{
@@ -362,7 +360,7 @@ function Cta() {
           가입 없이 바로 시작.<br />
           데이터는 내 브라우저에 저장돼요.
         </p>
-        <a href="/" className="btn-primary" style={{
+        <a href="/" className="btn-primary" onClick={onCtaClick} style={{
           marginTop: 'var(--space-4)', height: 'var(--form-height-lg)',
           padding: '0 var(--space-12)', fontSize: 'var(--font-size-body-lg)',
           fontWeight: 'var(--font-weight-semibold)',
@@ -425,22 +423,72 @@ function GlobalKeyframes() {
    Landing Page
    ══════════════════════════════════════ */
 export default function LandingPage() {
+  const currentSectionRef = useRef('hero');
+  const firedDepths = useRef(new Set<number>());
+
+  // 섹션 진입 추적 + "현재 보고 있는 섹션" 업데이트
   useEffect(() => {
-    // GSAP animation is optional — works without it
     document.body.style.overflow = '';
+
+    const sections = document.querySelectorAll<HTMLElement>('[data-section]');
+    const seen = new Set<string>();
+
+    const sectionObs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const name = (e.target as HTMLElement).dataset.section!;
+          if (e.isIntersecting) {
+            currentSectionRef.current = name;
+            if (!seen.has(name)) {
+              seen.add(name);
+              trackEvent('landing_section_view', { section: name });
+            }
+          }
+        }
+      },
+      { threshold: 0.3 },
+    );
+    sections.forEach((s) => sectionObs.observe(s));
+
+    // 스크롤 깊이 추적 (25/50/75/100%)
+    const handleScroll = () => {
+      const scrollH = document.documentElement.scrollHeight - window.innerHeight;
+      if (scrollH <= 0) return;
+      const pct = Math.round((window.scrollY / scrollH) * 100);
+      for (const milestone of [25, 50, 75, 100]) {
+        if (pct >= milestone && !firedDepths.current.has(milestone)) {
+          firedDepths.current.add(milestone);
+          trackEvent('landing_scroll_depth', { percent: milestone });
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      sectionObs.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // CTA 클릭 시 현재 섹션 포함
+  const handleCtaClick = useCallback((location: string) => {
+    trackEvent('landing_cta_click', {
+      location,
+      viewing_section: currentSectionRef.current,
+    });
   }, []);
 
   return (
     <>
       <GlobalKeyframes />
-      <Nav />
+      <Nav onCtaClick={() => handleCtaClick('nav')} />
       <main>
         <Hero />
         <Empathy />
         <WhyNine />
         <Tools />
         <Persona />
-        <Cta />
+        <Cta onCtaClick={() => handleCtaClick('bottom')} />
       </main>
       <Footer />
     </>

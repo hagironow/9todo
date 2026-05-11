@@ -8,6 +8,8 @@ import ColorDot from '@/components/ui/ColorDot';
 import RetroInput from '@/components/retrospective/RetroInput';
 import { EnergyBadge } from '@/components/retrospective/EnergyLevelInput';
 import WeeklyTimelineView from './WeeklyTimelineView';
+import ProjectStatsView from './ProjectStatsView';
+import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
 import { calculateDailyXP } from '@/lib/xp';
 import { getToday } from '@/lib/date';
 
@@ -296,6 +298,7 @@ export default function CalendarView({
 
   const filteredTasks = useMemo(() => {
     if (!calProjectFilter) return tasks;
+    if (calProjectFilter === '__uncategorized__') return tasks.filter((t) => !t.projectId);
     return tasks.filter((t) => t.projectId === calProjectFilter);
   }, [tasks, calProjectFilter]);
 
@@ -304,8 +307,28 @@ export default function CalendarView({
 
   function buildDayData(dateStr: string): DayData {
     const seen = new Set<string>();
-    const todos = filteredTasks
-      .filter((t) => t.date === dateStr && !t.recurrence) // 반복 부모 제외
+
+    // 해당 날짜에 실제 인스턴스가 없는 반복 부모 → 가상 인스턴스 생성
+    const existingDayTasks = filteredTasks.filter((t) => t.date === dateStr && !t.recurrence);
+    const virtualInstances: Task[] = [];
+    const recurringParents = tasks.filter((t) => t.recurrence && t.isRecurrenceActive !== false);
+    for (const parent of recurringParents) {
+      if (shouldCreateRecurringInstance(parent, [...tasks, ...virtualInstances], dateStr)) {
+        virtualInstances.push(createRecurringInstance(parent, dateStr));
+      }
+    }
+
+    // calProjectFilter 적용
+    const filteredVirtual = calProjectFilter
+      ? virtualInstances.filter((t) => {
+          if (calProjectFilter === '__uncategorized__') return !t.projectId;
+          return t.projectId === calProjectFilter;
+        })
+      : virtualInstances;
+
+    const allDayTasks = [...existingDayTasks, ...filteredVirtual];
+
+    const todos = allDayTasks
       .filter((t) => {
         // 같은 제목+프로젝트의 반복 인스턴스 중복 제거
         const titleKey = `${t.title}__${t.projectId ?? ''}`;
@@ -592,6 +615,11 @@ export default function CalendarView({
                   <ColorDot color={calFilterProject.color} size="sm" />
                   <span className="max-w-[60px] truncate">{calFilterProject.name}</span>
                 </>
+              ) : calProjectFilter === '__uncategorized__' ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] inline-block" />
+                  <span>미분류</span>
+                </>
               ) : (
                 <span>전체</span>
               )}
@@ -622,6 +650,18 @@ export default function CalendarView({
                     <span className="truncate">{p.name}</span>
                   </button>
                 ))}
+                <div className="border-t border-[var(--border)]" />
+                <button
+                  onClick={() => { setCalProjectFilter('__uncategorized__'); setCalProjectDropOpen(false); }}
+                  className={[
+                    'w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-left transition-colors',
+                    calProjectFilter === '__uncategorized__' ? 'bg-[var(--muted)] font-semibold' : 'hover:bg-[var(--muted)]',
+                    'text-[var(--muted-foreground)]',
+                  ].join(' ')}
+                >
+                  <span className="w-2 h-2 rounded-full bg-[var(--muted-foreground)] inline-block" />
+                  <span>미분류</span>
+                </button>
               </div>
             )}
           </div>
@@ -809,6 +849,15 @@ export default function CalendarView({
               </div>
             );
           })()}
+          {/* 주간 프로젝트 통계 */}
+          <div className="bg-[var(--card)] rounded-[var(--radius)] border border-[var(--border)] p-4">
+            <ProjectStatsView
+              tasks={tasks}
+              projects={projects}
+              dateRange={weekDates}
+              label="이번 주"
+            />
+          </div>
         </>
       )}
 
@@ -921,6 +970,24 @@ export default function CalendarView({
                   label="이번 달 회고"
                   placeholder="이번 달은 어떤 한 달이었나요?"
                   compact
+                />
+              </div>
+            );
+          })()}
+          {/* 월간 프로젝트 통계 */}
+          {(() => {
+            const daysInM = new Date(viewYear, viewMonth + 1, 0).getDate();
+            const monthDates: string[] = [];
+            for (let d = 1; d <= daysInM; d++) {
+              monthDates.push(toDateStringYMD(viewYear, viewMonth, d));
+            }
+            return (
+              <div className="border-t border-[var(--border)] p-4">
+                <ProjectStatsView
+                  tasks={tasks}
+                  projects={projects}
+                  dateRange={monthDates}
+                  label="이번 달"
                 />
               </div>
             );

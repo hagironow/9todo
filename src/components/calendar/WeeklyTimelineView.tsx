@@ -6,6 +6,7 @@ import { Check, Plus } from 'lucide-react';
 import type { Task, Project, TimePeriod, Priority } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import { getToday } from '@/lib/date';
+import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
 import { getDefaultStartTime, getDefaultEndTime } from '@/components/modals/RecurrenceSetupModal';
 
 interface WeeklyTimelineViewProps {
@@ -103,10 +104,20 @@ export default function WeeklyTimelineView({
   }, [startHour, endHour]);
 
   const tasksByDate = useMemo(() => {
+    const recurringParents = tasks.filter((t) => t.recurrence && t.isRecurrenceActive !== false);
     const map: Record<string, Task[]> = {};
     for (const d of weekDates) {
+      // 해당 날짜에 인스턴스가 없는 반복 부모 → 가상 인스턴스 생성
+      const virtualInstances: Task[] = [];
+      for (const parent of recurringParents) {
+        if (shouldCreateRecurringInstance(parent, [...tasks, ...virtualInstances], d)) {
+          virtualInstances.push(createRecurringInstance(parent, d));
+        }
+      }
+
+      const allTasks = [...tasks, ...virtualInstances];
       const seen = new Set<string>();
-      map[d] = tasks
+      map[d] = allTasks
         .filter((t) => t.date === d && t.slot !== null && !t.recurrence)
         .filter((t) => {
           const titleKey = `${t.title}__${t.projectId ?? ''}`;
