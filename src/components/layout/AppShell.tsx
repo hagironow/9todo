@@ -53,17 +53,18 @@ export default function AppShell({
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mobileNowFocusOpen, setMobileNowFocusOpen] = useState(false);
-  const [timerCollapsed, setTimerCollapsed] = useState(false);
+  const [timerCollapsed, setTimerCollapsed] = useState(true);
   const [timerManualOpen, setTimerManualOpen] = useState(false);
 
-  // xl(1280px) 미만이면 자동 축소
+  // xl(1280px) 미만이면 수동 열기도 닫기
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1280px)');
     const handler = (e: MediaQueryListEvent | MediaQueryList) => {
-      setTimerCollapsed(!e.matches);
-      if (e.matches) setTimerManualOpen(false);
+      if (!e.matches) {
+        setTimerCollapsed(true);
+        setTimerManualOpen(false);
+      }
     };
-    handler(mq);
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
   }, []);

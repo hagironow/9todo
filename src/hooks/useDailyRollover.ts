@@ -44,7 +44,20 @@ export function useDailyRollover({
         });
       }
 
-      // 2. 반복 투두 인스턴스 자동 생성 (슬롯 자동 배치)
+      // 2. 반복 투두 중복 인스턴스 정리
+      const instanceKeys = new Set<string>();
+      const dupeIds: string[] = [];
+      for (const t of nextTasks) {
+        if (!t.recurrenceParentId || !t.date) continue;
+        const key = `${t.recurrenceParentId}__${t.date}`;
+        if (instanceKeys.has(key)) { dupeIds.push(t.id); changed = true; }
+        else instanceKeys.add(key);
+      }
+      if (dupeIds.length > 0) {
+        nextTasks = nextTasks.filter((t) => !dupeIds.includes(t.id));
+      }
+
+      // 3. 반복 투두 인스턴스 자동 생성 (슬롯 자동 배치)
       const recurringParents = nextTasks.filter((t) => t.recurrence && t.isRecurrenceActive !== false);
       for (const parent of recurringParents) {
         if (shouldCreateRecurringInstance(parent, nextTasks, today)) {
