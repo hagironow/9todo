@@ -83,39 +83,15 @@ function Hero() {
         maxWidth: 'var(--container-max, 1200px)',
         paddingInline: 'var(--container-padding)', marginInline: 'auto',
       }}>
-        {/* ── Depth lines behind dashboard — stacked boards effect ── */}
-        {/* Line 3 (deepest, widest offset) */}
-        <div style={{
-          position: 'absolute', top: 14, left: 48, right: 48, height: '100%',
-          borderRadius: 16,
-          border: '1px solid rgba(255,255,255,0.03)',
-          pointerEvents: 'none', zIndex: 0,
-        }} />
-        {/* Line 2 */}
-        <div style={{
-          position: 'absolute', top: 8, left: 32, right: 32, height: '100%',
-          borderRadius: 16,
-          border: '1px solid rgba(255,255,255,0.04)',
-          pointerEvents: 'none', zIndex: 0,
-        }} />
-        {/* Line 1 (closest, least offset) */}
-        <div style={{
-          position: 'absolute', top: 3, left: 16, right: 16, height: '100%',
-          borderRadius: 16,
-          border: '1px solid rgba(255,255,255,0.05)',
-          pointerEvents: 'none', zIndex: 0,
-        }} />
-
-        {/* Dashboard card */}
+        {/* Single outline stroke around entire dashboard */}
         <div style={{
           position: 'relative', borderRadius: 16, overflow: 'hidden',
-          border: '1px solid rgba(255,255,255,0.06)',
-          zIndex: 1,
+          border: '1px solid rgba(255,255,255,0.08)',
         }}>
-          {/* Top edge highlight — light hitting the top edge */}
+          {/* Top edge highlight — gradient for 3D */}
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-            background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.1) 50%, transparent 95%)',
+            background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.12) 50%, transparent 95%)',
             zIndex: 3,
           }} />
           <HeroDemo />
