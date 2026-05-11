@@ -141,8 +141,9 @@ export default function BacklogItem({
           {onUpdateTitle && (
             <button
               onClick={(e) => { e.stopPropagation(); setEditValue(title); setEditing(true); }}
-              className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--border)] transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--border)] transition-colors"
               title={t.edit}
+              aria-label={t.edit}
             >
               <Pencil size={12} />
             </button>
@@ -150,8 +151,9 @@ export default function BacklogItem({
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(item); }}
-              className="w-6 h-6 flex items-center justify-center rounded-full bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--g-error)] hover:bg-[var(--g-error)]/10 transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--muted-foreground)] hover:text-[var(--g-error)] hover:bg-[var(--g-error)]/10 transition-colors"
               title={t.delete}
+              aria-label={t.delete}
             >
               <Trash2 size={12} />
             </button>

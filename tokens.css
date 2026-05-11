@@ -51,6 +51,20 @@
   --g-success: #22C55E;            /* 완료/통과 — 플로디 동일 */
   --g-success-muted: rgba(34, 197, 94, 0.12);
 
+  /* ── Heatmap (CalendarView) ── */
+  --heatmap-full: rgba(34, 197, 94, 0.10);
+  --heatmap-high: rgba(34, 197, 94, 0.06);
+  --heatmap-mid: rgba(34, 197, 94, 0.03);
+  --heatmap-miss: rgba(255, 110, 110, 0.06);
+
+  /* ── Energy (EnergyLevelInput) ── */
+  --energy-low: #FF6B6B;
+  --energy-mid: #FFD43B;
+  --energy-high: #51CF66;
+  --energy-low-bg: rgba(255, 107, 107, 0.15);
+  --energy-mid-bg: rgba(255, 212, 59, 0.15);
+  --energy-high-bg: rgba(81, 207, 102, 0.15);
+
   /* ── Surface tokens (컴포넌트 배경 계층) ── */
   --surface-primary: var(--background);
   --surface-secondary: var(--card);
@@ -187,6 +201,38 @@
   html {
     @apply font-sans;
   }
+}
+
+/* ── Timer (NowFocus) — 컴포넌트 자체 다크/라이트 토글 ── */
+.timer-light {
+  --timer-bg: #ffffff;
+  --timer-fg: #1a1a1a;
+  --timer-muted: #8a8a8a;
+  --timer-muted-bg: #f0f0f0;
+  --timer-hover: #e8e8e8;
+  --timer-btn: #e8e8e8;
+  --timer-btn-fg: #888888;
+  --timer-input-bg: #f5f5f5;
+  --timer-input-border: #e8e8e8;
+  --timer-divider: #f0f0f0;
+  --timer-submit-bg: #1a1a1a;
+  --timer-submit-fg: #ffffff;
+  --timer-tab-active-bg: #ffffff;
+}
+.timer-dark {
+  --timer-bg: #111111;
+  --timer-fg: #e0e0e0;
+  --timer-muted: #888888;
+  --timer-muted-bg: #1a1a1a;
+  --timer-hover: #1f1f1f;
+  --timer-btn: #2a2a2a;
+  --timer-btn-fg: #aaaaaa;
+  --timer-input-bg: #1a1a1a;
+  --timer-input-border: #2a2a2a;
+  --timer-divider: #1e1e1e;
+  --timer-submit-bg: #ffffff;
+  --timer-submit-fg: #1a1a1a;
+  --timer-tab-active-bg: #333333;
 }
 
 /* ── iOS 줌 방지 ── */

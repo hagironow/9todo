@@ -97,10 +97,10 @@ function getDayStats(todos: Task[], dateStr: string, today: string) {
 
 function getHeatmapBg(rate: number, dateStr: string, today: string): string | undefined {
   if (rate === -1 || dateStr > today) return undefined;
-  if (rate === 1) return 'rgba(34, 197, 94, 0.10)';
-  if (rate >= 0.8) return 'rgba(34, 197, 94, 0.06)';
-  if (rate >= 0.5) return 'rgba(34, 197, 94, 0.03)';
-  if (rate === 0) return 'rgba(255, 110, 110, 0.06)';
+  if (rate === 1) return 'var(--heatmap-full)';
+  if (rate >= 0.8) return 'var(--heatmap-high)';
+  if (rate >= 0.5) return 'var(--heatmap-mid)';
+  if (rate === 0) return 'var(--heatmap-miss)';
   return undefined;
 }
 
@@ -563,6 +563,7 @@ export default function CalendarView({
           <button
             onClick={viewMode === 'week' ? prevWeek : prevMonth}
             className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-sm)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
+            aria-label={t.prevMonth}
           >
             <ChevronLeft size={16} strokeWidth={1.8} />
           </button>
@@ -572,6 +573,7 @@ export default function CalendarView({
           <button
             onClick={viewMode === 'week' ? nextWeek : nextMonth}
             className="flex items-center justify-center w-8 h-8 rounded-[var(--radius-sm)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors"
+            aria-label={t.nextMonth}
           >
             <ChevronRight size={16} strokeWidth={1.8} />
           </button>

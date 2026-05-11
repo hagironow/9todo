@@ -1,6 +1,7 @@
 import type { Translations } from './ko';
 
 const en: Translations = {
+  dashboardTitle: "Today's Timetable",
   // ── Common ──
   cancel: 'Cancel',
   save: 'Save',

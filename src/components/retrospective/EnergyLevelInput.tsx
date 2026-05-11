@@ -12,31 +12,31 @@ interface EnergyLevelInputProps {
 }
 
 const ENERGY_COLORS: Record<EnergyLevel, string> = {
-  1: '#FF6B6B',
-  2: '#FF6B6B',
-  3: '#FFD43B',
-  4: '#51CF66',
-  5: '#51CF66',
+  1: 'var(--energy-low)',
+  2: 'var(--energy-low)',
+  3: 'var(--energy-mid)',
+  4: 'var(--energy-high)',
+  5: 'var(--energy-high)',
 };
 
 const ENERGY_BG: Record<EnergyLevel, string> = {
-  1: 'rgba(255, 107, 107, 0.15)',
-  2: 'rgba(255, 107, 107, 0.15)',
-  3: 'rgba(255, 212, 59, 0.15)',
-  4: 'rgba(81, 207, 102, 0.15)',
-  5: 'rgba(81, 207, 102, 0.15)',
+  1: 'var(--energy-low-bg)',
+  2: 'var(--energy-low-bg)',
+  3: 'var(--energy-mid-bg)',
+  4: 'var(--energy-high-bg)',
+  5: 'var(--energy-high-bg)',
 };
 
 export function getEnergyColor(level: number): string {
-  if (level <= 2) return '#FF6B6B';
-  if (level <= 3) return '#FFD43B';
-  return '#51CF66';
+  if (level <= 2) return 'var(--energy-low)';
+  if (level <= 3) return 'var(--energy-mid)';
+  return 'var(--energy-high)';
 }
 
 export function getEnergyBg(level: number): string {
-  if (level <= 2) return 'rgba(255, 107, 107, 0.15)';
-  if (level <= 3) return 'rgba(255, 212, 59, 0.15)';
-  return 'rgba(81, 207, 102, 0.15)';
+  if (level <= 2) return 'var(--energy-low-bg)';
+  if (level <= 3) return 'var(--energy-mid-bg)';
+  return 'var(--energy-high-bg)';
 }
 
 /** X 좌표로부터 레벨(1~5) 계산 */

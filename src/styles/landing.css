@@ -1,5 +1,5 @@
-/* Inter — display font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+/* Plus Jakarta Sans — display font */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 /* Landing page scoped styles */
 
@@ -22,6 +22,15 @@
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* 언어별 자간: 한글은 타이트, 영어는 기본 */
+:lang(ko) .landing { letter-spacing: -0.01em; }
+:lang(en) .landing { letter-spacing: 0; }
+:lang(en) .landing h1,
+:lang(en) .landing h2,
+:lang(en) .landing h3 {
+  letter-spacing: -0.02em;
 }
 
 /* 컨테이너 */

@@ -790,6 +790,7 @@ export default function Home() {
         }
       >
         <div className="w-full max-w-5xl px-4 md:px-8 py-6 flex flex-col gap-5">
+          <h1 className="sr-only">{t.dashboardTitle}</h1>
           {searchOpen ? (
             <SearchView
               tasks={state.tasks}
