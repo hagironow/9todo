@@ -53,7 +53,7 @@ import ProjectDetailView from '@/components/project-detail/ProjectDetailView';
 import SearchView from '@/components/search/SearchView';
 import Dialog from '@/components/ui/Dialog';
 import { importStateFromJSON, EMPTY_STATE } from '@/hooks/useAppData';
-import MarketingInjector from '@/components/dev/MarketingInjector';
+// import MarketingInjector from '@/components/dev/MarketingInjector';
 
 // PERIOD_LABELS removed — Play Section에서 시간대 레이블 불필요
 
@@ -262,10 +262,10 @@ export default function Home() {
   }, [state.tasks, today]);
 
 
-  // Backlog items (태스크만 — 슬롯 없거나 null, 미완료, 날짜 무관, 반복 부모 제외)
+  // Backlog items (태스크만 — 슬롯 없거나 null, 미완료, 날짜 무관, 반복 부모/인스턴스 제외)
   const backlogItems = useMemo(() => {
     return state.tasks.filter(
-      (t) => t.slot === null && t.completedAt === null && !t.recurrence
+      (t) => t.slot === null && t.completedAt === null && !t.recurrence && !t.recurrenceParentId
     );
   }, [state.tasks]);
 
@@ -1202,7 +1202,7 @@ export default function Home() {
           <button onClick={() => setImportErrorOpen(false)} className="flex-1 px-3 py-2 rounded-[var(--radius-sm)] text-sm font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] transition-opacity hover:opacity-85">확인</button>
         </div>
       </Dialog>
-      <MarketingInjector />
+      {/* <MarketingInjector /> */}
     </DndContext>
   );
 }
