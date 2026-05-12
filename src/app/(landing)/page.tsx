@@ -200,6 +200,65 @@ function Empathy({ t }: { t: Translations }) {
   );
 }
 
+/* ── Authority ── */
+const AUTHORITY_NAMES = [
+  'Harvard Business Review',
+  'Elon Musk',
+  'Bill Gates',
+  'Cal Newport',
+];
+
+function Authority({ t }: { t: Translations }) {
+  return (
+    <section data-section="authority" style={{ background: 'var(--color-bg-void)', paddingBlock: 'clamp(3rem, 8vw, 6rem)' }}>
+      <div className="container" style={{
+        display: 'flex', flexDirection: 'column', gap: 'clamp(2.5rem, 5vw, 4rem)',
+      }}>
+        {/* Name strip */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          gap: 'clamp(2rem, 5vw, 4rem)', flexWrap: 'wrap',
+        }}>
+          {AUTHORITY_NAMES.map((name) => (
+            <span key={name} style={{
+              fontSize: 'clamp(0.95rem, 1.8vw, 1.2rem)',
+              fontWeight: 600, letterSpacing: '0.02em',
+              color: 'var(--color-text-primary)',
+              whiteSpace: 'nowrap', userSelect: 'none',
+            }}>
+              {name}
+            </span>
+          ))}
+        </div>
+
+        {/* Statement */}
+        <p className="keep-all" style={{
+          fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)',
+          lineHeight: 1.35, letterSpacing: '-0.03em',
+          margin: 0, maxWidth: 900,
+        }}>
+          <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
+            {t.authorityTitle.split('\n').map((line, i, arr) => (
+              <span key={i}>{line}{i < arr.length - 1 && ' '}</span>
+            ))}
+          </span>{' '}
+          <span style={{ fontWeight: 'var(--font-weight-regular)', color: 'var(--color-text-tertiary)' }}>
+            {t.authoritySub}
+          </span>
+        </p>
+
+        {/* Small citation */}
+        <p style={{
+          fontSize: 'var(--font-size-small)', color: 'var(--color-text-quaternary, rgba(255,255,255,0.35))',
+          margin: 0, letterSpacing: '0.02em',
+        }}>
+          {t.authorityBadge}
+        </p>
+      </div>
+    </section>
+  );
+}
+
 /* ── WhyNine (Views) ── */
 function DemoComponent({ type }: { type: string }) {
   switch (type) {
@@ -842,9 +901,10 @@ export default function LandingPage() {
       <Nav onCtaClick={() => handleCtaClick('nav')} t={t} locale={locale} setLocale={setLocale} />
       <main>
         <Hero t={t} />
-        <Empathy t={t} />
+        <Authority t={t} />
         <WhyNine t={t} />
         {/* <Tools t={t} /> */}
+        <Empathy t={t} />
         <Impact onCtaClick={() => handleCtaClick('bottom')} t={t} />
       </main>
       <Footer />
