@@ -146,7 +146,7 @@ function Hero({ t }: { t: Translations }) {
       </div>
 
       {/* Dashboard — width matches GNB container, emerges from darkness */}
-      <div data-hero-visual style={{
+      <div data-hero-visual className="hero-float" style={{
         position: 'relative', zIndex: 1, width: '100%',
         maxWidth: 'var(--container-max, 1200px)',
         paddingInline: 'var(--container-padding)', marginInline: 'auto',
@@ -181,7 +181,7 @@ function Empathy({ t }: { t: Translations }) {
   return (
     <section data-section="empathy" style={{ background: 'var(--color-bg-void)', paddingBlock: 'var(--space-12, 3rem)' }}>
       <div className="container" style={{ paddingBlock: 'var(--space-10, 2.5rem)' }}>
-        <p className="keep-all" style={{
+        <p className="keep-all reveal" style={{
           maxWidth: 900, fontSize: 'clamp(1.5rem, 3vw, 2.25rem)',
           fontWeight: 'var(--font-weight-regular)', lineHeight: 1.4,
           letterSpacing: '-0.05em', color: 'var(--color-text-tertiary)', margin: 0,
@@ -215,16 +215,17 @@ function Authority({ t }: { t: Translations }) {
         display: 'flex', flexDirection: 'column', gap: 'clamp(2.5rem, 5vw, 4rem)',
       }}>
         {/* Name strip */}
-        <div style={{
+        <div className="reveal" style={{
           display: 'flex', alignItems: 'center',
           gap: 'clamp(2rem, 5vw, 4rem)', flexWrap: 'wrap',
         }}>
-          {AUTHORITY_NAMES.map((name) => (
-            <span key={name} style={{
+          {AUTHORITY_NAMES.map((name, i) => (
+            <span key={name} className="reveal" style={{
               fontSize: 'clamp(0.95rem, 1.8vw, 1.2rem)',
               fontWeight: 600, letterSpacing: '0.02em',
               color: 'var(--color-text-primary)',
               whiteSpace: 'nowrap', userSelect: 'none',
+              transitionDelay: `${i * 0.15}s`,
             }}>
               {name}
             </span>
@@ -232,14 +233,15 @@ function Authority({ t }: { t: Translations }) {
         </div>
 
         {/* Statement */}
-        <p className="keep-all" style={{
+        <p className="keep-all reveal" style={{
           fontSize: 'clamp(1.5rem, 3.5vw, 2.5rem)',
           lineHeight: 1.35, letterSpacing: '-0.03em',
           margin: 0, maxWidth: 900,
+          transitionDelay: '0.5s',
         }}>
           <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
             {t.authorityTitle.split('\n').map((line, i, arr) => (
-              <span key={i}>{line}{i < arr.length - 1 && ' '}</span>
+              <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
             ))}
           </span>{' '}
           <span style={{ fontWeight: 'var(--font-weight-regular)', color: 'var(--color-text-tertiary)' }}>
@@ -248,9 +250,10 @@ function Authority({ t }: { t: Translations }) {
         </p>
 
         {/* Small citation */}
-        <p style={{
+        <p className="reveal" style={{
           fontSize: 'var(--font-size-small)', color: 'var(--color-text-quaternary, rgba(255,255,255,0.35))',
           margin: 0, letterSpacing: '0.02em',
+          transitionDelay: '0.8s',
         }}>
           {t.authorityBadge}
         </p>
@@ -319,7 +322,7 @@ function WhyNine({ t }: { t: Translations }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--section-gap)' }}>
           {VIEWS.map((view) => (
-            <article key={view.num} style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(32px, 4vw, 56px)' }}>
+            <article key={view.num} className="reveal" style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(32px, 4vw, 56px)' }}>
               {/* Divider line */}
               <div>
                 <hr style={{ border: 'none', borderTop: '1px solid var(--color-border-subtle)', margin: 0 }} />
@@ -686,7 +689,7 @@ function Impact({ onCtaClick, t }: { onCtaClick?: () => void; t: Translations })
     }}>
       <ShaderGradientLazy />
       {/* Headline */}
-      <div style={{
+      <div className="reveal" style={{
         position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', zIndex: 2, pointerEvents: 'none',
         padding: 'var(--container-padding)',
@@ -826,6 +829,30 @@ function GlobalKeyframes() {
         0%   { transform: scale(1); opacity: 1; }
         100% { transform: scale(1.08); opacity: 0.6; }
       }
+      @keyframes hero-float {
+        0%   { transform: translateY(0); }
+        50%  { transform: translateY(-12px); }
+        100% { transform: translateY(0); }
+      }
+      @keyframes hero-entrance {
+        0%   { opacity: 0; transform: translateY(60px) perspective(800px) rotateX(2deg); }
+        100% { opacity: 1; transform: translateY(0) perspective(800px) rotateX(0deg); }
+      }
+      .hero-float {
+        animation: hero-entrance 1.8s cubic-bezier(0.25, 1, 0.5, 1) 0.3s both,
+                   hero-float 6s ease-in-out 2.5s infinite;
+      }
+      .reveal {
+        opacity: 0;
+        transform: translateY(48px);
+        transition: opacity 1.8s cubic-bezier(0.25, 1, 0.5, 1),
+                    transform 2s cubic-bezier(0.25, 1, 0.5, 1);
+        will-change: opacity, transform;
+      }
+      .reveal.revealed {
+        opacity: 1;
+        transform: translateY(0);
+      }
       @media (max-width: 768px) {
         .landing .persona-grid-responsive {
           grid-template-columns: 1fr !important;
@@ -867,6 +894,25 @@ export default function LandingPage() {
     );
     sections.forEach((s) => sectionObs.observe(s));
 
+    // Reveal animation — 스크롤 시 요소가 부드럽게 떠오름
+    const revealEls = document.querySelectorAll<HTMLElement>('.reveal');
+    const revealObs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            (e.target as HTMLElement).classList.add('revealed');
+            revealObs.unobserve(e.target);
+          }
+        }
+      },
+      { threshold: 0.05, rootMargin: '0px 0px -15% 0px' },
+    );
+    // 페이지 로드 직후가 아닌 첫 프레임 이후 observe 시작
+    // → 초기 뷰포트 밖 요소만 숨김 유지, 스크롤해야 등장
+    setTimeout(() => {
+      revealEls.forEach((el) => revealObs.observe(el));
+    }, 100);
+
     // 스크롤 깊이 추적 (25/50/75/100%)
     const handleScroll = () => {
       const scrollH = document.documentElement.scrollHeight - window.innerHeight;
@@ -883,6 +929,7 @@ export default function LandingPage() {
 
     return () => {
       sectionObs.disconnect();
+      revealObs.disconnect();
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
