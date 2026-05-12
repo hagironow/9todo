@@ -5,6 +5,7 @@ import { useRef, useEffect as useLayoutEffect } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 import { RecurrenceType, TimePeriod, Priority, SlotCoord, Task, Project } from '@/lib/types';
 import { formatLocalDate } from '@/lib/date';
+import { hourToPeriod } from '@/lib/periods';
 import Dialog from '@/components/ui/Dialog';
 import ColorDot from '@/components/ui/ColorDot';
 import InlineDatePicker from '@/components/ui/InlineDatePicker';
@@ -46,9 +47,7 @@ const SLOT_DEFAULT_HOURS: Record<TimePeriod, Record<Priority, number>> = {
 /** 시간(HH:mm) → 시간대 매핑 */
 export function timeToPeriod(time: string): TimePeriod {
   const h = Number(time.split(':')[0]);
-  if (h < 12) return 'morning';
-  if (h < 18) return 'afternoon';
-  return 'evening';
+  return hourToPeriod(h);
 }
 
 export function getDefaultStartTime(period: TimePeriod, priority: Priority): string {

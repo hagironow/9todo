@@ -29,6 +29,7 @@ interface TimetableRowProps {
   isReadOnly?: boolean;
   onItemSelect?: (item: ScheduledItem) => void;
   onEditRecurrence?: (item: ScheduledItem) => void;
+  onTimeLabelClick?: (period: TimePeriod) => void;
 }
 
 const PRIORITIES: Priority[] = [1, 2, 3];
@@ -65,6 +66,7 @@ export default function TimetableRow({
   isReadOnly,
   onItemSelect,
   onEditRecurrence,
+  onTimeLabelClick,
 }: TimetableRowProps) {
 
   const isActive = status === 'active';
@@ -92,9 +94,18 @@ export default function TimetableRow({
             {label}
           </span>
           {timeLabel && (
-            <span className="text-[11px] text-[var(--muted-foreground)]">
-              {timeLabel}
-            </span>
+            onTimeLabelClick ? (
+              <button
+                onClick={() => onTimeLabelClick(period)}
+                className="text-[11px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors duration-150 cursor-pointer rounded px-1 -mx-1 hover:bg-[var(--muted)]"
+              >
+                {timeLabel}
+              </button>
+            ) : (
+              <span className="text-[11px] text-[var(--muted-foreground)]">
+                {timeLabel}
+              </span>
+            )
           )}
         </div>
       </div>

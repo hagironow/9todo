@@ -199,6 +199,10 @@ const en: Translations = {
   inUse: 'In use',
   empty: 'Empty',
 
+  // ── Period Boundary ──
+  editPeriodBoundary: 'Period Settings',
+  periodRange: 'Start ~ End time',
+
   // ── Slot Picker ──
   slotPickerTitle: 'Assign Slot',
   slotPickerDesc: 'Select a slot to assign',

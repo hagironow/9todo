@@ -197,6 +197,10 @@ const ko = {
   inUse: '사용 중',
   empty: '비어 있음',
 
+  // ── Period Boundary ──
+  editPeriodBoundary: '시간대 설정',
+  periodRange: '시작 ~ 종료 시간',
+
   // ── Slot Picker ──
   slotPickerTitle: '슬롯 배치',
   slotPickerDesc: '배치할 슬롯을 선택하세요',

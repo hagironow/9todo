@@ -28,7 +28,7 @@ import { useCurrentPeriod } from '@/hooks/useCurrentPeriod';
 import { useDailyRollover } from '@/hooks/useDailyRollover';
 import AppShell from '@/components/layout/AppShell';
 import GoalCompass from '@/components/goal-compass/GoalCompass';
-import NowFocus from '@/components/now-focus/NowFocus';
+import NowFocus, { getActiveTimerItemId } from '@/components/now-focus/NowFocus';
 import TimetableGrid from '@/components/timetable/TimetableGrid';
 import MobileTimetableList from '@/components/timetable/MobileTimetableList';
 import DateNav from '@/components/date-nav/DateNav';
@@ -181,6 +181,27 @@ export default function Home() {
     for (const t of tasks) {
       if (t.slot) items[t.slot.priority - 1] = t;
     }
+
+    // 타이머가 활성인 태스크가 다른 시간대에 있으면 1순위로 고정
+    const activeTimerId = getActiveTimerItemId();
+    if (activeTimerId) {
+      const alreadyShown = items.some((it) => it && it.id === activeTimerId);
+      if (!alreadyShown) {
+        const timerTask = state.tasks.find(
+          (t) => t.id === activeTimerId && t.date === today && !t.completedAt && t.slot
+        );
+        if (timerTask) {
+          // 빈 슬롯에 넣거나, 없으면 1순위에 고정
+          const emptyIdx = items.indexOf(null);
+          if (emptyIdx !== -1) {
+            items[emptyIdx] = timerTask;
+          } else {
+            items[0] = timerTask;
+          }
+        }
+      }
+    }
+
     return items;
   }, [state.tasks, currentPeriod, today]);
 

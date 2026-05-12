@@ -86,7 +86,7 @@ function GoalTaskRow({
     <div className="flex items-center gap-3 py-1.5">
       <span
         className={[
-          'w-8 text-right text-[11px] font-semibold shrink-0',
+          'w-16 text-right text-[11px] font-semibold shrink-0 whitespace-nowrap',
           isToday ? 'text-[var(--primary)]' : 'text-[var(--muted-foreground)]',
         ].join(' ')}
       >

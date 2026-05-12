@@ -1,10 +1,11 @@
 import type { Task, RoutineInstance, TimePeriod, GoalTask } from './types';
 import { getToday, getWeekKey, getMonthKey } from './date';
+import { periodEndHour } from './periods';
 
 /**
  * 해당 시간대가 이미 지났는지 판단.
  * - 과거 날짜: 모든 시간대 지남
- * - 오늘: 현재 시각 기준 (morning < 12시, afternoon < 18시, evening < 새벽 5시)
+ * - 오늘: 현재 시각 기준 (periodEndHour 참조)
  * - 미래 날짜: 아직 안 지남
  */
 function isPeriodPassed(taskDate: string, period: TimePeriod, referenceDate: string): boolean {
@@ -13,10 +14,9 @@ function isPeriodPassed(taskDate: string, period: TimePeriod, referenceDate: str
 
   // 오늘인 경우 — 현재 시각으로 판단
   const hour = new Date().getHours();
-  if (period === 'morning') return hour >= 12;
-  if (period === 'afternoon') return hour >= 18;
-  // evening: 다음날 새벽 5시까지이므로, 당일에는 아직 안 지남
-  return false;
+  // evening은 다음날 새벽까지이므로 당일에는 아직 안 지남
+  if (period === 'evening') return false;
+  return hour >= periodEndHour(period);
 }
 
 function scoreTask(task: Task, today: string): number {
