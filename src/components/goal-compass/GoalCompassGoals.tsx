@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, KeyboardEvent } from 'react';
-import { CheckCircle2, Circle, Plus, X, CornerDownRight } from 'lucide-react';
+import { CheckCircle2, Circle, Plus, X } from 'lucide-react';
 import type { GoalCompass, GoalTask, GoalPeriod } from '@/lib/types';
 import { useLocale } from '@/i18n/context';
 
@@ -42,7 +42,6 @@ function GoalTaskRow({
   const editRef = useRef<HTMLInputElement>(null);
 
   const isCompleted = !!goalTask?.completedAt;
-  const isCarried = !!goalTask?.carriedFrom;
   const isToday = row.key === 'today';
 
   const handleAddSubmit = () => {
@@ -128,9 +127,6 @@ function GoalTaskRow({
                   : 'text-[var(--foreground)] cursor-text hover:bg-[var(--muted)]',
               ].join(' ')}
             >
-              {isCarried && (
-                <CornerDownRight size={12} className="inline mr-1 text-[var(--muted-foreground)]" />
-              )}
               {goalTask.title}
             </span>
           )}

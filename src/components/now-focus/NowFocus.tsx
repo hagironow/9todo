@@ -41,30 +41,106 @@ function formatTime(seconds: number): string {
 }
 
 
+const TIMER_STATE_KEY = '9todo_timer_state';
+
+interface PersistedTimerState {
+  itemId: string;
+  startedAt: number;      // Date.now() when play was pressed
+  pausedElapsed: number;   // elapsed seconds accumulated before current play
+  playing: boolean;
+}
+
+function loadTimerState(itemId: string): PersistedTimerState | null {
+  try {
+    const raw = localStorage.getItem(TIMER_STATE_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as PersistedTimerState;
+    return s.itemId === itemId ? s : null;
+  } catch { return null; }
+}
+
+function saveTimerState(s: PersistedTimerState | null) {
+  if (s) localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(s));
+  else localStorage.removeItem(TIMER_STATE_KEY);
+}
+
 function useTimer(itemId: string | undefined, durationMin: number) {
   const durationSec = durationMin * 60;
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // 복원 시 startedAt과 pausedElapsed를 추적
+  const startedAtRef = useRef<number>(0);
+  const pausedElapsedRef = useRef<number>(0);
 
+  // 마운트 시 또는 itemId 변경 시 localStorage에서 복원
   useEffect(() => {
-    setPlaying(false);
-    setElapsed(0);
     if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!itemId) { setPlaying(false); setElapsed(0); return; }
+
+    const saved = loadTimerState(itemId);
+    if (saved) {
+      if (saved.playing) {
+        // 재생 중이었으면 경과 시간 계산해서 복원
+        const now = Date.now();
+        const liveElapsed = saved.pausedElapsed + Math.floor((now - saved.startedAt) / 1000);
+        pausedElapsedRef.current = saved.pausedElapsed;
+        startedAtRef.current = saved.startedAt;
+        setElapsed(liveElapsed);
+        setPlaying(true);
+      } else {
+        pausedElapsedRef.current = saved.pausedElapsed;
+        startedAtRef.current = 0;
+        setElapsed(saved.pausedElapsed);
+        setPlaying(false);
+      }
+    } else {
+      pausedElapsedRef.current = 0;
+      startedAtRef.current = 0;
+      setPlaying(false);
+      setElapsed(0);
+    }
   }, [itemId]);
 
+  // interval로 매초 elapsed 갱신
   useEffect(() => {
     if (playing) {
-      intervalRef.current = setInterval(() => setElapsed((p) => p + 1), 1000);
+      intervalRef.current = setInterval(() => {
+        if (startedAtRef.current > 0) {
+          const now = Date.now();
+          setElapsed(pausedElapsedRef.current + Math.floor((now - startedAtRef.current) / 1000));
+        }
+      }, 1000);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [playing]);
 
-  const play = useCallback(() => setPlaying(true), []);
-  const pause = useCallback(() => setPlaying(false), []);
-  const reset = useCallback(() => { setPlaying(false); setElapsed(0); }, []);
+  const play = useCallback(() => {
+    const now = Date.now();
+    startedAtRef.current = now;
+    setPlaying(true);
+    if (itemId) saveTimerState({ itemId, startedAt: now, pausedElapsed: pausedElapsedRef.current, playing: true });
+  }, [itemId]);
+
+  const pause = useCallback(() => {
+    if (startedAtRef.current > 0) {
+      const now = Date.now();
+      pausedElapsedRef.current += Math.floor((now - startedAtRef.current) / 1000);
+    }
+    startedAtRef.current = 0;
+    setPlaying(false);
+    if (itemId) saveTimerState({ itemId, startedAt: 0, pausedElapsed: pausedElapsedRef.current, playing: false });
+  }, [itemId]);
+
+  const reset = useCallback(() => {
+    setPlaying(false);
+    setElapsed(0);
+    pausedElapsedRef.current = 0;
+    startedAtRef.current = 0;
+    saveTimerState(null);
+  }, []);
 
   const cycle = Math.floor(elapsed / durationSec);
   const cycleElapsed = elapsed % durationSec;
