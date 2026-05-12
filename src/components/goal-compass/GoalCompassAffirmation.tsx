@@ -41,7 +41,7 @@ export default function GoalCompassAffirmation({
   return (
     <div className="px-4 py-2 border-t border-[var(--border)]">
       <div className="flex items-start gap-3 py-1.5">
-        <span className="w-8 text-right text-[11px] font-semibold shrink-0 text-[var(--muted-foreground)] pt-0.5">
+        <span className="w-16 text-right text-[11px] font-semibold shrink-0 whitespace-nowrap text-[var(--muted-foreground)] pt-0.5">
           {t.affirmationLabel}
         </span>
 

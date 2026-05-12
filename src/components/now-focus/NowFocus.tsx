@@ -50,12 +50,26 @@ interface PersistedTimerState {
   playing: boolean;
 }
 
-function loadTimerState(itemId: string): PersistedTimerState | null {
+function loadTimerState(itemId: string): PersistedTimerState | null;
+function loadTimerState(): PersistedTimerState | null;
+function loadTimerState(itemId?: string): PersistedTimerState | null {
   try {
     const raw = localStorage.getItem(TIMER_STATE_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw) as PersistedTimerState;
-    return s.itemId === itemId ? s : null;
+    if (itemId !== undefined && s.itemId !== itemId) return null;
+    return s;
+  } catch { return null; }
+}
+
+/** 활성 타이머가 있는지 확인 (dashboard에서 사용) */
+export function getActiveTimerItemId(): string | null {
+  try {
+    const raw = localStorage.getItem(TIMER_STATE_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as PersistedTimerState;
+    if (s.playing || s.pausedElapsed > 0) return s.itemId;
+    return null;
   } catch { return null; }
 }
 

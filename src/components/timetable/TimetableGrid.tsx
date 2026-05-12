@@ -1,7 +1,10 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project, Routine } from '@/lib/types';
 import TimetableRow from './TimetableRow';
+import PeriodBoundaryModal from '@/components/modals/PeriodBoundaryModal';
+import { loadBoundaries, periodTimeLabel, type PeriodBoundaries } from '@/lib/periods';
 import { useLocale } from '@/i18n/context';
 
 type RowStatus = 'active' | 'past' | 'future';
@@ -27,6 +30,7 @@ interface TimetableGridProps {
   isToday?: boolean;
   onItemSelect?: (item: ScheduledItem) => void;
   onEditRecurrence?: (item: ScheduledItem) => void;
+  onBoundariesChange?: (boundaries: PeriodBoundaries) => void;
 }
 
 const PERIOD_ORDER: TimePeriod[] = ['morning', 'afternoon', 'evening'];
@@ -60,14 +64,26 @@ export default function TimetableGrid({
   isToday = true,
   onItemSelect,
   onEditRecurrence,
+  onBoundariesChange,
 }: TimetableGridProps) {
   const { t } = useLocale();
+  const [boundaries, setBoundaries] = useState<PeriodBoundaries>(loadBoundaries);
+  const [editingPeriod, setEditingPeriod] = useState<TimePeriod | null>(null);
 
   const PERIODS: { period: TimePeriod; label: string; time: string }[] = [
-    { period: 'morning',   label: t.morning,   time: t.morningTime },
-    { period: 'afternoon', label: t.afternoon, time: t.afternoonTime },
-    { period: 'evening',   label: t.evening,   time: t.eveningTime },
+    { period: 'morning',   label: t.morning,   time: periodTimeLabel('morning', boundaries) },
+    { period: 'afternoon', label: t.afternoon, time: periodTimeLabel('afternoon', boundaries) },
+    { period: 'evening',   label: t.evening,   time: periodTimeLabel('evening', boundaries) },
   ];
+
+  const handleTimeLabelClick = useCallback((period: TimePeriod) => {
+    setEditingPeriod(period);
+  }, []);
+
+  const handleBoundarySave = useCallback((newBoundaries: PeriodBoundaries) => {
+    setBoundaries(newBoundaries);
+    onBoundariesChange?.(newBoundaries);
+  }, [onBoundariesChange]);
 
   return (
     <div className="rounded-[var(--radius)] bg-[var(--grid-bg)]">
@@ -118,9 +134,20 @@ export default function TimetableGrid({
             isReadOnly={isReadOnly}
             onItemSelect={onItemSelect}
             onEditRecurrence={onEditRecurrence}
+            onTimeLabelClick={handleTimeLabelClick}
           />
         ))}
       </div>
+
+      {/* 시간대 경계 편집 모달 */}
+      {editingPeriod && (
+        <PeriodBoundaryModal
+          open
+          onClose={() => setEditingPeriod(null)}
+          editingPeriod={editingPeriod}
+          onSave={handleBoundarySave}
+        />
+      )}
     </div>
   );
 }

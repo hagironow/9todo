@@ -144,7 +144,7 @@ function MobileCard({
       {/* Main content */}
       <div className={['flex-1 px-3.5 py-3.5 flex items-center gap-3', isCompleted ? 'opacity-60' : ''].join(' ')}>
         {/* Left: period + priority — vertically centered */}
-        <div className="flex flex-col items-center justify-center gap-0.5 flex-shrink-0 w-8">
+        <div className="flex flex-col items-center justify-center gap-0.5 flex-shrink-0 w-14 whitespace-nowrap">
           <span className="text-[10px] text-[var(--muted-foreground)] leading-none text-center">
             {getPeriodLabel(period)}
           </span>
