@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { nanoid } from 'nanoid';
-import type { AppState, GoalTask } from '@/lib/types';
+import type { AppState } from '@/lib/types';
 import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
-import { formatLocalDate, getWeekKey, getMonthKey } from '@/lib/date';
+import { formatLocalDate } from '@/lib/date';
 
 interface UseDailyRolloverOptions {
   state: AppState;
@@ -67,65 +66,10 @@ export function useDailyRollover({
         }
       }
 
-      // 3. GoalTask 자동 이관 — 미완료 목표를 다음 기간으로 이관
-      let nextGoalTasks = prev.goalTasks ?? [];
-      if (today === realToday) {
-        const currentWeekKey = getWeekKey(today);
-        const currentMonthKey = getMonthKey(today);
-        const newCarried: GoalTask[] = [];
-
-        for (const gt of nextGoalTasks) {
-          if (gt.completedAt) continue; // 완료된 건 이관 불필요
-
-          let shouldCarry = false;
-          let newPeriodKey = '';
-
-          if (gt.goalPeriod === 'today' && gt.periodKey < today) {
-            // 어제 이전 미완료 → 오늘로 이관
-            shouldCarry = true;
-            newPeriodKey = today;
-          } else if (gt.goalPeriod === 'week' && gt.periodKey < currentWeekKey) {
-            // 지난 주 미완료 → 이번 주로 이관
-            shouldCarry = true;
-            newPeriodKey = currentWeekKey;
-          } else if (gt.goalPeriod === 'month' && gt.periodKey < currentMonthKey) {
-            // 지난 달 미완료 → 이번 달로 이관
-            shouldCarry = true;
-            newPeriodKey = currentMonthKey;
-          }
-
-          if (shouldCarry) {
-            // 이미 같은 기간+타입의 목표가 있으면 이관하지 않음
-            const alreadyExists = nextGoalTasks.some(
-              (g) => g.goalPeriod === gt.goalPeriod && g.periodKey === newPeriodKey
-            ) || newCarried.some(
-              (g) => g.goalPeriod === gt.goalPeriod && g.periodKey === newPeriodKey
-            );
-            if (!alreadyExists) {
-              newCarried.push({
-                id: `goal_${nanoid()}`,
-                title: gt.title,
-                goalPeriod: gt.goalPeriod,
-                periodKey: newPeriodKey,
-                completedAt: null,
-                createdAt: new Date().toISOString(),
-                carriedFrom: gt.id,
-              });
-              changed = true;
-            }
-          }
-        }
-
-        if (newCarried.length > 0) {
-          nextGoalTasks = [...nextGoalTasks, ...newCarried];
-        }
-      }
-
       if (!changed) return prev;
       return {
         ...prev,
         tasks: nextTasks,
-        goalTasks: nextGoalTasks,
       };
     });
   }, [loading, today, batchUpdate]);

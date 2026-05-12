@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { nanoid } from 'nanoid';
+import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
 import type {
   AppState,
   Task,
@@ -370,11 +371,18 @@ export function useAppData() {
           defaultSlot: options!.defaultSlot,
         } : {}),
       };
-      update((prev) => ({
-        ...prev,
-        tasks: [...prev.tasks, task],
-        lastUsedProjectId: task.projectId ?? prev.lastUsedProjectId,
-      }));
+      update((prev) => {
+        const newTasks = [...prev.tasks, task];
+        // 반복 투두 생성 시 오늘 인스턴스 즉시 생성
+        if (isRecurring && date && shouldCreateRecurringInstance(task, newTasks, date)) {
+          newTasks.push(createRecurringInstance(task, date));
+        }
+        return {
+          ...prev,
+          tasks: newTasks,
+          lastUsedProjectId: task.projectId ?? prev.lastUsedProjectId,
+        };
+      });
       return task;
     },
     [update],
