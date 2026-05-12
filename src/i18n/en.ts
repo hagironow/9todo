@@ -75,7 +75,7 @@ const en: Translations = {
   empathy2: "It's about focusing on what truly matters,",
   empathy3: 'setting your priorities straight and staying immersed in today.',
   empathy4: "'s promise.",
-  authorityTitle: "Put your tasks into time.\nThat's timeboxing.\nThat's all there is to it.",
+  authorityTitle: "Put your tasks into time.\nThat's timeboxing. That's all there is to it.",
   authoritySub: 'The one principle the world\'s top performers share.',
   authorityBadge: '— Harvard Business Review, #1 Productivity Technique',
   whyNineTitle: '',
