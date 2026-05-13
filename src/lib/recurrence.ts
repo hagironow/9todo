@@ -22,6 +22,9 @@ export function shouldCreateRecurringInstance(
   const target = parseDate(date);
   if (target < start) return false;
 
+  // "이 날만 삭제"로 건너뛴 날짜면 생성 안 함
+  if (task.skippedDates?.includes(date)) return false;
+
   // 이미 해당 날짜에 이 반복 투두의 인스턴스가 있으면 생성 안 함
   const alreadyExists = allTasks.some(
     (t) => t.recurrenceParentId === task.id && t.date === date,

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, SkipForward, RefreshCw, Trash2 } from 'lucide-react';
+import { Check, SkipForward, RefreshCw, Trash2, Repeat } from 'lucide-react';
 import type { Project, Task, ScheduledItem, RoutineInstance, Routine, Note } from '@/lib/types';
 import { COLOR_THEMES, resolveColor } from '@/lib/colors';
 import { useLocale } from '@/i18n/context';
@@ -45,6 +45,7 @@ export default function ProjectDetailView({
 }: ProjectDetailViewProps) {
   const { t } = useLocale();
   const [expanded, setExpanded] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(false);
   const [noteInput, setNoteInput] = useState('');
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
@@ -138,11 +139,29 @@ export default function ProjectDetailView({
     };
   }, [projectTasks, projectInstances]);
 
-  // 계보(lineageId) 기준 그룹핑 — 대표 1개만 표시 + 횟수
+  // 그룹핑: lineageId + recurrenceParentId 기준 — 대표 1개만 표시
   const groupedTasks = useMemo(() => {
+    // 반복 부모 태스크(recurrence 설정 있음)는 대표로 직접 표시, 인스턴스는 숨김
+    const recurringParentIds = new Set(
+      projectTasks.filter((t) => t.recurrence).map((t) => t.id),
+    );
+    // 반복 인스턴스별 완료 횟수 집계
+    const recurringCompletedMap = new Map<string, number>();
+    for (const t of projectTasks) {
+      if (!t.recurrenceParentId || !recurringParentIds.has(t.recurrenceParentId)) continue;
+      if (t.completedAt) {
+        recurringCompletedMap.set(t.recurrenceParentId, (recurringCompletedMap.get(t.recurrenceParentId) ?? 0) + 1);
+      }
+    }
+
+    // 반복 인스턴스 제외한 태스크만 그룹핑
+    const nonInstanceTasks = projectTasks.filter(
+      (t) => !t.recurrenceParentId || !recurringParentIds.has(t.recurrenceParentId),
+    );
+
     const lineageMap = new Map<string, Task[]>();
     const standalone: Task[] = [];
-    for (const task of projectTasks) {
+    for (const task of nonInstanceTasks) {
       if (task.lineageId) {
         const arr = lineageMap.get(task.lineageId) ?? [];
         arr.push(task);
@@ -151,12 +170,15 @@ export default function ProjectDetailView({
         standalone.push(task);
       }
     }
-    const result: { task: Task; lineageCount: number }[] = [];
+    const result: { task: Task; lineageCount: number; recurringCompleted?: number }[] = [];
     for (const task of standalone) {
-      result.push({ task, lineageCount: 0 });
+      result.push({
+        task,
+        lineageCount: 0,
+        recurringCompleted: recurringCompletedMap.get(task.id),
+      });
     }
     for (const [, group] of lineageMap) {
-      // 대표: 미완료 우선, 없으면 가장 최근
       const sorted = [...group].sort((a, b) => {
         if (!a.completedAt && b.completedAt) return -1;
         if (a.completedAt && !b.completedAt) return 1;
@@ -165,6 +187,10 @@ export default function ProjectDetailView({
       result.push({ task: sorted[0], lineageCount: group.length });
     }
     result.sort((a, b) => {
+      // 반복 부모는 상단에
+      const aRecur = !!a.task.recurrence;
+      const bRecur = !!b.task.recurrence;
+      if (aRecur !== bRecur) return aRecur ? -1 : 1;
       if (!a.task.completedAt && b.task.completedAt) return -1;
       if (a.task.completedAt && !b.task.completedAt) return 1;
       return (b.task.date ?? '').localeCompare(a.task.date ?? '');
@@ -172,10 +198,16 @@ export default function ProjectDetailView({
     return result;
   }, [projectTasks]);
 
+  // 완료 필터 적용
+  const filteredTasks = useMemo(
+    () => hideCompleted ? groupedTasks.filter(({ task }) => !task.completedAt) : groupedTasks,
+    [groupedTasks, hideCompleted],
+  );
+
   const visibleTasks = expanded
-    ? groupedTasks
-    : groupedTasks.slice(0, TASK_PAGE_SIZE);
-  const hasMore = groupedTasks.length > TASK_PAGE_SIZE;
+    ? filteredTasks
+    : filteredTasks.slice(0, TASK_PAGE_SIZE);
+  const hasMore = filteredTasks.length > TASK_PAGE_SIZE;
 
   const formatTime = (h: number, m: number) => {
     if (h === 0 && m === 0) return '0m';
@@ -258,21 +290,32 @@ export default function ProjectDetailView({
 
       {/* 태스크 목록 */}
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
-          {t.tasks} ({groupedTasks.length})
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-[var(--muted-foreground)] uppercase tracking-wider">
+            {t.tasks} ({filteredTasks.length})
+          </h3>
+          {groupedTasks.some(({ task }) => task.completedAt) && (
+            <button
+              onClick={() => setHideCompleted(!hideCompleted)}
+              className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+            >
+              {hideCompleted ? t.showCompleted : t.hideCompleted}
+            </button>
+          )}
+        </div>
 
-        {groupedTasks.length === 0 ? (
+        {filteredTasks.length === 0 ? (
           <p className="text-sm text-[var(--muted-foreground)] py-6 text-center">
             {t.noTasksYet}
           </p>
         ) : (
           <div className="flex flex-col gap-1">
-            {visibleTasks.map(({ task, lineageCount }) => (
+            {visibleTasks.map(({ task, lineageCount, recurringCompleted }) => (
               <TaskRow
                 key={task.id}
                 task={task}
                 lineageCount={lineageCount}
+                recurringCompleted={recurringCompleted}
                 onComplete={onComplete}
                 onDefer={onDefer}
                 onRepeat={onRepeat}
@@ -290,7 +333,7 @@ export default function ProjectDetailView({
           >
             {expanded
               ? t.collapse
-              : t.showMore(groupedTasks.length - TASK_PAGE_SIZE)}
+              : t.showMore(filteredTasks.length - TASK_PAGE_SIZE)}
           </button>
         )}
 
@@ -392,6 +435,7 @@ function StatCard({
 function TaskRow({
   task,
   lineageCount,
+  recurringCompleted,
   onComplete,
   onDefer,
   onRepeat,
@@ -400,6 +444,7 @@ function TaskRow({
 }: {
   task: Task;
   lineageCount: number;
+  recurringCompleted?: number;
   onComplete?: (item: ScheduledItem) => void;
   onDefer?: (item: ScheduledItem) => void;
   onRepeat?: (item: ScheduledItem) => void;
@@ -408,7 +453,10 @@ function TaskRow({
 }) {
   const { t } = useLocale();
   const done = !!task.completedAt;
-  const timeLabel = task.slot
+  const isRecurring = !!task.recurrence;
+  const timeLabel = isRecurring
+    ? t.recurringTask
+    : task.slot
     ? `${task.slot.period === 'morning' ? t.morning : task.slot.period === 'afternoon' ? t.afternoon : t.evening} P${task.slot.priority}`
     : t.backlog;
 
@@ -442,12 +490,26 @@ function TaskRow({
           </span>
         )}
       </span>
-      <span className="text-xs text-[var(--muted-foreground)] shrink-0">
-        {task.date ?? t.backlog}
-      </span>
-      <span className="text-xs text-[var(--muted-foreground)] shrink-0 w-16 text-right">
-        {timeLabel}
-      </span>
+      {isRecurring ? (
+        <span className="flex items-center gap-1.5 text-xs text-[var(--muted-foreground)] shrink-0">
+          <Repeat size={11} strokeWidth={1.8} />
+          {timeLabel}
+          {(recurringCompleted ?? 0) > 0 && (
+            <span className="text-[var(--accent)]">
+              {recurringCompleted}{t.completionCount(recurringCompleted!).replace(String(recurringCompleted), '')}
+            </span>
+          )}
+        </span>
+      ) : (
+        <>
+          <span className="text-xs text-[var(--muted-foreground)] shrink-0">
+            {task.date ?? t.backlog}
+          </span>
+          <span className="text-xs text-[var(--muted-foreground)] shrink-0 w-16 text-right">
+            {timeLabel}
+          </span>
+        </>
+      )}
       {timer && (
         <span className="text-xs text-[var(--accent)] shrink-0 w-10 text-right">
           {timer}

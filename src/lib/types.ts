@@ -43,6 +43,7 @@ export interface Task extends ItemBase {
   scheduledEndTime?: string; // "HH:mm"
   recurrenceParentId?: string; // 반복 원본 Task ID
   defaultSlot?: SlotCoord; // 반복 투두의 기본 슬롯
+  skippedDates?: string[]; // "이 날만 삭제"한 날짜 목록
 }
 
 export interface Routine extends ItemBase {

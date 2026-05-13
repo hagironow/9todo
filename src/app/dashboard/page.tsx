@@ -49,10 +49,12 @@ import { triggerConfetti } from '@/components/effects/ParticleBurst';
 import { exportToJSON, downloadFile } from '@/lib/export';
 import { calculateDailyXP, calculateTotalXP } from '@/lib/xp';
 import { getToday, formatLocalDate, getWeekKey, getMonthKey } from '@/lib/date';
+import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
 import StorageConsentBanner from '@/components/modals/StorageConsentBanner';
 import ProjectDetailView from '@/components/project-detail/ProjectDetailView';
 import SearchView from '@/components/search/SearchView';
 import Dialog from '@/components/ui/Dialog';
+import Button from '@/components/ui/Button';
 import { importStateFromJSON, EMPTY_STATE } from '@/hooks/useAppData';
 // import MarketingInjector from '@/components/dev/MarketingInjector';
 
@@ -82,21 +84,11 @@ function ProjectRenameModal({
             if (e.key === 'Enter') { const trimmed = value.trim(); if (trimmed) onSave(trimmed); }
             if (e.key === 'Escape') onClose();
           }}
-          className="px-3 py-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] outline-none focus:border-[var(--accent)]"
+          className="px-3 py-2 rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] outline-none focus:border-[var(--foreground)]"
         />
         <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
-          >
-            {t.cancel}
-          </button>
-          <button
-            onClick={() => { const trimmed = value.trim(); if (trimmed) onSave(trimmed); }}
-            className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity"
-          >
-            {t.save}
-          </button>
+          <Button variant="ghost" size="sm" onClick={onClose}>{t.cancel}</Button>
+          <Button variant="primary" size="sm" onClick={() => { const trimmed = value.trim(); if (trimmed) onSave(trimmed); }} disabled={!value.trim()}>{t.save}</Button>
         </div>
       </div>
     </div>
@@ -462,9 +454,7 @@ export default function Home() {
       // 반복 인스턴스(recurrenceParentId 있음)이면 부모 Task 조회
       const parentTask = item.recurrenceParentId
         ? state.tasks.find((t) => t.id === item.recurrenceParentId) ?? null
-        : item.recurrence
-        ? item
-        : null;
+        : item;
       if (!parentTask) return;
       setEditingRecurrenceTask(parentTask);
       setRoutineModalTitle('');
@@ -478,11 +468,10 @@ export default function Home() {
   const handleRoutineSetupSave = useCallback(
     (data: RecurrenceSetupData) => {
       if (editingRecurrenceTask) {
-        // 편집: 기존 반복 부모 Task 업데이트
-        batchUpdate((prev) => ({
-          ...prev,
-          tasks: prev.tasks.map((t) =>
-            t.id === editingRecurrenceTask.id
+        batchUpdate((prev) => {
+          const parentId = editingRecurrenceTask.id;
+          let nextTasks = prev.tasks.map((t) =>
+            t.id === parentId
               ? {
                   ...t,
                   title: data.title,
@@ -493,10 +482,29 @@ export default function Home() {
                   scheduledStartTime: data.scheduledStartTime,
                   scheduledEndTime: data.scheduledEndTime,
                   projectId: data.projectId,
+                  isRecurrenceActive: true,
+                  slot: null,
+                  date: null,
                 }
               : t
-          ),
-        }));
+          );
+          const updatedParent = nextTasks.find((t) => t.id === parentId)!;
+
+          // startDate 범위 밖 미완료 인스턴스 정리
+          nextTasks = nextTasks.filter((t) => {
+            if (t.recurrenceParentId !== parentId) return true;
+            if (t.completedAt) return true;
+            if (t.date && t.date < data.startDate) return false;
+            return true;
+          });
+
+          // 오늘 인스턴스가 필요하면 생성
+          if (shouldCreateRecurringInstance(updatedParent, nextTasks, today)) {
+            nextTasks = [...nextTasks, createRecurringInstance(updatedParent, today)];
+          }
+
+          return { ...prev, tasks: nextTasks };
+        });
       } else {
         // 신규: addTask에 recurrence 옵션 전달
         addTask(data.title, today, {
@@ -517,21 +525,36 @@ export default function Home() {
     [editingRecurrenceTask, routineModalTitle, routineModalCoord, addTask, today, batchUpdate]
   );
 
-  // 반복 투두 비활성화 핸들러
+  // 반복 해제: 부모를 일반 투두로 복원 + 인스턴스 전부 삭제
   const handleDeleteRoutine = useCallback(() => {
     if (editingRecurrenceTask) {
+      const parentId = editingRecurrenceTask.id;
       batchUpdate((prev) => ({
         ...prev,
-        tasks: prev.tasks.map((t) =>
-          t.id === editingRecurrenceTask.id
-            ? { ...t, isRecurrenceActive: false }
-            : t
-        ),
+        tasks: prev.tasks
+          // 인스턴스 전부 삭제
+          .filter((t) => t.recurrenceParentId !== parentId)
+          // 부모를 일반 투두로 복원
+          .map((t) =>
+            t.id === parentId
+              ? {
+                  ...t,
+                  slot: t.defaultSlot ?? null,
+                  date: today,
+                  recurrence: undefined,
+                  daysOfWeek: undefined,
+                  startDate: undefined,
+                  isRecurrenceActive: undefined,
+                  defaultSlot: undefined,
+                  skippedDates: undefined,
+                }
+              : t
+          ),
       }));
       setRoutineModalOpen(false);
       setEditingRecurrenceTask(null);
     }
-  }, [editingRecurrenceTask, batchUpdate]);
+  }, [editingRecurrenceTask, batchUpdate, today]);
 
   const handleProjectSelectDone = useCallback(
     (projectId: string) => {
@@ -1131,6 +1154,11 @@ export default function Home() {
             : state.lastUsedProjectId ?? null)
         }
         onCreateProject={(name, colorIndex) => addProject(name, colorIndex)}
+        occupiedSlots={
+          state.tasks
+            .filter((t) => t.recurrence && t.isRecurrenceActive !== false && t.defaultSlot)
+            .map((t) => t.defaultSlot!)
+        }
       />
 
       <CalendarModal

@@ -206,7 +206,7 @@ function GoalStringRow({
 
   return (
     <div className="flex items-center gap-3 py-1.5">
-      <span className="w-8 text-right text-[11px] font-semibold shrink-0 text-[var(--muted-foreground)]">
+      <span className="w-16 text-right text-[11px] font-semibold shrink-0 whitespace-nowrap text-[var(--muted-foreground)]">
         {row.label}
       </span>
 

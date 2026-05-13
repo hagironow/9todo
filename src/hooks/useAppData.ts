@@ -479,10 +479,25 @@ export function useAppData() {
 
   const removeTask = useCallback(
     (taskId: string) => {
-      update((prev) => ({
-        ...prev,
-        tasks: prev.tasks.filter((t) => t.id !== taskId),
-      }));
+      update((prev) => {
+        const task = prev.tasks.find((t) => t.id === taskId);
+        // 반복 인스턴스 삭제 시 부모의 skippedDates에 날짜 기록 → 좀비 재생성 방지
+        if (task?.recurrenceParentId && task.date) {
+          const parentId = task.recurrenceParentId;
+          const skippedDate = task.date;
+          return {
+            ...prev,
+            tasks: prev.tasks
+              .filter((t) => t.id !== taskId)
+              .map((t) =>
+                t.id === parentId
+                  ? { ...t, skippedDates: [...(t.skippedDates ?? []), skippedDate] }
+                  : t
+              ),
+          };
+        }
+        return { ...prev, tasks: prev.tasks.filter((t) => t.id !== taskId) };
+      });
     },
     [update],
   );
