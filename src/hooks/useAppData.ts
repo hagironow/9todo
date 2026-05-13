@@ -434,8 +434,9 @@ export function useAppData() {
   );
 
   // 또하기: 원본 완료 처리 + 슬롯 잔류, 복제본을 새 슬롯에 배치 (lineageId로 계보 연결)
+  // slot이 null이면 백로그로 보냄 (내일 배치 등)
   const continueTask = useCallback(
-    (taskId: string, date: string, slot: SlotCoord) => {
+    (taskId: string, date: string, slot: SlotCoord | null) => {
       update((prev) => {
         const original = prev.tasks.find((t) => t.id === taskId);
         if (!original) return prev;
@@ -444,7 +445,7 @@ export function useAppData() {
           ...original,
           id: `item_${nanoid()}`,
           slot,
-          date,
+          date: slot ? date : null,
           completedAt: null,
           continueCount: Math.min((original.continueCount ?? 0) + 1, 9),
           origin: 'repeated' as const,

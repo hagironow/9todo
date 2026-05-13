@@ -9,6 +9,7 @@ interface SlotPickerModalProps {
   onClose: () => void;
   slots: Record<TimePeriod, Record<Priority, ScheduledItem | null>>;
   onSelect: (coord: SlotCoord) => void;
+  onBacklog?: () => void;
   title?: string;
   description?: string;
 }
@@ -20,6 +21,7 @@ export default function SlotPickerModal({
   onClose,
   slots,
   onSelect,
+  onBacklog,
   title,
   description,
 }: SlotPickerModalProps) {
@@ -78,6 +80,15 @@ export default function SlotPickerModal({
           })}
         </div>
       ))}
+
+      {onBacklog && (
+        <button
+          onClick={() => { onBacklog(); onClose(); }}
+          className="w-full mt-2 py-2.5 rounded-[var(--radius)] border border-dashed border-[var(--border)] text-[var(--fs-tag)] font-medium text-[var(--muted-foreground)] hover:border-[var(--foreground)] hover:text-[var(--foreground)] transition-all duration-150"
+        >
+          {t.backlog}
+        </button>
+      )}
     </Dialog>
   );
 }

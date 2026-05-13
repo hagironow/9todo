@@ -1102,6 +1102,13 @@ export default function Home() {
         onClose={() => { setSlotPickerOpen(false); setSlotPickerIsRepeat(false); }}
         slots={slots}
         onSelect={handleSlotPick}
+        onBacklog={slotPickerIsRepeat ? () => {
+          if (!slotPickerTarget) return;
+          continueTask(slotPickerTarget, today, null);
+          setSlotPickerOpen(false);
+          setSlotPickerTarget(null);
+          setSlotPickerIsRepeat(false);
+        } : undefined}
         title={slotPickerIsRepeat ? t.redoSlotTitle : undefined}
         description={slotPickerIsRepeat ? t.redoSlotDesc : undefined}
       />
