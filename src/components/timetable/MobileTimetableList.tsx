@@ -351,7 +351,7 @@ function AddSlotPicker({
                 if (e.key === 'Escape') { setSelectedCoord(null); setInputValue(''); }
               }}
               placeholder={t.taskInputPlaceholder}
-              className="w-full px-4 py-3 rounded-[var(--radius)] bg-[var(--background)] text-[var(--foreground)] text-[15px] outline-none border border-[var(--border)] focus:border-[var(--accent)]"
+              className="w-full px-4 py-3 rounded-[var(--radius)] bg-[var(--background)] text-[var(--foreground)] text-[15px] outline-none border border-[var(--border)] focus:border-[var(--foreground)]"
             />
             <div className="flex gap-2 mt-3">
               <button

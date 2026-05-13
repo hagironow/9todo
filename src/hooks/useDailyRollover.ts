@@ -22,17 +22,16 @@ export function useDailyRollover({
 
   useEffect(() => {
     if (loading) return;
-    // 같은 날짜에 대해 중복 실행 방지
     if (lastRolloverDate.current === today) return;
     lastRolloverDate.current = today;
+
+    const realToday = formatLocalDate(new Date());
 
     batchUpdate((prev) => {
       let changed = false;
       let nextTasks = prev.tasks;
 
-      // 1. 어제 이전 미완료 태스크 → slot=null, date=null (백로그 이동) — 실제 오늘일 때만
-      // 단, 반복 인스턴스(recurrenceParentId 있음)는 백로그로 보내지 않고 그대로 둠
-      const realToday = formatLocalDate(new Date());
+      // 1. 어제 이전 미완료 태스크 → 백로그 이동 — 실제 오늘일 때만
       if (today === realToday) {
         nextTasks = nextTasks.map((t) => {
           if (t.date && t.date < today && t.completedAt === null && t.slot !== null && !t.recurrenceParentId) {
@@ -43,34 +42,39 @@ export function useDailyRollover({
         });
       }
 
-      // 2. 반복 투두 중복 인스턴스 정리
+      // 2. 반복 투두 정리: 고아 + 과거 미완료(realToday 기준) + 중복
+      const parentIds = new Set(nextTasks.filter((t) => t.recurrence).map((t) => t.id));
       const instanceKeys = new Set<string>();
-      const dupeIds: string[] = [];
+      const removeIds: string[] = [];
       for (const t of nextTasks) {
-        if (!t.recurrenceParentId || !t.date) continue;
-        const key = `${t.recurrenceParentId}__${t.date}`;
-        if (instanceKeys.has(key)) { dupeIds.push(t.id); changed = true; }
-        else instanceKeys.add(key);
+        if (!t.recurrenceParentId) continue;
+        if (!parentIds.has(t.recurrenceParentId)) {
+          removeIds.push(t.id); changed = true; continue;
+        }
+        if (t.date && t.date < realToday && !t.completedAt) {
+          removeIds.push(t.id); changed = true; continue;
+        }
+        if (t.date) {
+          const key = `${t.recurrenceParentId}__${t.date}`;
+          if (instanceKeys.has(key)) { removeIds.push(t.id); changed = true; }
+          else instanceKeys.add(key);
+        }
       }
-      if (dupeIds.length > 0) {
-        nextTasks = nextTasks.filter((t) => !dupeIds.includes(t.id));
+      if (removeIds.length > 0) {
+        nextTasks = nextTasks.filter((t) => !removeIds.includes(t.id));
       }
 
-      // 3. 반복 투두 인스턴스 자동 생성 (슬롯 자동 배치)
+      // 3. 반복 투두 인스턴스 생성 — shouldCreateRecurringInstance가 중복/startDate 전부 판단
       const recurringParents = nextTasks.filter((t) => t.recurrence && t.isRecurrenceActive !== false);
       for (const parent of recurringParents) {
         if (shouldCreateRecurringInstance(parent, nextTasks, today)) {
-          const instance = createRecurringInstance(parent, today);
-          nextTasks = [...nextTasks, instance];
+          nextTasks = [...nextTasks, createRecurringInstance(parent, today)];
           changed = true;
         }
       }
 
       if (!changed) return prev;
-      return {
-        ...prev,
-        tasks: nextTasks,
-      };
+      return { ...prev, tasks: nextTasks };
     });
   }, [loading, today, batchUpdate]);
 }

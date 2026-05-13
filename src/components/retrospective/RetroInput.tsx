@@ -115,7 +115,7 @@ export default function RetroInput({
           }}
           placeholder={resolvedPlaceholder}
           rows={compact ? 2 : 3}
-          className="w-full px-3 py-2.5 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] text-[13px] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:border-[var(--accent)] resize-none leading-relaxed transition-colors"
+          className="w-full px-3 py-2.5 rounded-[var(--radius)] border border-[var(--border)] bg-[var(--card)] text-[13px] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:border-[var(--foreground)] resize-none leading-relaxed transition-colors"
         />
         {editing && (
           <div className="flex justify-end gap-2">

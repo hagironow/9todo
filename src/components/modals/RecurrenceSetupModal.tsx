@@ -34,6 +34,8 @@ interface RecurrenceSetupModalProps {
   colorTheme?: string;
   initialProjectId?: string | null;
   onCreateProject?: (name: string, colorIndex: number) => Project;
+  /** 이미 반복 투두가 차지한 슬롯 목록 (충돌 감지용) */
+  occupiedSlots?: SlotCoord[];
 }
 
 
@@ -148,6 +150,7 @@ export default function RecurrenceSetupModal({
   colorTheme = 'vivid',
   initialProjectId = null,
   onCreateProject,
+  occupiedSlots = [],
 }: RecurrenceSetupModalProps) {
   const { t } = useLocale();
 
@@ -190,6 +193,7 @@ export default function RecurrenceSetupModal({
   useEffect(() => {
     if (!open) return;
     if (editingTask && editingTask.recurrence) {
+      // 기존 반복 태스크 편집
       setTitleValue(editingTask.title);
       setRecurrence(editingTask.recurrence);
       setDaysOfWeek(editingTask.daysOfWeek ?? []);
@@ -199,7 +203,21 @@ export default function RecurrenceSetupModal({
       setScheduledEndTime(editingTask.scheduledEndTime ?? '');
       setStartDate(editingTask.startDate ?? formatLocalDate(new Date()));
       setProjectId(editingTask.projectId);
+    } else if (editingTask) {
+      // 비반복 태스크 → 반복으로 변환
+      setTitleValue(editingTask.title);
+      setRecurrence('daily');
+      setDaysOfWeek([]);
+      const p = editingTask.slot?.period ?? initialCoord?.period ?? 'morning';
+      const pr = editingTask.slot?.priority ?? initialCoord?.priority ?? 1;
+      setPeriod(p);
+      setPriority(pr);
+      setScheduledStartTime(getDefaultStartTime(p, pr));
+      setScheduledEndTime(getDefaultEndTime(p, pr));
+      setStartDate(editingTask.date ?? formatLocalDate(new Date()));
+      setProjectId(editingTask.projectId);
     } else {
+      // 신규 생성
       setTitleValue(initialTitle);
       setRecurrence('daily');
       setDaysOfWeek([]);
@@ -230,7 +248,11 @@ export default function RecurrenceSetupModal({
     return () => document.removeEventListener('mousedown', handle);
   }, [projectDropdownOpen]);
   const showDaysOfWeek = recurrence !== 'monthly';
-  const canSave = titleValue.trim().length > 0;
+  // 현재 편집 중인 태스크의 슬롯은 충돌에서 제외
+  const slotConflict = occupiedSlots.some(
+    (s) => s.period === period && s.priority === priority
+  ) && !(editingTask?.defaultSlot?.period === period && editingTask?.defaultSlot?.priority === priority);
+  const canSave = titleValue.trim().length > 0 && !slotConflict;
 
   // 슬롯 변경 시 시간 자동 업데이트
   const handlePeriodChange = (p: TimePeriod) => {
@@ -407,29 +429,42 @@ export default function RecurrenceSetupModal({
             )}
 
             {/* 슬롯 */}
-            <div className={ROW}>
-              <span className={LABEL}>{t.slot}</span>
-              <div className="flex gap-0.5">
-                {PERIOD_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handlePeriodChange(opt.value)}
-                    className={period === opt.value ? PILL_ON : PILL_OFF}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-                <span className="w-px h-4 bg-[var(--border)] mx-1 self-center" />
-                {([1, 2, 3] as Priority[]).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => handlePriorityChange(p)}
-                    className={priority === p ? PILL_ON : PILL_OFF}
-                  >
-                    {p}
-                  </button>
-                ))}
+            <div className="flex flex-col gap-1">
+              <div className={ROW + ' border-b-0'}>
+                <span className={LABEL}>{t.slot}</span>
+                <div className="flex gap-0.5">
+                  {PERIOD_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => handlePeriodChange(opt.value)}
+                      className={period === opt.value ? PILL_ON : PILL_OFF}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                  <span className="w-px h-4 bg-[var(--border)] mx-1 self-center" />
+                  {([1, 2, 3] as Priority[]).map((p) => {
+                    const taken = occupiedSlots.some(
+                      (s) => s.period === period && s.priority === p
+                    ) && !(editingTask?.defaultSlot?.period === period && editingTask?.defaultSlot?.priority === p);
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => handlePriorityChange(p)}
+                        className={[
+                          priority === p ? PILL_ON : PILL_OFF,
+                          taken ? 'ring-1 ring-[var(--g-error)]/60' : '',
+                        ].join(' ')}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+              {slotConflict && (
+                <p className="text-[11px] text-[var(--g-error)] text-right pr-1">{t.slotInUse}</p>
+              )}
             </div>
 
             {/* 시간 */}

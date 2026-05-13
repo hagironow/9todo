@@ -11,7 +11,11 @@
 | m1 | 9todo.app/m1 | meta | paid | pmf_w1 |
 | th1 | 9todo.app/th1 | threads | organic | pmf_w1 |
 | l1 | 9todo.app/l1 | linkedin | organic | pmf_w1 |
-| rd1 | 9todo.app/rd1 | reddit | organic | pmf_w1 |
+| rd1 | 9todo.app/rd1 | reddit | organic | productivity |
+| rd2 | 9todo.app/rd2 | reddit | organic | sideproject |
+| rd3 | 9todo.app/rd3 | reddit | organic | adhd |
+| rd4 | 9todo.app/rd4 | reddit | organic | getdisciplined |
+| rd5 | 9todo.app/rd5 | reddit | organic | indiehackers |
 | d1 | 9todo.app/d1 | disquiet | organic | pmf_w1 |
 | inf1 | 9todo.app/inf1 | influencer | dm | pmf_w1 |
 | k1 | 9todo.app/k1 | kakao | dm | pmf_w1 |

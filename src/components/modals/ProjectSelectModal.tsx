@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react';
 import { Project } from '@/lib/types';
 import { COLOR_THEMES, resolveColor } from '@/lib/colors';
 import Dialog from '@/components/ui/Dialog';
+import Button from '@/components/ui/Button';
 import ColorDot from '@/components/ui/ColorDot';
 import { useLocale } from '@/i18n/context';
 
@@ -107,18 +108,8 @@ export default function ProjectSelectModal({
             ))}
           </div>
           <div className="flex justify-end gap-2 pt-1">
-            <button
-              onClick={() => setCreating(false)}
-              className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-colors"
-            >
-              {t.cancel}
-            </button>
-            <button
-              onClick={handleCreate}
-              className="px-3 py-1.5 rounded-[var(--radius-sm)] text-[var(--fs-item)] bg-[var(--foreground)] text-[var(--background)] hover:opacity-85 transition-opacity"
-            >
-              {t.create}
-            </button>
+            <Button variant="ghost" size="sm" onClick={() => setCreating(false)}>{t.cancel}</Button>
+            <Button variant="primary" size="sm" onClick={handleCreate} disabled={!newName.trim()}>{t.create}</Button>
           </div>
         </>
       )}
