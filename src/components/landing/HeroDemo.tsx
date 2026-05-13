@@ -203,8 +203,6 @@ function SidebarDemo() {
   const projects = PROJECTS[locale];
   return (
     <div style={{ width: 180, flexShrink: 0, display: "flex", flexDirection: "column", background: "linear-gradient(180deg, #141416 0%, #111111 30%, #0e0e10 100%)", borderRight: "1px solid rgba(255,255,255,0.05)", position: "relative" }}>
-      {/* Right edge gradient line */}
-      <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 1, background: "linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02) 50%, transparent)", zIndex: 3 }} />
       <div style={{ height: 44, display: "flex", alignItems: "center", padding: "0 16px", borderBottom: "1px solid rgba(255,255,255,0.05)", gap: 8 }}>
         <img src="/9todo.svg" alt="9todo" style={{ height: 18 }} />
         <div style={{ flex: 1 }} />
@@ -273,11 +271,7 @@ function TimerPanel({ item }: { item: SlotItem }) {
   });
 
   return (
-    <div style={{ width: 280, flexShrink: 0, background: "linear-gradient(180deg, #161618 0%, #111113 20%, #0d0d0f 100%)", borderRadius: 28, display: "flex", flexDirection: "column", overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)", position: "relative" }}>
-      {/* Top edge highlight */}
-      <div style={{ position: "absolute", top: 0, left: 20, right: 20, height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)", zIndex: 3 }} />
-      {/* Left edge highlight */}
-      <div style={{ position: "absolute", top: 20, left: 0, bottom: 20, width: 1, background: "linear-gradient(180deg, transparent, rgba(255,255,255,0.04), transparent)", zIndex: 3 }} />
+    <div style={{ width: 280, flexShrink: 0, background: "linear-gradient(180deg, #161618 0%, #111113 20%, #0d0d0f 100%)", borderRadius: 28, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
       {/* Tab */}
       <div style={{ display: "flex", padding: "8px 14px", gap: 4 }}>
         <div style={{ flex: 1, display: "flex", borderRadius: 99, backgroundColor: "#1a1a1a", padding: 2 }}>

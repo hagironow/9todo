@@ -457,7 +457,7 @@ function TaskRow({
   const timeLabel = isRecurring
     ? t.recurringTask
     : task.slot
-    ? `${task.slot.period === 'morning' ? t.morning : task.slot.period === 'afternoon' ? t.afternoon : t.evening} P${task.slot.priority}`
+    ? `${task.slot.period === 'morning' ? t.morningAbbr : task.slot.period === 'afternoon' ? t.afternoonAbbr : t.eveningAbbr} P${task.slot.priority}`
     : t.backlog;
 
   const timer = task.timerSeconds
@@ -606,7 +606,7 @@ function RoutineRow({
           ? t.frequency.biweekly
           : t.frequency.monthly;
 
-  const slotLabel = `${routine.defaultSlot.period === 'morning' ? t.morning : routine.defaultSlot.period === 'afternoon' ? t.afternoon : t.evening} P${routine.defaultSlot.priority}`;
+  const slotLabel = `${routine.defaultSlot.period === 'morning' ? t.morningAbbr : routine.defaultSlot.period === 'afternoon' ? t.afternoonAbbr : t.eveningAbbr} P${routine.defaultSlot.priority}`;
 
   return (
     <div className="flex items-center gap-3 px-3 py-2 rounded-[var(--radius-sm)] bg-[var(--card)]">

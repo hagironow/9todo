@@ -154,14 +154,7 @@ function Hero({ t }: { t: Translations }) {
         {/* Single outline stroke around entire dashboard */}
         <div style={{
           position: 'relative', borderRadius: 16, overflow: 'hidden',
-          border: '1px solid rgba(255,255,255,0.08)',
         }}>
-          {/* Top edge highlight — gradient for 3D */}
-          <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-            background: 'linear-gradient(90deg, transparent 5%, rgba(255,255,255,0.12) 50%, transparent 95%)',
-            zIndex: 3,
-          }} />
           <HeroDemo />
         </div>
 
@@ -839,8 +832,7 @@ function GlobalKeyframes() {
         100% { opacity: 1; transform: translateY(0) perspective(800px) rotateX(0deg); }
       }
       .hero-float {
-        animation: hero-entrance 1.8s cubic-bezier(0.25, 1, 0.5, 1) 0.3s both,
-                   hero-float 6s ease-in-out 2.5s infinite;
+        animation: hero-entrance 1.8s cubic-bezier(0.25, 1, 0.5, 1) 0.3s both;
       }
       .reveal {
         opacity: 0;

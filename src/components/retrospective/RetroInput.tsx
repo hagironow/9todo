@@ -43,6 +43,8 @@ export default function RetroInput({
   useEffect(() => {
     if (editing && textareaRef.current) {
       textareaRef.current.focus();
+      textareaRef.current.selectionStart = textareaRef.current.value.length;
+      textareaRef.current.selectionEnd = textareaRef.current.value.length;
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
@@ -108,6 +110,10 @@ export default function RetroInput({
           }}
           onFocus={() => setEditing(true)}
           onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSave();
+            }
             if (e.key === 'Escape') {
               setValue(initialContent);
               setEditing(false);
