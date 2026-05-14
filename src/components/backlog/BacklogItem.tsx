@@ -115,10 +115,10 @@ export default function BacklogItem({
             }}
             rows={1}
             onInput={(e) => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }}
-            className="flex-1 text-[var(--fs-item)] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--accent)] resize-none"
+            className="flex-1 text-[15px] text-[var(--foreground)] bg-transparent outline-none border-b border-[var(--accent)] resize-none"
           />
         ) : (
-          <span className="text-[var(--fs-item)] text-[var(--foreground)] whitespace-pre-wrap break-words">
+          <span className="text-[15px] text-[var(--foreground)] whitespace-pre-wrap break-words">
             {title}
           </span>
         )}

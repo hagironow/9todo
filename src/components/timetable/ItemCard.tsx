@@ -260,7 +260,7 @@ export default function ItemCard({
                   }}
                   rows={1}
                   onInput={(e) => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }}
-                  className="flex-1 text-[var(--fs-item)] font-medium text-[var(--card-foreground)] leading-snug bg-transparent border-b border-[var(--accent)] outline-none resize-none"
+                  className="flex-1 text-[14px] font-medium text-[var(--card-foreground)] leading-snug bg-transparent border-b border-[var(--accent)] outline-none resize-none"
                 />
                 {onEditRecurrence && (
                   <button
@@ -281,7 +281,7 @@ export default function ItemCard({
             ) : (
               <p
                 className={[
-                  'text-[var(--fs-item)] font-medium leading-snug whitespace-pre-wrap break-words',
+                  'text-[15px] font-medium leading-snug whitespace-pre-wrap break-words',
                   isCompleted
                     ? 'line-through text-[var(--muted-foreground)]'
                     : 'text-[var(--card-foreground)]',
