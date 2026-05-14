@@ -17,6 +17,8 @@ tsconfig.tsbuildinfo
 
 # credentials
 ga4-credentials.json
+ga4-oauth-client.json
+ga4-oauth-token.json
 
 # os
 .DS_Store

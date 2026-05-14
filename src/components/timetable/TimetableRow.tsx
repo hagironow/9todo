@@ -140,6 +140,7 @@ export default function TimetableRow({
                 onEditRecurrence={onEditRecurrence}
                 onCreateRoutine={onCreateRoutine}
                 isHighlighted={isActive && priority === 1}
+                isActive={isActive}
               />
             ))}
           </div>

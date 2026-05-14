@@ -74,15 +74,16 @@ function loadSession(): { data: SurveyData; step: Step } | null {
   }
 }
 
-/** 앱 상태에서 태스크/루틴 생성 수를 읽어옴 */
+/** 앱 상태에서 태스크/반복투두 생성 수를 읽어옴 */
 function getUsageCounts() {
   try {
     const raw = localStorage.getItem('9todo_state');
     if (!raw) return { taskCount: 0, routineCount: 0 };
     const state = JSON.parse(raw);
+    const tasks = Array.isArray(state.tasks) ? state.tasks : [];
     return {
-      taskCount: Array.isArray(state.tasks) ? state.tasks.length : 0,
-      routineCount: Array.isArray(state.routines) ? state.routines.length : 0,
+      taskCount: tasks.length,
+      routineCount: tasks.filter((t: { recurrence?: unknown }) => !!t.recurrence).length,
     };
   } catch {
     return { taskCount: 0, routineCount: 0 };
@@ -236,9 +237,30 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
     setStep('commit');
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     saveSurvey(survey, true);
     setStep('thanks-yes');
+    if (survey.email.trim()) {
+      try {
+        await fetch('/api/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: survey.email.trim(),
+            interest: survey.interest,
+            price: survey.price,
+            regret: survey.regret,
+            ageGroup: survey.ageGroup,
+            job: survey.job,
+            jobCustom: survey.job === otherJob ? survey.jobCustom.trim() : '',
+            interview: survey.interview,
+            daysSinceFirstUse: getDaysSinceFirstUse(),
+            ...getUsageCounts(),
+            completed: true,
+          }),
+        });
+      } catch { /* 노션 실패해도 UX에 영향 없음 */ }
+    }
   };
 
   const otherJob = JOB_OPTIONS[JOB_OPTIONS.length - 1];
