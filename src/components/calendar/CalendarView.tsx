@@ -354,7 +354,7 @@ export default function CalendarView({
     for (const d of weekDates) map[d] = buildDayData(d);
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekDates, tasks]);
+  }, [weekDates, tasks, calProjectFilter]);
 
   const monthData = useMemo(() => {
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -365,7 +365,7 @@ export default function CalendarView({
     }
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewYear, viewMonth, tasks]);
+  }, [viewYear, viewMonth, tasks, calProjectFilter]);
 
   // 연속 streak: 하나라도 완료한 날 기준 (어제부터 역순, 오늘은 완료 있으면 +1)
   const streak = useMemo(() => {

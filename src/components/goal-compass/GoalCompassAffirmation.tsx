@@ -69,6 +69,7 @@ export default function GoalCompassAffirmation({
               'flex-1 px-2 py-0.5 rounded-[var(--radius)] -mx-2 ml-1',
               'text-[var(--fs-item)] cursor-text whitespace-pre-wrap',
               'hover:bg-[var(--muted)] transition-colors duration-100',
+              'max-h-[120px] overflow-y-auto',
               affirmation ? 'text-[var(--foreground)]' : 'text-[var(--muted-foreground)]',
             ].join(' ')}
           >
