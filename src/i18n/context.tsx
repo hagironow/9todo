@@ -17,19 +17,23 @@ interface LocaleContextValue {
 }
 
 const LocaleContext = createContext<LocaleContextValue>({
-  locale: 'ko',
+  locale: 'en',
   setLocale: () => {},
-  t: ko,
+  t: en,
 });
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('ko');
+  const [locale, setLocaleState] = useState<Locale>('en');
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Locale | null;
     if (stored && (stored === 'ko' || stored === 'en')) {
       setLocaleState(stored);
       document.documentElement.lang = stored;
+    } else {
+      const browserLocale: Locale = navigator.language.startsWith('ko') ? 'ko' : 'en';
+      setLocaleState(browserLocale);
+      document.documentElement.lang = browserLocale;
     }
   }, []);
 
