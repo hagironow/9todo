@@ -19,7 +19,7 @@ import type {
   GoalPeriod,
 } from '@/lib/types';
 import { resolveColor, hexToColorIndex, DEFAULT_THEME } from '@/lib/colors';
-import { trackSlotFill, trackTaskComplete, trackRoutineComplete } from '@/lib/analytics';
+import { trackSlotFill, trackTaskComplete, trackRoutineComplete, trackDefer, trackRepeat, trackProjectCreate, trackTaskCreate, trackRetroSave } from '@/lib/analytics';
 import { getToday, getWeekKey, getMonthKey } from '@/lib/date';
 
 const STORAGE_KEY = '9todo_state';
@@ -270,6 +270,7 @@ export function useAppData() {
           lastUsedProjectId: project.id,
         };
       });
+      trackProjectCreate();
       return resolved;
     },
     [update],
@@ -383,6 +384,7 @@ export function useAppData() {
           lastUsedProjectId: task.projectId ?? prev.lastUsedProjectId,
         };
       });
+      trackTaskCreate(!!options?.slot, !!options?.projectId);
       return task;
     },
     [update],
@@ -429,6 +431,7 @@ export function useAppData() {
             : t,
         ),
       }));
+      trackDefer();
     },
     [update],
   );
@@ -461,6 +464,7 @@ export function useAppData() {
           ).concat(clone),
         };
       });
+      trackRepeat();
     },
     [update],
   );
@@ -873,6 +877,7 @@ export function useAppData() {
         };
         return { ...prev, retrospectives: [...retros, newEntry] };
       });
+      trackRetroSave(scope);
     },
     [update],
   );

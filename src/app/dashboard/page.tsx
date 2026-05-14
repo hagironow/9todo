@@ -47,6 +47,7 @@ import RetrospectiveListView from '@/components/retrospective/RetrospectiveListV
 import ReadOnlyBanner from '@/components/date-nav/ReadOnlyBanner';
 import { triggerConfetti } from '@/components/effects/ParticleBurst';
 import { exportToJSON, downloadFile } from '@/lib/export';
+import { trackEvent, trackExport, trackSearch, trackLoginClick } from '@/lib/analytics';
 import { calculateDailyXP, calculateTotalXP } from '@/lib/xp';
 import { getToday, formatLocalDate, getWeekKey, getMonthKey } from '@/lib/date';
 import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
@@ -781,9 +782,10 @@ export default function Home() {
         onDeleteProject={handleDeleteProject}
         onArchiveProject={handleArchiveProject}
         onUnarchiveProject={(id) => updateProject(id, { archived: false })}
-        onSearchClick={() => setSearchOpen(true)}
-        onLoginClick={() => setLoginModalOpen(true)}
+        onSearchClick={() => { trackSearch(0); setSearchOpen(true); }}
+        onLoginClick={() => { trackLoginClick(); setLoginModalOpen(true); }}
         onExport={() => {
+          trackExport('json');
           const json = exportToJSON(state);
           const todayStr = formatLocalDate(new Date());
           downloadFile(json, `9todo_${todayStr}.json`, 'application/json');
