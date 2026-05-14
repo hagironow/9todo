@@ -5,6 +5,7 @@ import { ArrowLeft, X } from 'lucide-react';
 import Dialog from '@/components/ui/Dialog';
 import Button from '@/components/ui/Button';
 import { useLocale } from '@/i18n/context';
+import { trackEvent } from '@/lib/analytics';
 
 /**
  * 사보이어 Fake Door + SITG 계단식 검증
@@ -46,7 +47,26 @@ const STORAGE_KEY = '9todo_survey';
 const SESSION_KEY = '9todo_survey_session';
 
 function getDaysSinceFirstUse() {
-  const first = localStorage.getItem('9todo_first_use');
+  let first = localStorage.getItem('9todo_first_use');
+  // 기존 사용자: 가장 오래된 태스크 생성일로 추론
+  if (!first) {
+    try {
+      const raw = localStorage.getItem('9todo_state');
+      if (raw) {
+        const tasks = JSON.parse(raw).tasks;
+        if (Array.isArray(tasks) && tasks.length) {
+          const oldest = tasks
+            .map((t: { createdAt?: string }) => t.createdAt)
+            .filter(Boolean)
+            .sort()[0];
+          if (oldest) {
+            first = oldest;
+            localStorage.setItem('9todo_first_use', oldest);
+          }
+        }
+      }
+    } catch { /* ignore */ }
+  }
   if (!first) return 0;
   return Math.floor((Date.now() - new Date(first).getTime()) / 86400000);
 }
@@ -82,8 +102,8 @@ function getUsageCounts() {
     const state = JSON.parse(raw);
     const tasks = Array.isArray(state.tasks) ? state.tasks : [];
     return {
-      taskCount: tasks.length,
-      routineCount: tasks.filter((t: { recurrence?: unknown }) => !!t.recurrence).length,
+      taskCount: tasks.filter((t: { recurrenceParentId?: string }) => !t.recurrenceParentId).length,
+      routineCount: tasks.filter((t: { recurrence?: unknown; recurrenceParentId?: string }) => !!t.recurrence && !t.recurrenceParentId).length,
     };
   } catch {
     return { taskCount: 0, routineCount: 0 };
@@ -177,6 +197,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
   useEffect(() => {
     if (open && !initialized.current) {
       initialized.current = true;
+      trackEvent('survey_open');
       const session = loadSession();
       if (session) {
         setSurvey(session.data);
@@ -191,6 +212,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
   const handleClose = () => {
     // 이탈 시 현재까지 입력된 데이터 저장 (thanks 스텝이 아닌 경우)
     if (!step.startsWith('thanks') && step !== 'ask') {
+      trackEvent('survey_drop', { drop_step: step });
       saveSurvey(survey, false);
     }
     onClose();
@@ -210,15 +232,18 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
     const next = { ...survey, interest: answer } as SurveyData;
     setSurvey(next);
     if (answer === 'yes') {
+      trackEvent('survey_step', { step: 'price', from: 'ask', interest: answer });
       saveSession(next, 'price');
       setStep('price');
     } else {
+      trackEvent('survey_step', { step: 'thanks-no', from: 'ask', interest: answer });
       saveSurvey({ interest: answer }, false);
       setStep('thanks-no');
     }
   };
 
   const handlePriceSelect = (price: string) => {
+    trackEvent('survey_step', { step: 'regret', from: 'price', price });
     const next = { ...survey, price };
     setSurvey(next as SurveyData);
     saveSession(next as SurveyData, 'regret');
@@ -226,6 +251,7 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
   };
 
   const handleRegretSelect = (regret: string) => {
+    trackEvent('survey_step', { step: 'profile', from: 'regret', regret });
     const next = { ...survey, regret };
     setSurvey(next as SurveyData);
     saveSession(next as SurveyData, 'profile');
@@ -233,11 +259,13 @@ export default function LoginModal({ open, onClose }: LoginModalProps) {
   };
 
   const handleProfileNext = () => {
+    trackEvent('survey_step', { step: 'commit', from: 'profile' });
     saveSession(survey, 'commit');
     setStep('commit');
   };
 
   const handleSubmit = async () => {
+    trackEvent('survey_step', { step: 'thanks-yes', from: 'commit' });
     saveSurvey(survey, true);
     setStep('thanks-yes');
     if (survey.email.trim()) {

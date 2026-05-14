@@ -69,6 +69,14 @@ export const trackPomodoroComplete = (seconds: number) =>
 export const trackSearch = (query_length: number) =>
   trackEvent('search_use', { query_length });
 
+/** 태스크 생성 */
+export const trackTaskCreate = (hasSlot: boolean, hasProject: boolean) =>
+  trackEvent('task_create', { has_slot: hasSlot, has_project: hasProject });
+
+/** 회고 저장 */
+export const trackRetroSave = (scope: string) =>
+  trackEvent('retro_save', { scope });
+
 // ── 리텐션 코호트 추적 ──
 
 const FIRST_VISIT_KEY = '9todo_first_visit';

@@ -32,6 +32,7 @@ export default function GoogleAnalytics() {
           gtag('js', new Date());
           gtag('config', '${GA_ID}', {
             page_path: window.location.pathname,
+            user_language: localStorage.getItem('9todo_locale') || navigator.language,
           });
         `}
       </Script>
