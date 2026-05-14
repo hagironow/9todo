@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
+import MetaPixel from "@/components/analytics/MetaPixel";
 import { LocaleProvider } from "@/i18n/context";
 import "./globals.css";
 
@@ -104,6 +105,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[var(--background)]">
         <GoogleAnalytics />
+        <MetaPixel />
         <LocaleProvider>
           {children}
         </LocaleProvider>
