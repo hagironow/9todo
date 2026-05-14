@@ -10,6 +10,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  verification: {
+    google: "7N5HbE-Sw9_gEv-q9lTg68qB7LAz94UK527_QWzsrVg",
+  },
   title: "9todo — 9칸 타임박스 플래너",
   description:
     "하루를 9칸에 담다. 아침·오후·저녁 × 3순위로 오늘 할 일을 배치하는 게임형 시간관리 앱.",
