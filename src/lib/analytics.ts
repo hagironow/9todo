@@ -8,9 +8,19 @@
 
 type GtagFn = (...args: unknown[]) => void;
 
+type FbqFn = (...args: unknown[]) => void;
+
 declare global {
   interface Window {
     gtag?: GtagFn;
+    fbq?: FbqFn;
+  }
+}
+
+/** Meta Pixel 전환 이벤트 */
+function trackMeta(eventName: string, params?: Record<string, string | number | boolean>) {
+  if (typeof window !== 'undefined' && window.fbq && !isAdmin()) {
+    window.fbq('trackCustom', eventName, params);
   }
 }
 
@@ -30,12 +40,16 @@ export function trackEvent(
 // ── 자주 쓸 이벤트 프리셋 ──
 
 /** "시작하기" / 로그인 CTA 클릭 */
-export const trackLoginClick = () =>
+export const trackLoginClick = () => {
   trackEvent('login_cta_click');
+  trackMeta('Lead');
+};
 
 /** 슬롯에 태스크 배치 */
-export const trackSlotFill = (period: string, priority: number) =>
+export const trackSlotFill = (period: string, priority: number) => {
   trackEvent('slot_fill', { period, priority });
+  trackMeta('SlotFill', { period, priority });
+};
 
 /** 태스크 완료 */
 export const trackTaskComplete = (xp: number) =>
@@ -70,8 +84,10 @@ export const trackSearch = (query_length: number) =>
   trackEvent('search_use', { query_length });
 
 /** 태스크 생성 */
-export const trackTaskCreate = (hasSlot: boolean, hasProject: boolean) =>
+export const trackTaskCreate = (hasSlot: boolean, hasProject: boolean) => {
   trackEvent('task_create', { has_slot: hasSlot, has_project: hasProject });
+  trackMeta('TaskCreate');
+};
 
 /** 회고 저장 */
 export const trackRetroSave = (scope: string) =>
