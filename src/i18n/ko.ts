@@ -71,6 +71,11 @@ const ko = {
 
   // ── Landing ──
   startNow: '지금 시작하기',
+  joinWaitlist: '정식 출시 알림 받기',
+  waitlistDesc: '데이터 동기화가 되는 앱이 런칭되면 알려드릴게요.',
+  waitlistDone: '등록 완료! 런칭 시 이메일로 안내드릴게요.',
+  waitlistInvalidEmail: '올바른 이메일 주소를 입력해주세요.',
+  waitlistError: '등록 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.',
   heroSub: '제약이 세우는 우선순위. 멀티태스커를 위한 타임 박스 플래너 시스템.',
   empathy1: '더 많은 일을 하는 게 아니라.',
   empathy2: '진짜 중요한 일에 집중할 수 있도록,',

@@ -14,6 +14,7 @@ const GoalCompassDemo = dynamic(() => import('@/components/landing/GoalCompassDe
 const CalendarViewDemo = dynamic(() => import('@/components/landing/CalendarViewDemo'), { ssr: false });
 const ProjectViewDemo = dynamic(() => import('@/components/landing/ProjectViewDemo'), { ssr: false });
 const ReviewDemo = dynamic(() => import('@/components/landing/ReviewDemo'), { ssr: false });
+const WaitlistModal = dynamic(() => import('@/components/modals/WaitlistModal'), { ssr: false });
 
 /* ── Nav ── */
 function Nav({
@@ -107,7 +108,7 @@ const ShaderGradientLazy = dynamic(
 );
 
 /* ── Hero ── */
-function Hero({ t }: { t: Translations }) {
+function Hero({ onCtaClick, onWaitlistClick, t }: { onCtaClick?: () => void; onWaitlistClick?: () => void; t: Translations }) {
   return (
     <section data-section="hero" style={{
       position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -143,6 +144,14 @@ function Hero({ t }: { t: Translations }) {
         }}>
           {t.heroSub}
         </p>
+        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-8)' }}>
+          <a href="/dashboard" className="btn-primary" onClick={onCtaClick}>
+            {t.startNow}
+          </a>
+          <button onClick={onWaitlistClick} className="btn-waitlist">
+            {t.joinWaitlist}
+          </button>
+        </div>
       </div>
 
       {/* Dashboard — width matches GNB container, emerges from darkness */}
@@ -673,7 +682,7 @@ function MarqueeStrip({ position, reverse, t }: { position: 'top' | 'bottom'; re
   );
 }
 
-function Impact({ onCtaClick, t }: { onCtaClick?: () => void; t: Translations }) {
+function Impact({ onCtaClick, onWaitlistClick, t }: { onCtaClick?: () => void; onWaitlistClick?: () => void; t: Translations }) {
   return (
     <section data-section="impact" id="cta" style={{
       position: 'relative', height: '100vh', minHeight: 600,
@@ -701,16 +710,23 @@ function Impact({ onCtaClick, t }: { onCtaClick?: () => void; t: Translations })
           <br />
           just today.
         </h2>
-        {/* CTA button below headline */}
-        <a href="/dashboard" className="btn-primary" onClick={onCtaClick} style={{
-          marginTop: 'var(--space-8)',
-          height: 'var(--form-height-lg)',
-          padding: '0 var(--space-12)', fontSize: 'var(--font-size-body-lg)',
-          fontWeight: 'var(--font-weight-semibold)',
-          pointerEvents: 'auto',
-        }}>
-          {t.startNow}
-        </a>
+        {/* CTA buttons below headline */}
+        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-8)', pointerEvents: 'auto' }}>
+          <a href="/dashboard" className="btn-primary" onClick={onCtaClick} style={{
+            height: 'var(--form-height-lg)',
+            padding: '0 var(--space-12)', fontSize: 'var(--font-size-body-lg)',
+            fontWeight: 'var(--font-weight-semibold)',
+          }}>
+            {t.startNow}
+          </a>
+          <button onClick={onWaitlistClick} className="btn-waitlist" style={{
+            height: 'var(--form-height-lg)',
+            padding: '0 var(--space-12)', fontSize: 'var(--font-size-body-lg)',
+            fontWeight: 'var(--font-weight-semibold)',
+          }}>
+            {t.joinWaitlist}
+          </button>
+        </div>
       </div>
       {/* Marquee strip at bottom */}
       <MarqueeStrip position="bottom" t={t} />
@@ -934,19 +950,29 @@ export default function LandingPage() {
     });
   }, []);
 
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const handleWaitlistClick = useCallback((location: string) => {
+    trackEvent('landing_waitlist_click', {
+      location,
+      viewing_section: currentSectionRef.current,
+    });
+    setWaitlistOpen(true);
+  }, []);
+
   return (
     <>
       <GlobalKeyframes />
       <Nav onCtaClick={() => handleCtaClick('nav')} t={t} locale={locale} setLocale={setLocale} />
       <main>
-        <Hero t={t} />
+        <Hero onCtaClick={() => handleCtaClick('hero')} onWaitlistClick={() => handleWaitlistClick('hero')} t={t} />
         <Authority t={t} />
         <WhyNine t={t} />
         {/* <Tools t={t} /> */}
         <Empathy t={t} />
-        <Impact onCtaClick={() => handleCtaClick('bottom')} t={t} />
+        <Impact onCtaClick={() => handleCtaClick('bottom')} onWaitlistClick={() => handleWaitlistClick('bottom')} t={t} />
       </main>
       <Footer />
+      <WaitlistModal open={waitlistOpen} onClose={() => setWaitlistOpen(false)} />
     </>
   );
 }

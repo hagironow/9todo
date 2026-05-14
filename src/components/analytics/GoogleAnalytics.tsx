@@ -1,17 +1,23 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { trackReturnVisit } from '@/lib/analytics';
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 export default function GoogleAnalytics() {
+  const [isAdmin, setIsAdmin] = useState(true); // default true to prevent flash-load
+
   useEffect(() => {
-    trackReturnVisit();
+    const admin = localStorage.getItem('9todo_admin') === 'true';
+    setIsAdmin(admin);
+    if (!admin) {
+      trackReturnVisit();
+    }
   }, []);
 
-  if (!GA_ID) return null;
+  if (!GA_ID || isAdmin) return null;
 
   return (
     <>
@@ -21,14 +27,12 @@ export default function GoogleAnalytics() {
       />
       <Script id="ga4-init" strategy="afterInteractive">
         {`
-          if (localStorage.getItem('9todo_admin') !== 'true') {
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_ID}', {
-              page_path: window.location.pathname,
-            });
-          }
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_ID}', {
+            page_path: window.location.pathname,
+          });
         `}
       </Script>
     </>

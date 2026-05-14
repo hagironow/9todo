@@ -73,6 +73,11 @@ const en: Translations = {
 
   // ── Landing ──
   startNow: 'Get Started',
+  joinWaitlist: 'Get Launch Notification',
+  waitlistDesc: "We'll notify you when the synced app launches.",
+  waitlistDone: "You're in! We'll email you at launch.",
+  waitlistInvalidEmail: 'Please enter a valid email address.',
+  waitlistError: 'Something went wrong. Please try again.',
   heroSub: 'Priority by constraints. A timebox planner system for multitaskers.',
   empathy1: "It's not about doing more.",
   empathy2: "It's about focusing on what truly matters,",
