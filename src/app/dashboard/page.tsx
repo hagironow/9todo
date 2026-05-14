@@ -210,6 +210,9 @@ export default function Home() {
     const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setIsDark(dark);
     if (dark) document.documentElement.classList.add('dark');
+    if (!localStorage.getItem('9todo_first_use')) {
+      localStorage.setItem('9todo_first_use', new Date().toISOString());
+    }
   }, []);
 
   const handleThemeToggle = useCallback(() => {

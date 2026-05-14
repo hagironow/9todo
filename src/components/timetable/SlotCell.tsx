@@ -27,6 +27,7 @@ interface SlotCellProps {
   onEditRecurrence?: (item: ScheduledItem) => void;
   onCreateRoutine?: (title: string, coord: SlotCoord) => void;
   isHighlighted?: boolean;
+  isActive?: boolean;
 }
 
 export default function SlotCell({
@@ -47,6 +48,7 @@ export default function SlotCell({
   onEditRecurrence,
   onCreateRoutine,
   isHighlighted,
+  isActive,
 }: SlotCellProps) {
   const { t } = useLocale();
   const droppableId = `${coord.period}-${coord.priority}`;
@@ -298,6 +300,22 @@ export default function SlotCell({
         </div>
       ) : isReadOnly ? (
         <div className="w-full h-full min-h-[80px]" />
+      ) : isActive && !item && coord.priority === 1 ? (
+        <button
+          onClick={openInput}
+          className={[
+            'w-full h-full min-h-[80px] flex flex-col items-center justify-center gap-1',
+            'rounded-lg animate-highlight',
+            'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]',
+            'transition-colors duration-150 cursor-pointer',
+          ].join(' ')}
+          aria-label={t.addToSlot}
+        >
+          <Plus size={14} strokeWidth={1.5} />
+          <span className="text-[11px] leading-tight text-center px-2 opacity-70">
+            {t.slotHint1}
+          </span>
+        </button>
       ) : (
         <button
           onClick={openInput}
