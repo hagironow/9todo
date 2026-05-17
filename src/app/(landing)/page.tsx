@@ -131,9 +131,9 @@ function Hero({ onCtaClick, onWaitlistClick, t }: { onCtaClick?: () => void; onW
           color: 'var(--color-text-primary)',
           margin: 0, wordBreak: 'keep-all', maxWidth: 800,
         }}>
-          <span style={{ fontWeight: 300, color: 'var(--color-text-secondary)' }}>Priority by constraints,</span>
+          <span style={{ fontWeight: 300, color: 'var(--color-text-secondary)' }}>Stop planning.</span>
           <br />
-          <span>for multitaskers.</span>
+          <span>Start finishing.</span>
         </h1>
         <p className="keep-all" data-hero-sub style={{
           fontSize: '16px',
