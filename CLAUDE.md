@@ -10,6 +10,7 @@
 | **planner** | 기능 사양/UX 흐름 작성 | po 게이트 통과 후 |
 | **developer** | 데이터/API/로직 구현 | planner 사양 산출 후 |
 | **design** | 디자인 토큰 세팅 + UI 구현 | "디자인 토큰 세팅해줘", UI 작업 시 |
+| **analytics** | 지표 분석 + 보고 (Cloudflare, GA4, Meta) | "지표 분석해줘", "성과 어때?", "광고 결과" |
 
 ## 표준 워크플로우
 
