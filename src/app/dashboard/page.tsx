@@ -136,6 +136,17 @@ export default function Home() {
   const [today, setToday] = useState<string>(getToday);
   const [searchOpen, setSearchOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+
+  // 뷰 전환 추적
+  const handleViewChange = useCallback((filterId: string | null) => {
+    const viewName = filterId === '__calendar__' ? 'calendar'
+      : filterId === '__retrospective__' ? 'retrospective'
+      : filterId === '__unassigned__' ? 'unassigned'
+      : filterId ? 'project_detail'
+      : 'today';
+    trackEvent('view_change', { view: viewName });
+    setActiveProjectFilter(filterId);
+  }, [setActiveProjectFilter]);
   const [importErrorOpen, setImportErrorOpen] = useState(false);
 
   const handlePrevDay = useCallback(() => {
@@ -774,7 +785,7 @@ export default function Home() {
       <AppShell
         projects={state.projects}
         activeFilter={state.activeProjectFilter}
-        onFilterChange={setActiveProjectFilter}
+        onFilterChange={handleViewChange}
         onCreateProject={() => setProjectModalOpen(true)}
         onThemeToggle={handleThemeToggle}
         isDark={isDark}
@@ -815,7 +826,7 @@ export default function Home() {
         onProjectFirstModeChange={(enabled) => {
           setProjectFirstMode(enabled);
           // 토글 OFF 시 프로젝트 필터 해제
-          if (!enabled) setActiveProjectFilter(null);
+          if (!enabled) handleViewChange(null);
         }}
         rightPanelAccentColor={
           playItems[0] && 'projectId' in playItems[0] && (playItems[0] as { projectId?: string | null }).projectId
