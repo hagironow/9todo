@@ -7,7 +7,7 @@ import { useLocale } from '@/i18n/context';
 
 type GoalKey = keyof GoalCompass['goals'];
 
-interface GoalRow {
+export interface GoalRow {
   key: GoalKey;
   label: string;
   placeholder: string;
@@ -16,7 +16,7 @@ interface GoalRow {
 }
 
 // ── Task-based goal row (today/week/month) ──
-function GoalTaskRow({
+export function GoalTaskRow({
   row,
   goalTask,
   onAdd,

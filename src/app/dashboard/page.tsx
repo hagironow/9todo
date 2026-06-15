@@ -846,6 +846,7 @@ export default function Home() {
             onRemoveNote={removeNote}
             onUpdateNote={updateNoteContent}
             lastUsedProjectId={state.lastUsedProjectId}
+            onNavigateToProject={handleViewChange}
           />
         }
       >
@@ -951,6 +952,12 @@ export default function Home() {
               onEditRecurrence={handleEditRoutine}
               retrospectives={state.retrospectives ?? []}
               onSaveRetro={upsertRetrospective}
+              goalTasks={state.goalTasks ?? []}
+              onAddGoalTask={addGoalTask}
+              onCompleteGoalTask={(id) => { completeGoalTask(id); triggerConfetti({}); }}
+              onUncompleteGoalTask={uncompleteGoalTask}
+              onUpdateGoalTaskTitle={updateGoalTaskTitle}
+              onRemoveGoalTask={removeGoalTask}
             />
           ) : (() => {
             // 실제 프로젝트 ID인지 확인
@@ -980,6 +987,7 @@ export default function Home() {
                   notes={state.notes ?? []}
                   onAddNote={addNote}
                   onRemoveNote={removeNote}
+                  onUpdateNote={updateNoteContent}
                   colorTheme={state.colorTheme}
                   onUpdateColor={isUnassignedView ? undefined : (pid, idx) => updateProject(pid, { colorIndex: idx })}
                   onComplete={handleComplete}

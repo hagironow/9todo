@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Check, Plus, Settings } from 'lucide-react';
-import type { Task, Project, RetrospectiveEntry, RetroScope, EnergyLevel } from '@/lib/types';
+import type { Task, Project, RetrospectiveEntry, RetroScope, EnergyLevel, GoalTask, GoalPeriod } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import RetroInput from '@/components/retrospective/RetroInput';
 import { EnergyBadge } from '@/components/retrospective/EnergyLevelInput';
@@ -26,6 +26,13 @@ interface CalendarViewProps {
   onEditRecurrence?: (task: Task) => void;
   retrospectives?: RetrospectiveEntry[];
   onSaveRetro?: (scope: RetroScope, scopeKey: string, content: string, energyLevel?: EnergyLevel) => void;
+  // 오늘의 할일 (나침반 today 행과 공유)
+  goalTasks?: GoalTask[];
+  onAddGoalTask?: (title: string, goalPeriod: GoalPeriod, periodKey: string) => void;
+  onCompleteGoalTask?: (id: string) => void;
+  onUncompleteGoalTask?: (id: string) => void;
+  onUpdateGoalTaskTitle?: (id: string, title: string) => void;
+  onRemoveGoalTask?: (id: string) => void;
 }
 
 type ViewMode = 'week' | 'month';
@@ -268,6 +275,12 @@ export default function CalendarView({
   onEditRecurrence,
   retrospectives = [],
   onSaveRetro,
+  goalTasks,
+  onAddGoalTask,
+  onCompleteGoalTask,
+  onUncompleteGoalTask,
+  onUpdateGoalTaskTitle,
+  onRemoveGoalTask,
 }: CalendarViewProps) {
   const { t } = useLocale();
   const todayStr = getToday();
@@ -806,6 +819,12 @@ export default function CalendarView({
             onUpdateTask={onUpdateTask}
             onCreateTask={onCreateTask}
             onEditRecurrence={onEditRecurrence}
+            goalTasks={goalTasks}
+            onAddGoalTask={onAddGoalTask}
+            onCompleteGoalTask={onCompleteGoalTask}
+            onUncompleteGoalTask={onUncompleteGoalTask}
+            onUpdateGoalTaskTitle={onUpdateGoalTaskTitle}
+            onRemoveGoalTask={onRemoveGoalTask}
           />
           {/* 주간 요약 바 */}
           {weekSummary.total > 0 && (

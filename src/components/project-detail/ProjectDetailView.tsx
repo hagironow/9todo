@@ -17,6 +17,7 @@ interface ProjectDetailViewProps {
   notes: Note[];
   onAddNote: (projectId: string, content: string) => void;
   onRemoveNote: (noteId: string) => void;
+  onUpdateNote?: (noteId: string, content: string) => void;
   colorTheme?: string;
   onUpdateColor?: (projectId: string, colorIndex: number) => void;
   onComplete?: (item: ScheduledItem) => void;
@@ -35,6 +36,7 @@ export default function ProjectDetailView({
   notes,
   onAddNote,
   onRemoveNote,
+  onUpdateNote,
   colorTheme = 'vivid',
   onUpdateColor,
   onComplete,
@@ -394,7 +396,7 @@ export default function ProjectDetailView({
         {projectNotes.length > 0 && (
           <div className="flex flex-col gap-1">
             {projectNotes.map((note) => (
-              <NoteRow key={note.id} note={note} onRemove={onRemoveNote} />
+              <NoteRow key={note.id} note={note} onRemove={onRemoveNote} onUpdate={onUpdateNote} />
             ))}
           </div>
         )}
@@ -638,12 +640,17 @@ function RoutineRow({
 function NoteRow({
   note,
   onRemove,
+  onUpdate,
 }: {
   note: Note;
   onRemove: (id: string) => void;
+  onUpdate?: (id: string, content: string) => void;
 }) {
   const { t } = useLocale();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editContent, setEditContent] = useState(note.content);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dateStr = new Date(note.createdAt).toLocaleDateString('ko-KR', {
     month: 'short',
     day: 'numeric',
@@ -651,12 +658,62 @@ function NoteRow({
     minute: '2-digit',
   });
 
+  useEffect(() => {
+    if (editing && textareaRef.current) {
+      const ta = textareaRef.current;
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = ta.value.length;
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+    }
+  }, [editing]);
+
+  const handleSave = () => {
+    const trimmed = editContent.trim();
+    if (trimmed && trimmed !== note.content && onUpdate) {
+      onUpdate(note.id, trimmed);
+    }
+    setEditing(false);
+  };
+
   return (
     <>
       <div className="group flex items-start gap-3 px-3 py-2 rounded-[var(--radius-sm)] bg-[var(--card)]">
-        <span className="flex-1 text-sm text-[var(--foreground)] whitespace-pre-wrap break-words">
-          {note.content}
-        </span>
+        {editing ? (
+          <textarea
+            ref={textareaRef}
+            value={editContent}
+            onChange={(e) => {
+              setEditContent(e.target.value);
+              e.target.style.height = 'auto';
+              e.target.style.height = e.target.scrollHeight + 'px';
+            }}
+            onBlur={handleSave}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                handleSave();
+              }
+              if (e.key === 'Escape') {
+                setEditContent(note.content);
+                setEditing(false);
+              }
+            }}
+            className="flex-1 text-sm text-[var(--foreground)] bg-transparent outline-none resize-none whitespace-pre-wrap break-words border border-[var(--border)] rounded px-1.5 py-0.5"
+          />
+        ) : (
+          <span
+            onClick={() => {
+              if (onUpdate) {
+                setEditContent(note.content);
+                setEditing(true);
+              }
+            }}
+            className={`flex-1 text-sm text-[var(--foreground)] whitespace-pre-wrap break-words ${onUpdate ? 'cursor-text' : ''}`}
+          >
+            {note.content}
+          </span>
+        )}
         <span className="text-xs text-[var(--muted-foreground)] shrink-0 pt-0.5">
           {dateStr}
         </span>

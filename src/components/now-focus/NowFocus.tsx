@@ -20,6 +20,7 @@ interface NowFocusProps {
   onUpdateNote?: (noteId: string, content: string) => void;
   lastUsedProjectId?: string | null;
   onClose?: () => void;
+  onNavigateToProject?: (projectId: string) => void;
 }
 
 type PanelMode = 'timer' | 'note';
@@ -382,6 +383,7 @@ function QuickNotePanel({
   onUpdate,
   lastUsedProjectId,
   timerDark,
+  onNavigateToProject,
 }: {
   projects: Project[];
   notes: Note[];
@@ -390,6 +392,7 @@ function QuickNotePanel({
   onUpdate: (noteId: string, content: string) => void;
   lastUsedProjectId?: string | null;
   timerDark: boolean;
+  onNavigateToProject?: (projectId: string) => void;
 }) {
   const [content, setContent] = useState('');
   const [projectId, setProjectId] = useState(lastUsedProjectId || '__unassigned__');
@@ -461,12 +464,16 @@ function QuickNotePanel({
                         ×
                       </button>
                     </div>
-                    {/* 본문 — 클릭 시 펼침/접힘 (드래그 선택 중에는 무시) */}
+                    {/* 본문 — 클릭 시 프로젝트 뷰로 이동 */}
                     <p
                       onClick={() => {
                         const sel = window.getSelection();
                         if (sel && sel.toString().length > 0) return;
-                        setExpandedId(expandedId === note.id ? null : note.id);
+                        if (onNavigateToProject) {
+                          onNavigateToProject(note.projectId);
+                        } else {
+                          setExpandedId(expandedId === note.id ? null : note.id);
+                        }
                       }}
                       className="text-[14px] leading-relaxed whitespace-pre-wrap break-words cursor-pointer"
                       style={{
@@ -567,7 +574,7 @@ function QuickNotePanel({
 }
 
 // ── Main ──
-export default function NowFocus({ items, projects, onComplete, onDefer, onRepeat, isReadOnly, notes, onAddNote, onRemoveNote, onUpdateNote, lastUsedProjectId, onClose }: NowFocusProps) {
+export default function NowFocus({ items, projects, onComplete, onDefer, onRepeat, isReadOnly, notes, onAddNote, onRemoveNote, onUpdateNote, lastUsedProjectId, onClose, onNavigateToProject }: NowFocusProps) {
   const { t } = useLocale();
   const [mode, setMode] = useState<PanelMode>('timer');
   const [confirm, setConfirm] = useState<ConfirmType | null>(null);
@@ -751,6 +758,7 @@ export default function NowFocus({ items, projects, onComplete, onDefer, onRepea
                 onUpdate={onUpdateNote ?? (() => {})}
                 lastUsedProjectId={lastUsedProjectId}
                 timerDark={timerDark}
+                onNavigateToProject={onNavigateToProject}
               />
             </div>
           )}
