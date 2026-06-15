@@ -2,13 +2,14 @@
 
 import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useState as useLocalState } from 'react';
-import { Check, Plus, Repeat } from 'lucide-react';
-import type { Task, Project, TimePeriod, Priority } from '@/lib/types';
+import { Check, Plus, Repeat, Compass } from 'lucide-react';
+import type { Task, Project, TimePeriod, Priority, GoalTask, GoalPeriod } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import { getToday } from '@/lib/date';
 import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
 import { getDefaultStartTime, getDefaultEndTime } from '@/components/modals/RecurrenceSetupModal';
 import { useLocale } from '@/i18n/context';
+import WeekDayGoalCell from './WeekDayGoalCell';
 
 interface WeeklyTimelineViewProps {
   tasks: Task[];
@@ -18,6 +19,13 @@ interface WeeklyTimelineViewProps {
   onUpdateTask?: (taskId: string, updates: { scheduledStartTime?: string; scheduledEndTime?: string; date?: string }) => void;
   onCreateTask?: (title: string, date: string, projectId: string | null) => void;
   onEditRecurrence?: (task: Task) => void;
+  // 날짜별 '끝낼 일' (나침반 today 행과 데이터 공유)
+  goalTasks?: GoalTask[];
+  onAddGoalTask?: (title: string, goalPeriod: GoalPeriod, periodKey: string) => void;
+  onCompleteGoalTask?: (id: string) => void;
+  onUncompleteGoalTask?: (id: string) => void;
+  onUpdateGoalTaskTitle?: (id: string, title: string) => void;
+  onRemoveGoalTask?: (id: string) => void;
 }
 const STORAGE_KEY = '9todo_timeline_range';
 const HOUR_HEIGHT = 60;
@@ -83,9 +91,16 @@ export default function WeeklyTimelineView({
   onUpdateTask,
   onCreateTask,
   onEditRecurrence,
+  goalTasks,
+  onAddGoalTask,
+  onCompleteGoalTask,
+  onUncompleteGoalTask,
+  onUpdateGoalTaskTitle,
+  onRemoveGoalTask,
 }: WeeklyTimelineViewProps) {
   const { t } = useLocale();
   const todayStr = getToday();
+  const goalEnabled = !!(goalTasks && onAddGoalTask && onCompleteGoalTask && onUncompleteGoalTask && onUpdateGoalTaskTitle && onRemoveGoalTask);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const range = timeRange ?? getStoredRange();
@@ -296,6 +311,28 @@ export default function WeeklyTimelineView({
             );
           })}
         </div>
+
+        {/* 날짜별 '끝낼 일' 행 — 한 주 목표 한눈에 */}
+        {goalEnabled && (
+          <div className="grid border-b border-[var(--border)] bg-[var(--card)]" style={{ gridTemplateColumns: '48px repeat(7, 1fr)' }}>
+            <div className="flex items-center justify-center" title={t.goalPeriodPlaceholders[0]}>
+              <Compass size={13} className="text-[var(--primary)]" />
+            </div>
+            {weekDates.map((dateStr) => (
+              <WeekDayGoalCell
+                key={dateStr}
+                dateKey={dateStr}
+                isToday={dateStr === todayStr}
+                goalTask={goalTasks!.find((gt) => gt.goalPeriod === 'today' && gt.periodKey === dateStr)}
+                onAdd={(d, title) => onAddGoalTask!(title, 'today', d)}
+                onComplete={onCompleteGoalTask!}
+                onUncomplete={onUncompleteGoalTask!}
+                onUpdateTitle={onUpdateGoalTaskTitle!}
+                onRemove={onRemoveGoalTask!}
+              />
+            ))}
+          </div>
+        )}
 
         {/* 타임라인 본체 */}
         <div

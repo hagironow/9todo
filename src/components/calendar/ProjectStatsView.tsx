@@ -65,18 +65,18 @@ export default function ProjectStatsView({ tasks, projects, dateRange, label }: 
 
   const grandTotal = stats.reduce((sum, s) => sum + s.total, 0);
 
-  if (stats.length === 0) return null;
-
-  // 파이 차트 데이터 계산
+  // 파이 차트 데이터 계산 (훅은 조건부 반환보다 위에 — Rules of Hooks)
   const pieSegments = useMemo(() => {
     let cumulative = 0;
     return stats.map((s) => {
-      const pct = s.total / grandTotal;
+      const pct = grandTotal > 0 ? s.total / grandTotal : 0;
       const start = cumulative;
       cumulative += pct;
       return { ...s, pct, start, end: cumulative };
     });
   }, [stats, grandTotal]);
+
+  if (stats.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-4">
