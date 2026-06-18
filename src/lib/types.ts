@@ -44,6 +44,7 @@ export interface Task extends ItemBase {
   recurrenceParentId?: string; // 반복 원본 Task ID
   defaultSlot?: SlotCoord; // 반복 투두의 기본 슬롯
   skippedDates?: string[]; // "이 날만 삭제"한 날짜 목록
+  isDeferred?: boolean; // 미루기 후 원본 자리에 남겨두기 위한 플래그
 }
 
 export interface Routine extends ItemBase {
@@ -63,6 +64,7 @@ export interface RoutineInstance {
   slot: SlotCoord | null; // null = 백로그
   deferCount: number;
   completedAt: string | null;
+  isDeferred?: boolean; // 미루기 후 원본 자리에 남겨두기 위한 플래그
 }
 
 export const UNCATEGORIZED_ID = '__uncategorized__';

@@ -423,14 +423,29 @@ export function useAppData() {
 
   const deferTask = useCallback(
     (taskId: string) => {
-      update((prev) => ({
-        ...prev,
-        tasks: prev.tasks.map((t) =>
-          t.id === taskId
-            ? { ...t, slot: null, date: null, deferCount: t.deferCount + 1, origin: 'deferred' as const }
-            : t,
-        ),
-      }));
+      update((prev) => {
+        const original = prev.tasks.find((t) => t.id === taskId);
+        if (!original) return prev;
+        
+        const clone: Task = {
+          ...original,
+          id: `item_${nanoid()}`,
+          slot: null,
+          date: null,
+          deferCount: original.deferCount + 1,
+          origin: 'deferred' as const,
+          createdAt: new Date().toISOString(),
+        };
+
+        return {
+          ...prev,
+          tasks: prev.tasks.map((t) =>
+            t.id === taskId
+              ? { ...t, isDeferred: true }
+              : t,
+          ).concat(clone),
+        };
+      });
       trackDefer();
     },
     [update],
@@ -648,14 +663,26 @@ export function useAppData() {
 
   const deferRoutineInstance = useCallback(
     (instanceId: string) => {
-      update((prev) => ({
-        ...prev,
-        routineInstances: prev.routineInstances.map((ri) =>
-          ri.id === instanceId
-            ? { ...ri, slot: null, deferCount: ri.deferCount + 1 }
-            : ri,
-        ),
-      }));
+      update((prev) => {
+        const original = prev.routineInstances.find((ri) => ri.id === instanceId);
+        if (!original) return prev;
+
+        const clone: RoutineInstance = {
+          ...original,
+          id: `ri_${nanoid()}`,
+          slot: null,
+          deferCount: original.deferCount + 1,
+        };
+
+        return {
+          ...prev,
+          routineInstances: prev.routineInstances.map((ri) =>
+            ri.id === instanceId
+              ? { ...ri, isDeferred: true }
+              : ri,
+          ).concat(clone),
+        };
+      });
     },
     [update],
   );

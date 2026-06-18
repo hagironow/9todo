@@ -481,7 +481,8 @@ export default function CalendarView({
   // 투두 아이템 렌더
   function renderTodoItem(t: Task) {
     const isDone = !!t.completedAt;
-    const isPastIncomplete = !isDone && t.date && t.date < todayStr;
+    const isDeferredMarked = !!t.isDeferred;
+    const isPastIncomplete = !isDone && !isDeferredMarked && t.date && t.date < todayStr;
     const project = t.projectId ? projects.find((p) => p.id === t.projectId) : null;
     return (
       <div
@@ -490,6 +491,8 @@ export default function CalendarView({
           'flex items-start gap-1 px-1.5 py-0.5 rounded-[4px] text-[12px] leading-snug',
           isDone
             ? 'text-[var(--g-success)]'
+            : isDeferredMarked
+            ? 'text-[var(--g-error)] line-through opacity-70'
             : isPastIncomplete
             ? 'text-[var(--g-error)] bg-[var(--g-error)]/8'
             : 'bg-[var(--muted)] text-[var(--foreground)]',
