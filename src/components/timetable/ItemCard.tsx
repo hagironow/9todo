@@ -52,11 +52,13 @@ export default function ItemCard({
   const { t } = useLocale();
   const isRecurring = !!item.recurrenceParentId || !!item.recurrence;
   const isCompleted = !!item.completedAt;
+  const isDeferredMarked = 'isDeferred' in item && !!(item as any).isDeferred;
+  const isInactive = isCompleted || isDeferredMarked;
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: item.id,
     data: { item, isRoutineInstance: false },
-    disabled: isReadOnly || isCompleted || isRecurring,
+    disabled: isReadOnly || isInactive || isRecurring,
   });
 
   const style = {
@@ -141,13 +143,13 @@ export default function ItemCard({
       style={style}
       className={[
         'group relative p-2.5 rounded-lg h-full',
-        isCompleted ? 'bg-transparent' : 'bg-[var(--surface-inset)]',
-        isHighlighted && !isCompleted ? 'animate-highlight' : '',
+        isInactive ? 'bg-transparent' : 'bg-[var(--surface-inset)]',
+        isHighlighted && !isInactive ? 'animate-highlight' : '',
       ].join(' ')}
     >
 
       {/* Content */}
-      <div className={['relative flex flex-col gap-1.5', isCompleted ? 'opacity-60' : ''].join(' ')}>
+      <div className={['relative flex flex-col gap-1.5', isInactive ? 'opacity-60' : ''].join(' ')}>
         {/* 상단: 프로젝트 태그 */}
         <div className="flex items-center gap-1.5" style={{ pointerEvents: editing ? 'auto' : 'none' }}>
           {editing ? (
@@ -284,6 +286,8 @@ export default function ItemCard({
                   'text-[15px] font-medium leading-snug whitespace-pre-wrap break-words',
                   isCompleted
                     ? 'line-through text-[var(--muted-foreground)]'
+                    : isDeferredMarked
+                    ? 'line-through text-[var(--g-error)]'
                     : 'text-[var(--card-foreground)]',
                 ].join(' ')}
                 onClick={(e) => { e.stopPropagation(); if (onItemSelect) onItemSelect(item); }}
@@ -339,7 +343,7 @@ export default function ItemCard({
       )}
 
       {/* Hover action overlay */}
-      {!editing && !isReadOnly && !isCompleted && (
+      {!editing && !isReadOnly && !isInactive && (
         <div
           className={[
             'absolute inset-0 rounded-lg',
