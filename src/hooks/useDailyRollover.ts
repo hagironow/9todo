@@ -35,6 +35,8 @@ export function useDailyRollover({
       if (today === realToday) {
         nextTasks = nextTasks.map((t) => {
           if (t.date && t.date < today && t.completedAt === null && t.slot !== null && !t.recurrenceParentId) {
+            // 미뤄진 태스크는 이미 복제본이 백로그에 있으므로 백로그로 다시 이동하지 않고 원본 자리에 보존
+            if (t.isDeferred) return t;
             changed = true;
             return { ...t, slot: null, date: null };
           }
@@ -52,6 +54,8 @@ export function useDailyRollover({
           removeIds.push(t.id); changed = true; continue;
         }
         if (t.date && t.date < realToday && !t.completedAt) {
+          // 미뤄진 반복 인스턴스는 어제 타임테이블에 기록으로 남겨둠
+          if (t.isDeferred) continue;
           removeIds.push(t.id); changed = true; continue;
         }
         if (t.date) {
