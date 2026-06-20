@@ -145,6 +145,7 @@ export default function ItemCard({
         'group relative p-2.5 rounded-lg h-full',
         isInactive ? 'bg-transparent' : 'bg-[var(--surface-inset)]',
         isHighlighted && !isInactive ? 'animate-highlight' : '',
+        isDeferredMarked && slotPriority === 1 ? 'border-l-[3px] border-[var(--g-error)]' : '',
       ].join(' ')}
     >
 
