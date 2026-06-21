@@ -17,6 +17,7 @@ import type {
   EnergyLevel,
   GoalTask,
   GoalPeriod,
+  Habit,
 } from '@/lib/types';
 import { resolveColor, hexToColorIndex, DEFAULT_THEME } from '@/lib/colors';
 import { trackSlotFill, trackTaskComplete, trackRoutineComplete, trackDefer, trackRepeat, trackProjectCreate, trackTaskCreate, trackRetroSave } from '@/lib/analytics';
