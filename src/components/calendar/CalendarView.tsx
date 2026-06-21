@@ -3,7 +3,8 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, Check, Plus, Settings } from 'lucide-react';
-import type { Task, Project, RetrospectiveEntry, RetroScope, EnergyLevel, GoalTask, GoalPeriod } from '@/lib/types';
+import { Flame } from 'lucide-react';
+import type { Task, Project, RetrospectiveEntry, RetroScope, EnergyLevel, GoalTask, GoalPeriod, Habit } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import RetroInput from '@/components/retrospective/RetroInput';
 import { EnergyBadge } from '@/components/retrospective/EnergyLevelInput';
@@ -18,6 +19,8 @@ interface CalendarViewProps {
   tasks: Task[];
   routines?: never[];
   routineInstances?: never[];
+  habits?: Habit[];
+  onToggleHabitDate?: (id: string, date: string) => void;
   projects: Project[];
   onEditRoutine?: () => void;
   onViewModeChange?: (mode: ViewMode) => void;
@@ -281,6 +284,8 @@ export default function CalendarView({
   onUncompleteGoalTask,
   onUpdateGoalTaskTitle,
   onRemoveGoalTask,
+  habits = [],
+  onToggleHabitDate,
 }: CalendarViewProps) {
   const { t } = useLocale();
   const todayStr = getToday();
@@ -477,6 +482,25 @@ export default function CalendarView({
     if (sM === eM) return `${t.monthYear(sY, sM)} ${sD} ~ ${eD}`;
     return `${sM}/${sD} ~ ${eM}/${eD}`;
   }, [weekDates, t]);
+
+  // Habit Streak Helper
+  const getHabitStreak = (completedDates: string[]) => {
+    let count = 0;
+    const dateSet = new Set(completedDates);
+    const d = new Date(todayStr + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    for (let i = 0; i < 365; i++) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${dd}`;
+      if (dateSet.has(dateStr)) count++;
+      else break;
+      d.setDate(d.getDate() - 1);
+    }
+    if (dateSet.has(todayStr)) count++;
+    return count;
+  };
 
   // 투두 아이템 렌더
   function renderTodoItem(t: Task) {
@@ -989,6 +1013,64 @@ export default function CalendarView({
               </div>
             );
           })()}
+
+          {/* 월간 습관 트래커 */}
+          {habits.length > 0 && (
+            <div className="border-t border-[var(--border)] p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[13px] font-semibold text-[var(--foreground)]">{t.routine || 'Habits'}</span>
+                <Flame size={12} className="text-[var(--accent)]" />
+              </div>
+              <div className="flex flex-col gap-2">
+                {habits.map(habit => {
+                  const streak = getHabitStreak(habit.completedDates);
+                  const displayDates = (() => {
+                    const daysInM = new Date(viewYear, viewMonth + 1, 0).getDate();
+                    const dates = [];
+                    for(let d=1; d<=daysInM; d++) {
+                      dates.push(toDateStringYMD(viewYear, viewMonth, d));
+                    }
+                    return dates;
+                  })();
+
+                  return (
+                    <div key={habit.id} className="flex items-center gap-2 bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius-sm)] p-2">
+                      <div className="w-[120px] shrink-0 flex items-center justify-between pr-2 border-r border-[var(--border)]">
+                        <span className="text-[12px] font-medium text-[var(--foreground)] truncate">{habit.title}</span>
+                        {streak > 0 && (
+                          <div className="flex items-center gap-0.5 text-[10px] text-[var(--accent)] font-bold ml-1">
+                            <Flame size={10} />
+                            <span>{streak}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 flex flex-wrap gap-[2px] items-center">
+                        {displayDates.map(d => {
+                          const isCompleted = habit.completedDates.includes(d);
+                          const isFuture = d > todayStr;
+                          return (
+                            <div
+                              key={d}
+                              onClick={() => !isFuture && onToggleHabitDate?.(habit.id, d)}
+                              className={[
+                                'w-[10px] h-[10px] rounded-[2px]',
+                                isFuture ? 'opacity-20 cursor-not-allowed border border-dashed border-[var(--border)]' : 'cursor-pointer hover:opacity-80 transition-opacity',
+                                isCompleted ? 'bg-[var(--accent)] shadow-sm' : 'bg-[var(--muted)] border border-[var(--border)]',
+                              ].join(' ')}
+                              title={`${d} - ${isCompleted ? 'Completed' : 'Missed'}`}
+                            >
+                              {/* removed week mode check */}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* 월간 프로젝트 통계 */}
           {(() => {
             const daysInM = new Date(viewYear, viewMonth + 1, 0).getDate();
