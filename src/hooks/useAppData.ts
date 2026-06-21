@@ -30,6 +30,7 @@ export const EMPTY_STATE: AppState = {
   tasks: [],
   routines: [],
   routineInstances: [],
+  habits: [],
   notes: [],
   goalCompass: {
     identity: '',
@@ -194,8 +195,15 @@ function resolveProjectColors(state: AppState): AppState {
   };
 }
 
+function migrateHabits(state: AppState): AppState {
+  if (!state.habits) {
+    return { ...state, habits: [] };
+  }
+  return state;
+}
+
 export function importStateFromJSON(json: string): AppState {
-  return migrateBacklogDates(resolveProjectColors(JSON.parse(json) as AppState));
+  return migrateHabits(migrateBacklogDates(resolveProjectColors(JSON.parse(json) as AppState)));
 }
 
 export function useAppData() {
@@ -216,7 +224,7 @@ export function useAppData() {
         if (parsed.tasks.length < before) {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
         }
-        setState(migrateGoalCompassToTasks(migrateBacklogDates(migrateRoutinesToTasks(parsed))));
+        setState(migrateHabits(migrateGoalCompassToTasks(migrateBacklogDates(migrateRoutinesToTasks(parsed)))));
       }
     } catch (err) {
       console.error('[useAppData] localStorage read error', err);
@@ -435,6 +443,7 @@ export function useAppData() {
           deferCount: original.deferCount + 1,
           origin: 'deferred' as const,
           createdAt: new Date().toISOString(),
+          isDeferred: undefined,
         };
 
         return {
@@ -489,7 +498,7 @@ export function useAppData() {
       update((prev) => ({
         ...prev,
         tasks: prev.tasks.map((t) =>
-          t.id === taskId ? { ...t, slot: coord, ...(date ? { date } : {}) } : t,
+          t.id === taskId ? { ...t, slot: coord, ...(date ? { date } : {}), isDeferred: undefined } : t,
         ),
       }));
       trackSlotFill(coord.period, coord.priority);
@@ -631,6 +640,65 @@ export function useAppData() {
       }));
     },
     [update],
+  );
+
+  // ── Habit CRUD ────────────────────────────────────────────────
+  const addHabit = useCallback(
+    (title: string) => {
+      const habit: Habit = {
+        id: `habit_${nanoid()}`,
+        title,
+        createdAt: new Date().toISOString(),
+        completedDates: [],
+      };
+      update((prev) => ({
+        ...prev,
+        habits: [...(prev.habits || []), habit],
+      }));
+      return habit;
+    },
+    [update]
+  );
+
+  const removeHabit = useCallback(
+    (habitId: string) => {
+      update((prev) => ({
+        ...prev,
+        habits: (prev.habits || []).filter((h) => h.id !== habitId),
+      }));
+    },
+    [update]
+  );
+
+  const updateHabitTitle = useCallback(
+    (habitId: string, title: string) => {
+      update((prev) => ({
+        ...prev,
+        habits: (prev.habits || []).map((h) =>
+          h.id === habitId ? { ...h, title } : h
+        ),
+      }));
+    },
+    [update]
+  );
+
+  const toggleHabitDate = useCallback(
+    (habitId: string, date: string) => {
+      update((prev) => ({
+        ...prev,
+        habits: (prev.habits || []).map((h) => {
+          if (h.id !== habitId) return h;
+          const isCompleted = h.completedDates.includes(date);
+          return {
+            ...h,
+            completedDates: isCompleted
+              ? h.completedDates.filter((d) => d !== date)
+              : [...h.completedDates, date].sort(),
+          };
+        }),
+      }));
+    },
+    [update]
   );
 
   // ── RoutineInstance ───────────────────────────────────────────
@@ -952,6 +1020,11 @@ export function useAppData() {
     continueRoutineInstance,
     assignRoutineInstanceSlot,
     removeRoutineInstance,
+    // habit
+    addHabit,
+    removeHabit,
+    updateHabitTitle,
+    toggleHabitDate,
     // note
     addNote,
     removeNote,
