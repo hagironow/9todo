@@ -29,6 +29,7 @@ const DEFAULT_STATE: AppState = {
   projectFirstMode: true,
   colorTheme: 'vivid',
   retrospectives: [],
+  habits: [],
 };
 
 export function readData(): AppState {
