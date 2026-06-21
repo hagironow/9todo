@@ -31,6 +31,7 @@ import GoalCompass from '@/components/goal-compass/GoalCompass';
 import NowFocus, { getActiveTimerItemId } from '@/components/now-focus/NowFocus';
 import TimetableGrid from '@/components/timetable/TimetableGrid';
 import MobileTimetableList from '@/components/timetable/MobileTimetableList';
+import HabitTracker from '@/components/routine/HabitTracker';
 import DateNav from '@/components/date-nav/DateNav';
 import BacklogPanel from '@/components/backlog/BacklogPanel';
 import SlotPickerModal from '@/components/modals/SlotPickerModal';
@@ -129,6 +130,10 @@ export default function Home() {
     removeGoalTask,
     upsertRetrospective,
     removeRetrospective,
+    addHabit,
+    removeHabit,
+    updateHabitTitle,
+    toggleHabitDate,
   } = useAppData();
 
   const { t } = useLocale();
@@ -180,7 +185,7 @@ export default function Home() {
   const playItems = useMemo(() => {
     const items: (ScheduledItem | null)[] = [null, null, null];
     const tasks = state.tasks.filter(
-      (t) => t.slot?.period === currentPeriod && t.date === today && !t.completedAt
+      (t) => t.slot?.period === currentPeriod && t.date === today && !t.completedAt && !t.isDeferred
     );
     for (const t of tasks) {
       if (t.slot) items[t.slot.priority - 1] = t;
@@ -899,6 +904,8 @@ export default function Home() {
               tasks={state.tasks}
               routines={[]}
               routineInstances={[]}
+              habits={state.habits || []}
+              onToggleHabitDate={toggleHabitDate}
               projects={state.projects}
               onEditRoutine={() => {}}
               onViewModeChange={setCalendarViewMode}
@@ -1060,6 +1067,17 @@ export default function Home() {
                   onItemSelect={() => {}}
                   onSendToBacklog={handleSendToBacklog}
                 />
+
+                {/* Habit Tracker */}
+                <div className="mt-4">
+                  <HabitTracker
+                    habits={state.habits || []}
+                    onAddHabit={addHabit}
+                    onRemoveHabit={removeHabit}
+                    onUpdateHabitTitle={updateHabitTitle}
+                    onToggleHabitDate={toggleHabitDate}
+                  />
+                </div>
 
                 {/* Backlog */}
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
