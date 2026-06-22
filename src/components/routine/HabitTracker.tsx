@@ -84,14 +84,16 @@ export default function HabitTracker({
       <div className="bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius)] p-4 flex flex-col gap-4">
         {/* Header Row for Weekdays */}
         {habits.length > 0 && (
-          <div className="flex items-center pl-[calc(280px+0.75rem)] pr-8">
-            <div className="flex-1 grid grid-cols-7 gap-1">
+          <div className="flex items-center group h-6">
+            <div className="w-[180px] sm:w-[240px] shrink-0 border-r border-transparent pr-3" />
+            <div className="flex-1 grid grid-cols-7 gap-1 pl-3">
               {weekDates.map((date, i) => (
                 <div key={date} className="text-center text-[10px] font-semibold text-[var(--muted-foreground)]">
                   {weekdaysStr[i]}
                 </div>
               ))}
             </div>
+            <div className="w-8 shrink-0" />
           </div>
         )}
 
@@ -101,7 +103,7 @@ export default function HabitTracker({
             return (
               <div key={habit.id} className="flex items-center group h-8">
                 {/* Habit Title */}
-                <div className="w-[280px] shrink-0 flex items-center justify-between pr-3 border-r border-[var(--border)]">
+                <div className="w-[180px] sm:w-[240px] shrink-0 flex items-center justify-between pr-3 border-r border-[var(--border)]">
                   <input
                     value={habit.title}
                     onChange={(e) => onUpdateHabitTitle(habit.id, e.target.value)}
