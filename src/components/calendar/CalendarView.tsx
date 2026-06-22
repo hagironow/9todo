@@ -1054,8 +1054,8 @@ export default function CalendarView({
                               onClick={() => !isFuture && onToggleHabitDate?.(habit.id, d)}
                               className={[
                                 'w-[10px] h-[10px] rounded-[2px]',
-                                isFuture ? 'opacity-20 cursor-not-allowed border border-dashed border-[var(--border)]' : 'cursor-pointer hover:opacity-80 transition-opacity',
-                                isCompleted ? 'bg-[var(--accent)] shadow-sm' : 'bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10',
+                                isFuture ? 'opacity-40 cursor-not-allowed border border-dashed border-[var(--muted-foreground)]' : 'cursor-pointer hover:opacity-80 transition-opacity',
+                                isCompleted ? 'bg-[var(--accent)] shadow-sm' : !isFuture ? 'bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10' : '',
                               ].join(' ')}
                               title={`${d} - ${isCompleted ? 'Completed' : 'Missed'}`}
                             >

@@ -133,10 +133,10 @@ export default function HabitTracker({
                         onClick={() => onToggleHabitDate(habit.id, date)}
                         className={[
                           'relative w-7 h-7 mx-auto rounded-full flex items-center justify-center transition-all duration-200',
-                          isFuture ? 'opacity-20 cursor-not-allowed border border-dashed border-[var(--border)]' : 'cursor-pointer hover:scale-110 active:scale-95',
+                          isFuture ? 'opacity-40 cursor-not-allowed border border-dashed border-[var(--muted-foreground)]' : 'cursor-pointer hover:scale-110 active:scale-95',
                           isCompleted
                             ? 'bg-[var(--accent)] text-[var(--background)] shadow-sm'
-                            : 'bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20',
+                            : !isFuture ? 'bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20' : '',
                           isToday && !isCompleted ? 'ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--card)]' : ''
                         ].join(' ')}
                         title={date}
