@@ -67,6 +67,14 @@ export interface RoutineInstance {
   isDeferred?: boolean; // 미루기 후 원본 자리에 남겨두기 위한 플래그
 }
 
+export interface Habit {
+  id: string;
+  title: string;
+  createdAt: string;
+  archived?: boolean;
+  completedDates: string[]; // "YYYY-MM-DD"
+}
+
 export const UNCATEGORIZED_ID = '__uncategorized__';
 
 export interface Note {
@@ -120,6 +128,7 @@ export interface AppState {
   tasks: Task[];
   routines: Routine[];
   routineInstances: RoutineInstance[];
+  habits: Habit[];
   notes: Note[];
   goalCompass: GoalCompass;
   goalCompletedDates: string[]; // (레거시) 오늘 목표 완료한 날짜 목록
