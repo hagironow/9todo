@@ -85,8 +85,8 @@ export default function HabitTracker({
         {/* Header Row for Weekdays */}
         {habits.length > 0 && (
           <div className="flex items-center group h-6">
-            <div className="w-[180px] sm:w-[240px] shrink-0 border-r border-transparent pr-3" />
-            <div className="flex-1 grid grid-cols-7 gap-1 pl-3">
+            <div className="w-[140px] sm:w-[240px] shrink-0 border-r border-transparent pr-3" />
+            <div className="flex-1 grid grid-cols-7 gap-1 pl-3 place-items-center">
               {weekDates.map((date, i) => (
                 <div key={date} className="text-center text-[10px] font-semibold text-[var(--muted-foreground)]">
                   {weekdaysStr[i]}
@@ -103,12 +103,12 @@ export default function HabitTracker({
             return (
               <div key={habit.id} className="flex items-center group h-8">
                 {/* Habit Title */}
-                <div className="w-[180px] sm:w-[240px] shrink-0 flex items-center justify-between pr-3 border-r border-[var(--border)]">
+                <div className="w-[140px] sm:w-[240px] shrink-0 flex items-center justify-between pr-3 border-r border-[var(--border)]">
                   <input
                     value={habit.title}
                     onChange={(e) => onUpdateHabitTitle(habit.id, e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') e.currentTarget.blur();
+                      if (e.key === 'Enter' && !e.nativeEvent.isComposing) e.currentTarget.blur();
                     }}
                     className="flex-1 bg-transparent text-[13px] font-medium text-[var(--foreground)] outline-none truncate placeholder:text-[var(--muted-foreground)] min-w-0 pr-2"
                     placeholder="Habit title"
@@ -122,7 +122,7 @@ export default function HabitTracker({
                 </div>
 
                 {/* Week Circles */}
-                <div className="flex-1 grid grid-cols-7 gap-1 pl-3">
+                <div className="flex-1 grid grid-cols-7 gap-1 pl-3 place-items-center">
                   {weekDates.map((date) => {
                     const isToday = date === todayStr;
                     const isCompleted = habit.completedDates.includes(date);
@@ -134,7 +134,7 @@ export default function HabitTracker({
                         disabled={isFuture}
                         onClick={() => onToggleHabitDate(habit.id, date)}
                         className={[
-                          'relative w-7 h-7 mx-auto rounded-full flex items-center justify-center transition-all duration-200',
+                          'relative w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all duration-200',
                           isFuture ? 'opacity-40 cursor-not-allowed border border-dashed border-[var(--muted-foreground)]' : 'cursor-pointer hover:scale-110 active:scale-95',
                           isCompleted
                             ? 'bg-[var(--accent)] text-[var(--background)] shadow-sm'
@@ -168,7 +168,7 @@ export default function HabitTracker({
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAdd();
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAdd();
               }}
               placeholder="Add a new habit..."
               className="flex-1 bg-transparent text-[13px] text-[var(--foreground)] outline-none placeholder:text-[var(--muted-foreground)]"

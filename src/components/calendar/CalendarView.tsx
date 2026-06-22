@@ -1035,7 +1035,7 @@ export default function CalendarView({
 
                   return (
                     <div key={habit.id} className="flex items-center gap-2 bg-[var(--card)] border border-[var(--border)] rounded-[var(--radius-sm)] p-2">
-                      <div className="w-[160px] sm:w-[240px] shrink-0 flex items-center justify-between pr-2 border-r border-[var(--border)]">
+                      <div className="w-[140px] sm:w-[240px] shrink-0 flex items-center justify-between pr-2 border-r border-[var(--border)]">
                         <span className="text-[12px] font-medium text-[var(--foreground)] truncate">{habit.title}</span>
                         {streak > 0 && (
                           <div className="flex items-center gap-0.5 text-[10px] text-[var(--accent)] font-bold ml-1">
