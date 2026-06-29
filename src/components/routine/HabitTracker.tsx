@@ -13,6 +13,7 @@ interface HabitTrackerProps {
   onUpdateHabitTitle: (id: string, title: string) => void;
   onToggleHabitDate: (id: string, date: string) => void;
   weekStartDay?: 0 | 1;
+  currentDate?: string;
 }
 
 export default function HabitTracker({
@@ -22,14 +23,16 @@ export default function HabitTracker({
   onUpdateHabitTitle,
   onToggleHabitDate,
   weekStartDay = 1,
+  currentDate,
 }: HabitTrackerProps) {
   const { t } = useLocale();
   const [newTitle, setNewTitle] = useState('');
-  const todayStr = getToday();
+  const realToday = getToday();
+  const activeDate = currentDate || realToday;
 
   // Get current week's dates
   const weekDates = useMemo(() => {
-    const d = new Date(todayStr + 'T00:00:00');
+    const d = new Date(activeDate + 'T00:00:00');
     const dayOfWeek = d.getDay();
     const diff = (dayOfWeek - weekStartDay + 7) % 7;
     const start = new Date(d);
@@ -44,14 +47,14 @@ export default function HabitTracker({
       dates.push(`${y}-${m}-${date}`);
     }
     return dates;
-  }, [todayStr, weekStartDay]);
+  }, [activeDate, weekStartDay]);
 
   const weekdaysStr = weekStartDay === 1 ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   const getStreak = (completedDates: string[]) => {
     let count = 0;
     const dateSet = new Set(completedDates);
-    const d = new Date(todayStr + 'T00:00:00');
+    const d = new Date(realToday + 'T00:00:00');
     d.setDate(d.getDate() - 1); // check from yesterday
     for (let i = 0; i < 365; i++) {
       const y = d.getFullYear();
@@ -62,7 +65,7 @@ export default function HabitTracker({
       else break;
       d.setDate(d.getDate() - 1);
     }
-    if (dateSet.has(todayStr)) count++;
+    if (dateSet.has(realToday)) count++;
     return count;
   };
 
@@ -124,9 +127,9 @@ export default function HabitTracker({
                 {/* Week Circles */}
                 <div className="flex-1 grid grid-cols-7 gap-1 pl-3 place-items-center">
                   {weekDates.map((date) => {
-                    const isToday = date === todayStr;
+                    const isToday = date === realToday;
                     const isCompleted = habit.completedDates.includes(date);
-                    const isFuture = date > todayStr;
+                    const isFuture = date > realToday;
                     
                     return (
                       <button

@@ -1076,6 +1076,7 @@ export default function Home() {
                     onRemoveHabit={removeHabit}
                     onUpdateHabitTitle={updateHabitTitle}
                     onToggleHabitDate={toggleHabitDate}
+                    currentDate={today}
                   />
                 </div>
 
