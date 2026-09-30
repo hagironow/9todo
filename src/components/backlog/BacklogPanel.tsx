@@ -2,7 +2,7 @@
 
 import { useState, useRef, KeyboardEvent } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { ChevronDown, Clock, Inbox, Plus } from 'lucide-react';
+import { CalendarCheck, ChevronDown, Clock, Inbox, Plus } from 'lucide-react';
 import RepeatCountIcon from '@/components/ui/RepeatCountIcon';
 import { Task, RoutineInstance, Project } from '@/lib/types';
 import BacklogItem from './BacklogItem';
@@ -19,13 +19,27 @@ interface BacklogPanelProps {
   isRoutineInstance: (item: BacklogEntry) => boolean;
   onPlaceInSlot: (item: BacklogEntry) => void;
   onUpdateTitle?: (item: BacklogEntry, title: string) => void;
+  onUpdateProject?: (item: BacklogEntry, projectId: string | null) => void;
   onDelete?: (item: BacklogEntry) => void;
   onAdd?: (title: string, projectId: string | null) => void;
   lastUsedProjectId?: string | null;
   isReadOnly?: boolean;
+  /** 현재 주 키 ("YYYY-Www") — 이 값과 일치하는 항목만 '이번주 할일'로 묶인다 */
+  currentWeekKey?: string;
+  /** '이번주 할일' 토글 */
+  onToggleWeek?: (item: BacklogEntry) => void;
 }
 
-function getOriginGroup(item: BacklogEntry): 'deferred' | 'repeated' | 'normal' {
+type GroupKey = 'week' | 'deferred' | 'repeated' | 'normal';
+
+function isInWeek(item: BacklogEntry, currentWeekKey?: string): boolean {
+  if (!currentWeekKey || !('weekKey' in item)) return false;
+  return (item as Task).weekKey === currentWeekKey;
+}
+
+function getOriginGroup(item: BacklogEntry, currentWeekKey?: string): GroupKey {
+  // '이번주 할일'로 직접 표시한 항목이 최우선 — 지난 주 키는 자동으로 풀린다
+  if (isInWeek(item, currentWeekKey)) return 'week';
   if ('origin' in item) {
     const origin = (item as Task).origin;
     if (origin === 'deferred') return 'deferred';
@@ -37,8 +51,6 @@ function getOriginGroup(item: BacklogEntry): 'deferred' | 'repeated' | 'normal' 
   return 'normal';
 }
 
-type GroupKey = 'deferred' | 'repeated' | 'normal';
-
 export default function BacklogPanel({
   items,
   projects,
@@ -46,10 +58,13 @@ export default function BacklogPanel({
   isRoutineInstance,
   onPlaceInSlot,
   onUpdateTitle,
+  onUpdateProject,
   onDelete,
   onAdd,
   lastUsedProjectId,
   isReadOnly,
+  currentWeekKey,
+  onToggleWeek,
 }: BacklogPanelProps) {
   const { t } = useLocale();
   const [expanded, setExpanded] = useState(true);
@@ -62,9 +77,10 @@ export default function BacklogPanel({
   const pickerAnchorRef = useRef<HTMLButtonElement>(null);
 
   const GROUP_CONFIG: Record<GroupKey, { label: string; icon: typeof Clock | typeof Inbox | null; order: number }> = {
-    deferred: { label: t.deferredItems, icon: Clock, order: 0 },
-    repeated: { label: t.redoItems,    icon: null,  order: 1 },
-    normal:   { label: t.todoItems,    icon: Inbox,  order: 2 },
+    week:     { label: t.weekTodoItems, icon: CalendarCheck, order: 0 },
+    deferred: { label: t.deferredItems, icon: Clock,         order: 1 },
+    repeated: { label: t.redoItems,     icon: null,          order: 2 },
+    normal:   { label: t.todoItems,     icon: Inbox,         order: 3 },
   };
 
   const handleAdd = () => {
@@ -84,13 +100,13 @@ export default function BacklogPanel({
   const totalCount = items.length;
 
   // Group by origin
-  const grouped: Record<GroupKey, BacklogEntry[]> = { deferred: [], repeated: [], normal: [] };
+  const grouped: Record<GroupKey, BacklogEntry[]> = { week: [], deferred: [], repeated: [], normal: [] };
   for (const item of items) {
-    const group = getOriginGroup(item);
+    const group = getOriginGroup(item, currentWeekKey);
     grouped[group].push(item);
   }
 
-  const orderedGroups = (['deferred', 'repeated', 'normal'] as GroupKey[]).filter(
+  const orderedGroups = (['week', 'deferred', 'repeated', 'normal'] as GroupKey[]).filter(
     (key) => grouped[key].length > 0
   );
 
@@ -171,10 +187,14 @@ export default function BacklogPanel({
                           deferCount={'deferCount' in item ? item.deferCount : 0}
                           isRoutine={isRoutineInstance(item)}
                           project={project}
+                          projects={projects}
+                          onUpdateProject={onUpdateProject}
                           onPlaceInSlot={onPlaceInSlot}
                           onUpdateTitle={onUpdateTitle}
                           onDelete={onDelete}
                           isReadOnly={isReadOnly}
+                          inWeek={key === 'week'}
+                          onToggleWeek={onToggleWeek}
                         />
                       );
                     })}

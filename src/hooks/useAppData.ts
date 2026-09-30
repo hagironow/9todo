@@ -14,6 +14,7 @@ import type {
   RecurrenceType,
   RetrospectiveEntry,
   RetroScope,
+  RetroFields,
   EnergyLevel,
   GoalTask,
   GoalPeriod,
@@ -563,6 +564,19 @@ export function useAppData() {
     [update],
   );
 
+  /** 백로그 '이번주 할일' 토글 — weekKey를 넣거나(null) 뺀다 */
+  const setTaskWeek = useCallback(
+    (taskId: string, weekKey: string | null) => {
+      update((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId ? { ...t, weekKey } : t,
+        ),
+      }));
+    },
+    [update],
+  );
+
   /** 반복 부모 + 모든 인스턴스 제목 일괄 수정 */
   const updateTaskTitleWithRecurrence = useCallback(
     (taskId: string, title: string) => {
@@ -948,7 +962,13 @@ export function useAppData() {
 
   // ── Retrospective ─────────────────────────────────────────────
   const upsertRetrospective = useCallback(
-    (scope: RetroScope, scopeKey: string, content: string, energyLevel?: EnergyLevel) => {
+    (
+      scope: RetroScope,
+      scopeKey: string,
+      content: string,
+      energyLevel?: EnergyLevel,
+      fields?: RetroFields,
+    ) => {
       update((prev) => {
         const retros = prev.retrospectives ?? [];
         const existing = retros.find((r) => r.scope === scope && r.scopeKey === scopeKey);
@@ -957,7 +977,13 @@ export function useAppData() {
             ...prev,
             retrospectives: retros.map((r) =>
               r.id === existing.id
-                ? { ...r, content, ...(energyLevel !== undefined && { energyLevel }), updatedAt: new Date().toISOString() }
+                ? {
+                    ...r,
+                    content,
+                    ...(energyLevel !== undefined && { energyLevel }),
+                    ...(fields ?? {}),
+                    updatedAt: new Date().toISOString(),
+                  }
                 : r,
             ),
           };
@@ -968,6 +994,7 @@ export function useAppData() {
           scopeKey,
           content,
           energyLevel,
+          ...(fields ?? {}),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -1008,6 +1035,7 @@ export function useAppData() {
     removeTask,
     removeTaskWithRecurrence,
     updateTaskTitle,
+    setTaskWeek,
     updateTaskTitleWithRecurrence,
     // routine
     addRoutine,

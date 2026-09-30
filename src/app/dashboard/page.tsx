@@ -50,7 +50,7 @@ import { triggerConfetti } from '@/components/effects/ParticleBurst';
 import { exportToJSON, downloadFile } from '@/lib/export';
 import { trackEvent, trackExport, trackSearch, trackLoginClick } from '@/lib/analytics';
 import { calculateDailyXP, calculateTotalXP } from '@/lib/xp';
-import { getToday, formatLocalDate, getWeekKey, getMonthKey } from '@/lib/date';
+import { getToday, formatLocalDate, getWeekKey, getMonthKey, getNextDay } from '@/lib/date';
 import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
 import StorageConsentBanner from '@/components/modals/StorageConsentBanner';
 import ProjectDetailView from '@/components/project-detail/ProjectDetailView';
@@ -113,6 +113,7 @@ export default function Home() {
     removeTask,
     removeTaskWithRecurrence,
     updateTaskTitle,
+    setTaskWeek,
     updateTaskTitleWithRecurrence,
     setActiveProjectFilter,
     setColorTheme,
@@ -1080,6 +1081,23 @@ export default function Home() {
                   />
                 </div>
 
+                {/* 일간 회고 */}
+                <DailyRetro
+                  date={today}
+                  retrospectives={state.retrospectives ?? []}
+                  tasks={state.tasks}
+                  onSave={upsertRetrospective}
+                  onPlanTomorrow={(title) => {
+                    const nextDay = getNextDay(today);
+                    const occupied = state.tasks
+                      .filter((x) => x.date === nextDay && x.slot?.period === 'morning')
+                      .map((x) => x.slot!.priority);
+                    const free = ([1, 2, 3] as Priority[]).find((p) => !occupied.includes(p));
+                    // 아침이 꽉 찼으면 백로그로 (addTask는 slot 없으면 date를 비운다)
+                    addTask(title, nextDay, free ? { slot: { period: 'morning', priority: free } } : undefined);
+                  }}
+                />
+
                 {/* Backlog */}
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                 <BacklogPanel
@@ -1089,18 +1107,19 @@ export default function Home() {
                   isRoutineInstance={isRoutineInstanceFn as any}
                   onPlaceInSlot={handlePlaceInSlot as any}
                   onUpdateTitle={handleUpdateTitle as any}
+                  onUpdateProject={handleUpdateProject as any}
                   onDelete={handleDelete as any}
                   onAdd={(title, projectId) => addTask(title, today, { projectId })}
                   lastUsedProjectId={state.lastUsedProjectId}
                   isReadOnly={isReadOnly}
+                  currentWeekKey={getWeekKey(today)}
+                  onToggleWeek={(item) => {
+                    const weekKey = getWeekKey(today);
+                    const inWeek = 'weekKey' in item && (item as Task).weekKey === weekKey;
+                    setTaskWeek(item.id, inWeek ? null : weekKey);
+                  }}
                 />
 
-                {/* 일간 회고 */}
-                <DailyRetro
-                  date={today}
-                  retrospectives={state.retrospectives ?? []}
-                  onSave={upsertRetrospective}
-                />
               </>
             );
           })()}

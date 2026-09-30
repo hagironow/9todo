@@ -45,6 +45,7 @@ export interface Task extends ItemBase {
   defaultSlot?: SlotCoord; // 반복 투두의 기본 슬롯
   skippedDates?: string[]; // "이 날만 삭제"한 날짜 목록
   isDeferred?: boolean; // 미루기 후 원본 자리에 남겨두기 위한 플래그
+  weekKey?: string | null; // "YYYY-Www" — 백로그의 '이번주 할일'로 표시. 주가 지나면 자동으로 일반 할 일로 돌아간다
 }
 
 export interface Routine extends ItemBase {
@@ -113,15 +114,43 @@ export type RetroScope = 'day' | 'week' | 'month';
 
 export type EnergyLevel = 1 | 2 | 3 | 4 | 5;
 
+/** 미루기/또하기 사유 — 고정 선택지. 자책 서술 대신 장애물 한 탭으로 담는다. */
+export type RetroBlocker = 'time' | 'focus' | 'waiting' | 'toobig' | 'condition';
+
+/**
+ * 오늘 실제로 일어난 미루기/또하기 액션 한 건에 대한 기록.
+ * 액션이 없으면 회고에 아무것도 뜨지 않는다 — 체크 없이 지나간 일은 묻지 않는다.
+ */
+export interface RetroActionNote {
+  taskId: string; // 미루기/또하기로 생성된 태스크의 id
+  reason?: RetroBlocker | null;
+  note?: string;
+}
+
 export interface RetrospectiveEntry {
   id: string;
   scope: RetroScope;
   scopeKey: string; // 'day': "YYYY-MM-DD", 'week': "YYYY-Www", 'month': "YYYY-MM"
-  content: string;
+  content: string;  // 사람이 읽는 형태. 일간은 아래 필드로부터 자동 합성된다.
   energyLevel?: EnergyLevel; // 1~5 에너지 레벨
+  // ── 일간 템플릿 필드 (week/month는 content 자유 입력 유지) ──
+  win?: string;       // 오늘의 한 건
+  learned?: string;   // 알게 된 것
+  nextFirst?: string; // 내일 첫 칸
+  actionNotes?: RetroActionNote[]; // 오늘의 미루기/또하기 사유
+  /** @deprecated actionNotes로 대체. 기존 데이터 호환용으로만 남김 */
+  blocker?: RetroBlocker | null;
+  /** @deprecated actionNotes로 대체 */
+  blockerNote?: string;
+  legacy?: string;    // 템플릿 이전에 자유 서술로 쓴 기록 보존용
   createdAt: string;
   updatedAt: string;
 }
+
+/** 일간 회고 템플릿 필드의 부분 패치 (로컬 단독 사용 — 느슨하게 둔다) */
+export type RetroFields = Partial<
+  Pick<RetrospectiveEntry, 'win' | 'learned' | 'nextFirst' | 'actionNotes' | 'legacy'>
+>;
 
 export interface AppState {
   projects: Project[];
