@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { Repeat, GripVertical, Pencil, Trash2 } from 'lucide-react';
+import { Repeat, GripVertical, Pencil, Trash2, CalendarCheck } from 'lucide-react';
 import { Task, RoutineInstance, Project } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ColorDot from '@/components/ui/ColorDot';
+import ProjectPicker from '@/components/quick-input/ProjectPicker';
 import { useLocale } from '@/i18n/context';
 
 type BacklogEntry = Task | RoutineInstance;
@@ -18,10 +19,17 @@ interface BacklogItemProps {
   deferCount: number;
   isRoutine?: boolean;
   project?: Project | null;
+  /** 프로젝트 태그 클릭으로 변경할 때 필요한 전체 목록 */
+  projects?: Project[];
+  onUpdateProject?: (item: BacklogEntry, projectId: string | null) => void;
   onPlaceInSlot: (item: BacklogEntry) => void;
   onUpdateTitle?: (item: BacklogEntry, title: string) => void;
   onDelete?: (item: BacklogEntry) => void;
   isReadOnly?: boolean;
+  /** '이번주 할일'에 들어있는지 */
+  inWeek?: boolean;
+  /** '이번주 할일' 토글 (태스크만 지원) */
+  onToggleWeek?: (item: BacklogEntry) => void;
 }
 
 export default function BacklogItem({
@@ -30,15 +38,21 @@ export default function BacklogItem({
   deferCount,
   isRoutine = false,
   project,
+  projects,
+  onUpdateProject,
   onPlaceInSlot,
   onUpdateTitle,
   onDelete,
   isReadOnly,
+  inWeek = false,
+  onToggleWeek,
 }: BacklogItemProps) {
   const { t } = useLocale();
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
   const editRef = useRef<HTMLTextAreaElement>(null);
+  const [projectPickerOpen, setProjectPickerOpen] = useState(false);
+  const projectAnchorRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (editing) editRef.current?.focus();
@@ -95,13 +109,30 @@ export default function BacklogItem({
         {isRoutine ? (
           <span title={t.routine} className="flex-shrink-0"><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
         ) : (
-          <span
-            className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+          <button
+            ref={projectAnchorRef}
+            type="button"
+            disabled={!onUpdateProject || isReadOnly}
+            onClick={(e) => {
+              e.stopPropagation();
+              setProjectPickerOpen((v) => !v);
+            }}
+            className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium transition-opacity enabled:hover:opacity-70 disabled:cursor-default"
             style={project ? { backgroundColor: 'var(--surface-hover)', color: project.color } : { backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}
+            title={onUpdateProject ? t.selectProject : undefined}
           >
             <ColorDot color={project?.color ?? '#8A8A8A'} size="sm" />
             <span className="max-w-[60px] truncate">{project?.name ?? t.uncategorized}</span>
-          </span>
+          </button>
+        )}
+        {projectPickerOpen && onUpdateProject && (
+          <ProjectPicker
+            projects={projects ?? []}
+            selectedId={project?.id ?? null}
+            onSelect={(selected) => onUpdateProject(item, selected?.id ?? null)}
+            onClose={() => setProjectPickerOpen(false)}
+            anchorRef={projectAnchorRef}
+          />
         )}
         {editing ? (
           <textarea
@@ -130,6 +161,21 @@ export default function BacklogItem({
       {/* 호버 액션 버튼 */}
       {!isReadOnly && (
         <div className="absolute right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          {onToggleWeek && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleWeek(item); }}
+              className={[
+                'w-10 h-10 flex items-center justify-center rounded-full transition-colors',
+                inWeek
+                  ? 'text-[var(--accent)] hover:bg-[var(--accent)]/10'
+                  : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--border)]',
+              ].join(' ')}
+              title={inWeek ? t.removeFromWeek : t.addToWeek}
+              aria-label={inWeek ? t.removeFromWeek : t.addToWeek}
+            >
+              <CalendarCheck size={13} />
+            </button>
+          )}
           <Button
             variant="ghost"
             size="sm"
