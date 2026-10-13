@@ -15,6 +15,7 @@ import type {
   RetrospectiveEntry,
   RetroScope,
   RetroFields,
+  WeekPriority,
   EnergyLevel,
   GoalTask,
   GoalPeriod,
@@ -564,13 +565,47 @@ export function useAppData() {
     [update],
   );
 
-  /** 백로그 '이번주 할일' 토글 — weekKey를 넣거나(null) 뺀다 */
+  /** '이번 주'에 담거나 뺀다. weekKey가 null이면 우선순위도 같이 비운다. */
   const setTaskWeek = useCallback(
-    (taskId: string, weekKey: string | null) => {
+    (taskId: string, weekKey: string | null, weekPriority?: WeekPriority) => {
       update((prev) => ({
         ...prev,
         tasks: prev.tasks.map((t) =>
-          t.id === taskId ? { ...t, weekKey } : t,
+          t.id === taskId
+            ? {
+                ...t,
+                weekKey,
+                weekPriority: weekKey
+                  ? (weekPriority ?? t.weekPriority ?? 'normal')
+                  : undefined,
+              }
+            : t,
+        ),
+      }));
+    },
+    [update],
+  );
+
+  /** 이번 주 항목의 요일 메모. null이면 '아무 때나' */
+  const setTaskWeekDay = useCallback(
+    (taskId: string, weekDay: number | null) => {
+      update((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId ? { ...t, weekDay: weekDay ?? undefined } : t,
+        ),
+      }));
+    },
+    [update],
+  );
+
+  /** 이번 주 항목의 우선순위만 변경 */
+  const setTaskWeekPriority = useCallback(
+    (taskId: string, weekPriority: WeekPriority) => {
+      update((prev) => ({
+        ...prev,
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId ? { ...t, weekPriority } : t,
         ),
       }));
     },
@@ -1036,6 +1071,8 @@ export function useAppData() {
     removeTaskWithRecurrence,
     updateTaskTitle,
     setTaskWeek,
+    setTaskWeekPriority,
+    setTaskWeekDay,
     updateTaskTitleWithRecurrence,
     // routine
     addRoutine,

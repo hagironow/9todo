@@ -20,6 +20,7 @@ import type {
   Task,
   GoalCompass as GoalCompassType,
   Project,
+  WeekPriority,
 } from '@/lib/types';
 import { UNCATEGORIZED_ID } from '@/lib/types';
 import { useAppData } from '@/hooks/useAppData';
@@ -44,6 +45,8 @@ import type { RecurrenceSetupData } from '@/components/modals/RecurrenceSetupMod
 import { timeToPeriod } from '@/components/modals/RecurrenceSetupModal';
 import CalendarView from '@/components/calendar/CalendarView';
 import DailyRetro from '@/components/retrospective/DailyRetro';
+import WeekStrip from '@/components/week/WeekStrip';
+import WeekBoardView from '@/components/week/WeekBoardView';
 import RetrospectiveListView from '@/components/retrospective/RetrospectiveListView';
 import ReadOnlyBanner from '@/components/date-nav/ReadOnlyBanner';
 import { triggerConfetti } from '@/components/effects/ParticleBurst';
@@ -114,6 +117,8 @@ export default function Home() {
     removeTaskWithRecurrence,
     updateTaskTitle,
     setTaskWeek,
+    setTaskWeekPriority,
+    setTaskWeekDay,
     updateTaskTitleWithRecurrence,
     setActiveProjectFilter,
     setColorTheme,
@@ -147,6 +152,7 @@ export default function Home() {
   const handleViewChange = useCallback((filterId: string | null) => {
     const viewName = filterId === '__calendar__' ? 'calendar'
       : filterId === '__retrospective__' ? 'retrospective'
+      : filterId === '__week__' ? 'week'
       : filterId === '__unassigned__' ? 'unassigned'
       : filterId ? 'project_detail'
       : 'today';
@@ -665,6 +671,16 @@ export default function Home() {
     if (item) setActiveItem(item);
   }, []);
 
+  /** 이번 주에서 만든 태스크 — 슬롯 없이 바로 이번 주 풀로 들어간다 */
+  const handleAddWeekTask = useCallback(
+    (title: string, projectId: string | null, priority: WeekPriority, weekDay: number | null) => {
+      const task = addTask(title, null, { projectId });
+      setTaskWeek(task.id, getWeekKey(today), priority);
+      if (weekDay !== null) setTaskWeekDay(task.id, weekDay);
+    },
+    [addTask, setTaskWeek, setTaskWeekDay, today],
+  );
+
   const handlePlaceInSlot = useCallback(
     (item: Task) => {
       setSlotPickerTarget(item.id);
@@ -871,8 +887,9 @@ export default function Home() {
           {!(state.activeProjectFilter
             && state.activeProjectFilter !== '__calendar__'
             && state.activeProjectFilter !== '__retrospective__'
+            && state.activeProjectFilter !== '__week__'
             && (state.activeProjectFilter === '__unassigned__' || state.projects.some((p) => p.id === state.activeProjectFilter))
-          ) && state.activeProjectFilter !== '__retrospective__' && (
+          ) && state.activeProjectFilter !== '__retrospective__' && state.activeProjectFilter !== '__week__' && (
             <GoalCompass
               data={state.goalCompass}
               onSaveIdentity={handleSaveIdentity}
@@ -892,7 +909,29 @@ export default function Home() {
             />
           )}
 
-          {state.activeProjectFilter === '__retrospective__' ? (
+          {state.activeProjectFilter === '__week__' ? (
+            <WeekBoardView
+              tasks={state.tasks}
+              projects={state.projects}
+              today={today}
+              lastUsedProjectId={state.lastUsedProjectId}
+              onAdd={handleAddWeekTask}
+              onSetPriority={setTaskWeekPriority}
+              onSetWeekDay={setTaskWeekDay}
+              onSetProject={(taskId, projectId) => {
+                const target = state.tasks.find((x) => x.id === taskId);
+                if (target) handleUpdateProject(target, projectId);
+              }}
+              onUpdateTitle={updateTaskTitle}
+              onSendToBacklog={(taskId) => setTaskWeek(taskId, null)}
+              onDelete={(taskId) => {
+                // 백로그와 같은 확인 모달을 태운다
+                const target = state.tasks.find((x) => x.id === taskId);
+                if (target) handleDelete(target);
+              }}
+              onPlaceInSlot={handlePlaceInSlot}
+            />
+          ) : state.activeProjectFilter === '__retrospective__' ? (
             /* 회고 뷰 */
             <RetrospectiveListView
               retrospectives={state.retrospectives ?? []}
@@ -1025,6 +1064,18 @@ export default function Home() {
                   <ReadOnlyBanner date={today} onGoToday={handleGoToday} />
                 )}
 
+                {/* 이번 주 — 9칸 위에 상시 노출 */}
+                <WeekStrip
+                  tasks={state.tasks}
+                  projects={state.projects}
+                  today={today}
+                  lastUsedProjectId={state.lastUsedProjectId}
+                  onPlaceInSlot={handlePlaceInSlot}
+                  onAdd={handleAddWeekTask}
+                  onDelete={handleDelete}
+                  isReadOnly={isReadOnly}
+                />
+
                 {/* Timetable Grid — desktop */}
                 <div className="hidden md:block">
                   <TimetableGrid
@@ -1113,11 +1164,10 @@ export default function Home() {
                   lastUsedProjectId={state.lastUsedProjectId}
                   isReadOnly={isReadOnly}
                   currentWeekKey={getWeekKey(today)}
-                  onToggleWeek={(item) => {
-                    const weekKey = getWeekKey(today);
-                    const inWeek = 'weekKey' in item && (item as Task).weekKey === weekKey;
-                    setTaskWeek(item.id, inWeek ? null : weekKey);
-                  }}
+                  onSetWeek={(item: { id: string }, priority: WeekPriority) =>
+                    setTaskWeek(item.id, getWeekKey(today), priority)
+                  }
+                  onRemoveWeek={(item: { id: string }) => setTaskWeek(item.id, null)}
                 />
 
               </>
@@ -1218,7 +1268,7 @@ export default function Home() {
         colorTheme={state.colorTheme}
         initialProjectId={
           editingRecurrenceTask?.projectId ??
-          (state.activeProjectFilter && state.activeProjectFilter !== '__unassigned__' && state.activeProjectFilter !== '__calendar__' && state.activeProjectFilter !== '__retrospective__'
+          (state.activeProjectFilter && state.activeProjectFilter !== '__unassigned__' && state.activeProjectFilter !== '__calendar__' && state.activeProjectFilter !== '__retrospective__' && state.activeProjectFilter !== '__week__'
             ? state.activeProjectFilter
             : state.lastUsedProjectId ?? null)
         }

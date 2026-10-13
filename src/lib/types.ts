@@ -45,7 +45,9 @@ export interface Task extends ItemBase {
   defaultSlot?: SlotCoord; // 반복 투두의 기본 슬롯
   skippedDates?: string[]; // "이 날만 삭제"한 날짜 목록
   isDeferred?: boolean; // 미루기 후 원본 자리에 남겨두기 위한 플래그
-  weekKey?: string | null; // "YYYY-Www" — 백로그의 '이번주 할일'로 표시. 주가 지나면 자동으로 일반 할 일로 돌아간다
+  weekKey?: string | null; // "YYYY-Www" — '이번 주'에 담긴 항목. 주가 지나면 자동으로 풀린다
+  weekPriority?: WeekPriority; // 이번 주 안에서의 우선순위 (개수 상한은 두지 않는다)
+  weekDay?: number; // 0(월) ~ 6(일). "이때 하려 했다"는 메모지 마감이 아니다 — 지나가도 연체가 아니라 위로 올라온다
 }
 
 export interface Routine extends ItemBase {
@@ -109,6 +111,11 @@ export interface GoalTask {
   createdAt: string;
   carriedFrom?: string;     // 이관된 원본 GoalTask ID
 }
+
+/** 이번 주 풀 안에서의 우선순위. 개수를 제한하지 않는 대신 이걸로 줄을 세운다. */
+export type WeekPriority = 'urgent' | 'important' | 'normal';
+
+export const WEEK_PRIORITIES: WeekPriority[] = ['urgent', 'important', 'normal'];
 
 export type RetroScope = 'day' | 'week' | 'month';
 

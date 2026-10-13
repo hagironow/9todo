@@ -4,12 +4,14 @@ import { useState, useRef, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Repeat, GripVertical, Pencil, Trash2, CalendarCheck } from 'lucide-react';
-import { Task, RoutineInstance, Project } from '@/lib/types';
+import { Task, RoutineInstance, Project, WeekPriority } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import ColorDot from '@/components/ui/ColorDot';
 import ProjectPicker from '@/components/quick-input/ProjectPicker';
+import WeekPriorityPicker from '@/components/week/WeekPriorityPicker';
 import { useLocale } from '@/i18n/context';
+import { useImeEnterSubmit } from '@/hooks/useImeEnterSubmit';
 
 type BacklogEntry = Task | RoutineInstance;
 
@@ -26,10 +28,12 @@ interface BacklogItemProps {
   onUpdateTitle?: (item: BacklogEntry, title: string) => void;
   onDelete?: (item: BacklogEntry) => void;
   isReadOnly?: boolean;
-  /** '이번주 할일'에 들어있는지 */
+  /** '이번 주'에 들어있는지 */
   inWeek?: boolean;
-  /** '이번주 할일' 토글 (태스크만 지원) */
-  onToggleWeek?: (item: BacklogEntry) => void;
+  /** 이번 주에 담기 / 우선순위 변경 */
+  onSetWeek?: (item: BacklogEntry, priority: WeekPriority) => void;
+  /** 이번 주에서 빼기 */
+  onRemoveWeek?: (item: BacklogEntry) => void;
 }
 
 export default function BacklogItem({
@@ -45,7 +49,8 @@ export default function BacklogItem({
   onDelete,
   isReadOnly,
   inWeek = false,
-  onToggleWeek,
+  onSetWeek,
+  onRemoveWeek,
 }: BacklogItemProps) {
   const { t } = useLocale();
   const [editing, setEditing] = useState(false);
@@ -53,6 +58,7 @@ export default function BacklogItem({
   const editRef = useRef<HTMLTextAreaElement>(null);
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const projectAnchorRef = useRef<HTMLButtonElement>(null);
+  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
 
   useEffect(() => {
     if (editing) editRef.current?.focus();
@@ -71,13 +77,15 @@ export default function BacklogItem({
 
   const origin = 'origin' in item ? (item as { origin?: string }).origin as 'deferred' | 'repeated' | undefined : undefined;
 
-  const commitEdit = () => {
-    const trimmed = editValue.trim();
+  const commitEdit = (value: string = editValue) => {
+    const trimmed = value.trim();
     if (trimmed && trimmed !== title && onUpdateTitle) {
       onUpdateTitle(item, trimmed);
     }
     setEditing(false);
   };
+
+  const ime = useImeEnterSubmit<HTMLTextAreaElement>(commitEdit, { allowShiftNewline: true });
 
   return (
     <div
@@ -139,10 +147,11 @@ export default function BacklogItem({
             ref={editRef}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
-            onBlur={commitEdit}
+            onBlur={() => commitEdit()}
+            onCompositionEnd={ime.onCompositionEnd}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); commitEdit(); }
-              if (e.key === 'Escape') { setEditValue(title); setEditing(false); }
+              if (e.key === 'Escape') { setEditValue(title); setEditing(false); return; }
+              ime.onKeyDown(e);
             }}
             rows={1}
             onInput={(e) => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }}
@@ -158,12 +167,34 @@ export default function BacklogItem({
         )}
       </div>
 
+      {/* 이번 주 담기 — 우선순위 선택 */}
+      {weekPickerOpen && onSetWeek && (
+        <div
+          className="absolute left-0 right-0 top-full z-20 flex flex-wrap items-center gap-2 px-3 py-2 bg-[var(--popover)] border border-[var(--border)] rounded-[var(--radius)] shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="text-[12px] font-medium text-[var(--muted-foreground)]">
+            {t.weekView}
+          </span>
+          <WeekPriorityPicker
+            size="sm"
+            value={inWeek ? (item as Task).weekPriority ?? 'normal' : undefined}
+            onChange={(p) => { onSetWeek(item, p); setWeekPickerOpen(false); }}
+            onRemove={
+              inWeek && onRemoveWeek
+                ? () => { onRemoveWeek(item); setWeekPickerOpen(false); }
+                : undefined
+            }
+          />
+        </div>
+      )}
+
       {/* 호버 액션 버튼 */}
       {!isReadOnly && (
         <div className="absolute right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          {onToggleWeek && (
+          {onSetWeek && (
             <button
-              onClick={(e) => { e.stopPropagation(); onToggleWeek(item); }}
+              onClick={(e) => { e.stopPropagation(); setWeekPickerOpen((v) => !v); }}
               className={[
                 'w-10 h-10 flex items-center justify-center rounded-full transition-colors',
                 inWeek
