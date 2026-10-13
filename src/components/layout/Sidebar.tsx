@@ -118,6 +118,7 @@ export default function Sidebar({
 
   const FILTERS = [
     { id: null, label: t.today },
+    { id: '__week__', label: t.weekView },
     { id: '__calendar__', label: t.calendar },
     { id: '__retrospective__', label: t.retrospective },
   ] as const;

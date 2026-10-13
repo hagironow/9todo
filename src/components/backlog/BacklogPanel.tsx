@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useRef, KeyboardEvent } from 'react';
+import { useState, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { CalendarCheck, ChevronDown, Clock, Inbox, Plus } from 'lucide-react';
 import RepeatCountIcon from '@/components/ui/RepeatCountIcon';
-import { Task, RoutineInstance, Project } from '@/lib/types';
+import { Task, RoutineInstance, Project, WeekPriority } from '@/lib/types';
 import BacklogItem from './BacklogItem';
 import ColorDot from '@/components/ui/ColorDot';
 import ProjectPicker from '@/components/quick-input/ProjectPicker';
 import { useLocale } from '@/i18n/context';
+import { useImeEnterSubmit } from '@/hooks/useImeEnterSubmit';
 
 type BacklogEntry = Task | RoutineInstance;
 
@@ -26,8 +27,10 @@ interface BacklogPanelProps {
   isReadOnly?: boolean;
   /** 현재 주 키 ("YYYY-Www") — 이 값과 일치하는 항목만 '이번주 할일'로 묶인다 */
   currentWeekKey?: string;
-  /** '이번주 할일' 토글 */
-  onToggleWeek?: (item: BacklogEntry) => void;
+  /** 이번 주에 담기 / 우선순위 변경 */
+  onSetWeek?: (item: BacklogEntry, priority: WeekPriority) => void;
+  /** 이번 주에서 빼기 */
+  onRemoveWeek?: (item: BacklogEntry) => void;
 }
 
 type GroupKey = 'week' | 'deferred' | 'repeated' | 'normal';
@@ -64,7 +67,8 @@ export default function BacklogPanel({
   lastUsedProjectId,
   isReadOnly,
   currentWeekKey,
-  onToggleWeek,
+  onSetWeek,
+  onRemoveWeek,
 }: BacklogPanelProps) {
   const { t } = useLocale();
   const [expanded, setExpanded] = useState(true);
@@ -77,23 +81,21 @@ export default function BacklogPanel({
   const pickerAnchorRef = useRef<HTMLButtonElement>(null);
 
   const GROUP_CONFIG: Record<GroupKey, { label: string; icon: typeof Clock | typeof Inbox | null; order: number }> = {
-    week:     { label: t.weekTodoItems, icon: CalendarCheck, order: 0 },
+    week:     { label: t.weekView,      icon: CalendarCheck, order: 0 },
     deferred: { label: t.deferredItems, icon: Clock,         order: 1 },
     repeated: { label: t.redoItems,     icon: null,          order: 2 },
     normal:   { label: t.todoItems,     icon: Inbox,         order: 3 },
   };
 
-  const handleAdd = () => {
-    const trimmed = inputValue.trim();
+  const handleAdd = (value: string = inputValue) => {
+    const trimmed = value.trim();
     if (!trimmed || !onAdd) return;
     onAdd(trimmed, selectedProject?.id ?? null);
     setInputValue('');
     inputRef.current?.focus();
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAdd();
-  };
+  const ime = useImeEnterSubmit<HTMLInputElement>(handleAdd);
 
   const { isOver, setNodeRef: setDropRef } = useDroppable({ id: 'backlog-drop' });
 
@@ -194,7 +196,8 @@ export default function BacklogPanel({
                           onDelete={onDelete}
                           isReadOnly={isReadOnly}
                           inWeek={key === 'week'}
-                          onToggleWeek={onToggleWeek}
+                          onSetWeek={onSetWeek}
+                          onRemoveWeek={onRemoveWeek}
                         />
                       );
                     })}
@@ -219,12 +222,13 @@ export default function BacklogPanel({
                 ref={inputRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
+                onKeyDown={ime.onKeyDown}
+                onCompositionEnd={ime.onCompositionEnd}
                 placeholder={t.addToBacklog}
                 className="flex-1 bg-transparent text-[var(--foreground)] text-[var(--fs-item)] placeholder:text-[var(--muted-foreground)] outline-none"
               />
               <button
-                onClick={handleAdd}
+                onClick={() => handleAdd()}
                 disabled={!inputValue.trim()}
                 className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-[var(--radius)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors disabled:opacity-30"
                 aria-label={t.add}
