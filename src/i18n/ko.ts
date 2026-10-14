@@ -309,7 +309,13 @@ const ko = {
   retroActionDefer: '미룸',
   retroActionRepeat: '또하기',
   retroActionNotePlaceholder: '왜 그랬는지 — 상황을 그대로',
+  retroActionNth: (n: number) => `${n}차`,
   retroBlockers: {
+    forgot: '잊어버림',
+    tired: '피곤함',
+    reward: '보상심리',
+    listless: '무기력',
+    // 아래는 예전 기록을 읽기 위해 남겨둔 값 — 새로 고를 수는 없다
     time: '시간부족',
     focus: '집중안됨',
     waiting: '대기중',
