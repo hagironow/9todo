@@ -6,6 +6,7 @@ import type {
   RetroScope,
   RetroFields,
   RetroBlocker,
+  AnyRetroBlocker,
   RetroActionNote,
   EnergyLevel,
   Task,
@@ -15,12 +16,21 @@ import Badge from '@/components/ui/Badge';
 import { getNextDay, formatLocalDate } from '@/lib/date';
 import { useLocale } from '@/i18n/context';
 
-const BLOCKERS: RetroBlocker[] = ['time', 'focus', 'waiting', 'toobig', 'condition'];
+const BLOCKERS: RetroBlocker[] = ['forgot', 'tired', 'reward', 'listless'];
 
 const AUTOSAVE_MS = 600;
 
+interface ActionGroup {
+  key: string;
+  kind: 'deferred' | 'repeated';
+  /** 가장 최근 상태 — 뱃지(미룬 횟수)에 쓴다 */
+  latest: Task;
+  /** 미룸 한 번 = 회고 한 건. createdAt 순 */
+  events: Task[];
+}
+
 interface ActionEntry {
-  reason: RetroBlocker | null;
+  reason: AnyRetroBlocker | null;
   note: string;
 }
 
@@ -111,19 +121,39 @@ export default function DailyRetro({
   const persistedRef = useRef(serializeDraft(EMPTY_DRAFT));
 
   // 오늘 실제로 일어난 미루기/또하기 액션. 체크 없이 지나간 일은 여기에 잡히지 않는다.
-  const actions = useMemo(
-    () =>
-      (tasks ?? [])
-        .filter(
-          (x) =>
-            (x.origin === 'deferred' || x.origin === 'repeated') &&
-            !!x.createdAt &&
-            formatLocalDate(new Date(x.createdAt)) === date,
-        )
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-        .map((task) => ({ task, kind: task.origin as 'deferred' | 'repeated' })),
-    [tasks, date],
-  );
+  const actions = useMemo(() => {
+    const sameDay = (tasks ?? [])
+      .filter(
+        (x) =>
+          (x.origin === 'deferred' || x.origin === 'repeated') &&
+          !!x.createdAt &&
+          formatLocalDate(new Date(x.createdAt)) === date,
+      )
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+    // 미루기는 누를 때마다 새 태스크를 만든다.
+    // 같은 일을 하루에 두 번 미루면 복제본이 둘 다 올라와 똑같은 줄이 나란히 보인다.
+    // 묶어서 한 덩어리로 보여주되, 각 미룸은 따로 회고할 수 있게 그대로 들고 있는다.
+    const groups = new Map<string, ActionGroup>();
+    for (const task of sameDay) {
+      const kind = task.origin as 'deferred' | 'repeated';
+      const key =
+        kind === 'repeated'
+          ? task.id // 또하기는 원본이 'continued'로 바뀌어 중복이 생기지 않는다
+          : task.lineageId ?? `${task.title}\u0000${task.projectId ?? ''}`;
+      const found = groups.get(key);
+      if (found) {
+        found.events.push(task);
+        found.latest = task; // createdAt 순으로 들어오므로 마지막이 최신
+      } else {
+        groups.set(key, { key, kind, latest: task, events: [task] });
+      }
+    }
+
+    return [...groups.values()].sort((a, b) =>
+      a.events[0].createdAt.localeCompare(b.events[0].createdAt),
+    );
+  }, [tasks, date]);
 
   const composeContent = useCallback(
     (d: Draft, legacyText: string) => {
@@ -132,8 +162,10 @@ export default function DailyRetro({
       if (d.learned.trim()) lines.push(`${t.retroLearnedLabel} · ${d.learned.trim()}`);
       for (const [taskId, v] of Object.entries(d.actions)) {
         if (!v.reason && !v.note.trim()) continue;
-        const action = actions.find((a) => a.task.id === taskId);
-        const kind = action?.kind === 'repeated' ? t.retroActionRepeat : t.retroActionDefer;
+        const action = actions
+          .flatMap((g) => g.events.map((task) => ({ group: g, task })))
+          .find((x) => x.task.id === taskId);
+        const kind = action?.group.kind === 'repeated' ? t.retroActionRepeat : t.retroActionDefer;
         const parts = [
           action?.task.title ?? '',
           v.reason ? t.retroBlockers[v.reason] : '',
@@ -341,54 +373,79 @@ export default function DailyRetro({
         <div className={rowClass}>
           <div className={labelClass}>{t.retroActionsLabel}</div>
           <div className="flex flex-col gap-3.5">
-            {actions.map(({ task, kind }) => {
-              const entry = draft.actions[task.id] ?? { reason: null, note: '' };
-              const opened = !!entry.reason || entry.note.trim().length > 0;
+            {actions.map((group) => {
+              const multi = group.events.length > 1;
               return (
-                <div key={task.id}>
+                <div key={group.key}>
+                  {/* 태스크는 한 번만 — 같은 제목이 나란히 반복되지 않게 */}
                   <div className="flex items-center gap-1.5 mb-1.5 min-w-0">
                     <Badge
-                      count={kind === 'deferred' ? task.deferCount : 0}
-                      continueCount={kind === 'repeated' ? task.continueCount ?? 0 : 0}
-                      origin={kind}
+                      count={group.kind === 'deferred' ? group.latest.deferCount : 0}
+                      continueCount={
+                        group.kind === 'repeated' ? group.latest.continueCount ?? 0 : 0
+                      }
+                      origin={group.kind}
                     />
                     <span className="text-[15px] text-[var(--foreground)] truncate">
-                      {task.title}
+                      {group.latest.title}
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5">
-                    {BLOCKERS.map((key) => {
-                      const active = entry.reason === key;
+                  {/* 미룬 횟수만큼 — 각각 따로 회고한다 */}
+                  <div className="flex flex-col gap-2">
+                    {group.events.map((task, i) => {
+                      const entry = draft.actions[task.id] ?? { reason: null, note: '' };
+                      const opened = !!entry.reason || entry.note.trim().length > 0;
                       return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() =>
-                            setActionField(task.id, { reason: active ? null : key })
-                          }
-                          className={[
-                            'px-2.5 py-1 rounded-full text-[13px] transition-colors border',
-                            active
-                              ? 'border-[var(--foreground)] text-[var(--foreground)] font-medium'
-                              : 'border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]',
-                          ].join(' ')}
+                        <div
+                          key={task.id}
+                          className={multi ? 'pl-2 border-l-2 border-[var(--border)]' : ''}
                         >
-                          {t.retroBlockers[key]}
-                        </button>
+                          <div className="flex items-start gap-2">
+                            {multi && (
+                              <span className="text-[12px] text-[var(--muted-foreground)] pt-1.5 shrink-0 w-[30px]">
+                                {t.retroActionNth(i + 1)}
+                              </span>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap gap-1.5">
+                                {BLOCKERS.map((key) => {
+                                  const active = entry.reason === key;
+                                  return (
+                                    <button
+                                      key={key}
+                                      type="button"
+                                      onClick={() =>
+                                        setActionField(task.id, { reason: active ? null : key })
+                                      }
+                                      className={[
+                                        'px-2.5 py-1 rounded-full text-[13px] transition-colors border',
+                                        active
+                                          ? 'border-[var(--foreground)] text-[var(--foreground)] font-medium'
+                                          : 'border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]',
+                                      ].join(' ')}
+                                    >
+                                      {t.retroBlockers[key]}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {opened && (
+                                <div className="mt-1.5">
+                                  <GrowField
+                                    value={entry.note}
+                                    onChange={(v) => setActionField(task.id, { note: v })}
+                                    placeholder={t.retroActionNotePlaceholder}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       );
                     })}
                   </div>
-
-                  {opened && (
-                    <div className="mt-1.5">
-                      <GrowField
-                        value={entry.note}
-                        onChange={(v) => setActionField(task.id, { note: v })}
-                        placeholder={t.retroActionNotePlaceholder}
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })}

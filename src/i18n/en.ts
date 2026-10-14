@@ -311,7 +311,13 @@ const en: Translations = {
   retroActionDefer: 'Deferred',
   retroActionRepeat: 'Repeated',
   retroActionNotePlaceholder: 'What happened — just the situation',
+  retroActionNth: (n: number) => `#${n}`,
   retroBlockers: {
+    forgot: 'Forgot',
+    tired: 'Too tired',
+    reward: 'Earned a break',
+    listless: 'No drive',
+    // legacy values, kept so older entries still render
     time: 'No time',
     focus: 'No focus',
     waiting: 'Waiting',
