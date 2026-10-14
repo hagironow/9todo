@@ -122,10 +122,10 @@ export type RetroScope = 'day' | 'week' | 'month';
 export type EnergyLevel = 1 | 2 | 3 | 4 | 5;
 
 /** 미루기/또하기 사유 — 고정 선택지. 자책 서술 대신 장애물 한 탭으로 담는다. */
-export type RetroBlocker = 'forgot' | 'tired' | 'reward' | 'listless';
+export type RetroBlocker = 'forgot' | 'tired' | 'reward' | 'listless' | 'time';
 
 /** 예전 선택지. 이미 저장된 기록을 읽기 위해서만 남겨둔다 — 새로 고를 수는 없다. */
-export type LegacyRetroBlocker = 'time' | 'focus' | 'waiting' | 'toobig' | 'condition';
+export type LegacyRetroBlocker = 'focus' | 'waiting' | 'toobig' | 'condition';
 
 /** 저장된 값을 읽을 때 쓰는 합집합 */
 export type AnyRetroBlocker = RetroBlocker | LegacyRetroBlocker;

@@ -317,8 +317,8 @@ const en: Translations = {
     tired: 'Too tired',
     reward: 'Earned a break',
     listless: 'No drive',
-    // legacy values, kept so older entries still render
     time: 'No time',
+    // legacy values, kept so older entries still render
     focus: 'No focus',
     waiting: 'Waiting',
     toobig: 'Too big',

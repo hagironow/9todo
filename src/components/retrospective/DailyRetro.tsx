@@ -16,7 +16,7 @@ import Badge from '@/components/ui/Badge';
 import { getNextDay, formatLocalDate } from '@/lib/date';
 import { useLocale } from '@/i18n/context';
 
-const BLOCKERS: RetroBlocker[] = ['forgot', 'tired', 'reward', 'listless'];
+const BLOCKERS: RetroBlocker[] = ['forgot', 'tired', 'reward', 'listless', 'time'];
 
 const AUTOSAVE_MS = 600;
 
