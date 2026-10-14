@@ -315,8 +315,8 @@ const ko = {
     tired: '피곤함',
     reward: '보상심리',
     listless: '무기력',
+    time: '시간 부족',
     // 아래는 예전 기록을 읽기 위해 남겨둔 값 — 새로 고를 수는 없다
-    time: '시간부족',
     focus: '집중안됨',
     waiting: '대기중',
     toobig: '일이 컴',
