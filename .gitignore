@@ -27,3 +27,8 @@ Thumbs.db
 # ide
 .vscode/
 .idea/
+
+# agent tooling
+.agents/
+.codex/
+AGENTS.md
