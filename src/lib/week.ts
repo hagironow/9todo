@@ -79,11 +79,15 @@ function dayBucket(weekDay: number | undefined, todayIdx: number): number {
 /**
  * 이번 주 풀을 만든다.
  * weekKey가 현재 주와 일치하는 항목만 들어오므로, 주가 지나면 자동으로 비워진다.
+ *
+ * 미루기 원본(isDeferred)은 그날 타임테이블에 흔적으로 남는 자리표시일 뿐이고
+ * 실제 할 일은 복제본 쪽이다. 둘 다 weekKey를 들고 있으므로 원본을 빼지 않으면
+ * 같은 일이 두 줄로 보인다.
  */
 export function buildWeekPool(tasks: Task[], today: string): WeekPool {
   const weekKey = getWeekKey(today);
   const mine = (tasks ?? []).filter(
-    (t) => t.weekKey === weekKey && !t.recurrence && !t.recurrenceParentId,
+    (t) => t.weekKey === weekKey && !t.recurrence && !t.recurrenceParentId && !t.isDeferred,
   );
 
   const todayIdx = getWeekDayIndex(today);
