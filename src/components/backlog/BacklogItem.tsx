@@ -12,6 +12,8 @@ import ProjectPicker from '@/components/quick-input/ProjectPicker';
 import WeekPriorityPicker from '@/components/week/WeekPriorityPicker';
 import { useLocale } from '@/i18n/context';
 import { useImeEnterSubmit } from '@/hooks/useImeEnterSubmit';
+import ChecklistText from '@/components/ui/ChecklistText';
+import { hasChecklist } from '@/lib/checklist';
 
 type BacklogEntry = Task | RoutineInstance;
 
@@ -159,7 +161,12 @@ export default function BacklogItem({
           />
         ) : (
           <span className="text-[15px] text-[var(--foreground)] whitespace-pre-wrap break-words">
-            {title}
+            {hasChecklist(title) ? (
+              <ChecklistText
+                title={title}
+                onToggle={!isReadOnly && onUpdateTitle ? (next) => onUpdateTitle(item, next) : undefined}
+              />
+            ) : title}
           </span>
         )}
         {(deferCount > 0 || origin) && (

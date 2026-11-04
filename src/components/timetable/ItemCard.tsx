@@ -9,7 +9,7 @@ import { ScheduledItem, Project } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import Badge from '@/components/ui/Badge';
 import ChecklistText from '@/components/ui/ChecklistText';
-import { hasChecklist, checklistProgress, dropEmptyChecks } from '@/lib/checklist';
+import { hasChecklist, checklistProgress, dropEmptyChecks, isAllChecked } from '@/lib/checklist';
 import { useChecklistShiftEnter } from '@/hooks/useChecklistShiftEnter';
 import { useLocale } from '@/i18n/context';
 
@@ -308,7 +308,11 @@ export default function ItemCard({
                 {isChecklist ? (
                   <ChecklistText
                     title={title}
-                    onToggle={canToggleCheck ? (next) => onUpdateTitle!(item, next) : undefined}
+                    onToggle={canToggleCheck ? (next) => {
+                      onUpdateTitle!(item, next);
+                      // 마지막 체크박스까지 체크하면 블록 완료
+                      if (isAllChecked(next)) onComplete(item);
+                    } : undefined}
                   />
                 ) : title}
               </p>
