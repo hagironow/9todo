@@ -55,6 +55,7 @@ import { trackEvent, trackExport, trackSearch, trackLoginClick } from '@/lib/ana
 import { calculateDailyXP, calculateTotalXP } from '@/lib/xp';
 import { getToday, formatLocalDate, getWeekKey, getMonthKey, getNextDay } from '@/lib/date';
 import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
+import { sameIgnoringChecks } from '@/lib/checklist';
 import StorageConsentBanner from '@/components/modals/StorageConsentBanner';
 import ProjectDetailView from '@/components/project-detail/ProjectDetailView';
 import SearchView from '@/components/search/SearchView';
@@ -422,7 +423,9 @@ export default function Home() {
 
   const handleUpdateTitle = useCallback(
     (item: ScheduledItem, title: string) => {
-      if (item.recurrenceParentId || item.recurrence) {
+      // 체크박스 체크만 바뀐 건 이 블록에만 적용 — 반복 수정 모달 생략
+      const isCheckToggle = 'title' in item && sameIgnoringChecks(item.title, title);
+      if ((item.recurrenceParentId || item.recurrence) && !isCheckToggle) {
         setRecurrenceEditTarget({ item, title });
       } else {
         updateTaskTitle(item.id, title);

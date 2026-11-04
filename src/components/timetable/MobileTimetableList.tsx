@@ -5,6 +5,8 @@ import { Check, SkipForward, RefreshCw, Trash2, Plus, Repeat, Inbox } from 'luci
 import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project } from '@/lib/types';
 import Badge from '@/components/ui/Badge';
 import ColorDot from '@/components/ui/ColorDot';
+import ChecklistText from '@/components/ui/ChecklistText';
+import { hasChecklist } from '@/lib/checklist';
 import { useLocale } from '@/i18n/context';
 
 interface MobileTimetableListProps {
@@ -76,6 +78,7 @@ function MobileCard({
   onDelete,
   onUncomplete,
   onSendToBacklog,
+  onUpdateTitle,
 }: {
   card: CardItem;
   currentPeriod: TimePeriod;
@@ -89,6 +92,7 @@ function MobileCard({
   onDelete?: (item: ScheduledItem) => void;
   onUncomplete?: (item: ScheduledItem) => void;
   onSendToBacklog?: (item: ScheduledItem) => void;
+  onUpdateTitle?: (item: ScheduledItem, title: string) => void;
   isToday?: boolean;
 }) {
   const { t } = useLocale();
@@ -196,7 +200,12 @@ function MobileCard({
                 : 'text-[var(--card-foreground)]',
             ].join(' ')}
           >
-            {title}
+            {hasChecklist(title) ? (
+              <ChecklistText
+                title={title}
+                onToggle={!isReadOnly && !isCompleted && !isRoutine && onUpdateTitle ? (next) => onUpdateTitle(item, next) : undefined}
+              />
+            ) : title}
           </p>
         </div>
 
@@ -414,7 +423,9 @@ function AddSlotPicker({
                           ].join(' ')}
                         >
                           {occupied ? (
-                            <span className="block whitespace-pre-wrap break-words">{title}</span>
+                            <span className="block whitespace-pre-wrap break-words">
+                              {hasChecklist(title) ? <ChecklistText title={title} /> : title}
+                            </span>
                           ) : (
                             <Plus size={14} className="mx-auto" strokeWidth={1.5} />
                           )}
@@ -447,6 +458,7 @@ export default function MobileTimetableList({
   projects,
   isReadOnly,
   onSendToBacklog,
+  onUpdateTitle,
   isToday = true,
 }: MobileTimetableListProps) {
   const { t } = useLocale();
@@ -513,6 +525,7 @@ export default function MobileTimetableList({
             onDelete={onDelete}
             onUncomplete={onUncomplete}
             onSendToBacklog={onSendToBacklog}
+            onUpdateTitle={onUpdateTitle}
             isToday={isToday}
           />
         ))

@@ -8,6 +8,8 @@ import { SlotCoord, ScheduledItem, Project } from '@/lib/types';
 import ItemCard from './ItemCard';
 import ColorDot from '@/components/ui/ColorDot';
 import { useLocale } from '@/i18n/context';
+import { useChecklistShiftEnter } from '@/hooks/useChecklistShiftEnter';
+import { dropEmptyChecks } from '@/lib/checklist';
 
 interface SlotCellProps {
   coord: SlotCoord;
@@ -56,6 +58,7 @@ export default function SlotCell({
 
   const [inputting, setInputting] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const checklistKeys = useChecklistShiftEnter(setInputValue);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
@@ -82,7 +85,7 @@ export default function SlotCell({
   };
 
   const commitInput = () => {
-    const trimmed = inputValue.trim();
+    const trimmed = dropEmptyChecks(inputValue).trim();
     setInputting(false);
     setInputValue('');
     setDropdownOpen(false);
@@ -269,9 +272,11 @@ export default function SlotCell({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
+                if (checklistKeys.onKeyDown(e)) return;
                 if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); commitInput(); }
                 if (e.key === 'Escape') cancelInput();
               }}
+              onCompositionEnd={checklistKeys.onCompositionEnd}
               rows={1}
               onInput={(e) => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }}
               placeholder={t.taskInputPlaceholder}
