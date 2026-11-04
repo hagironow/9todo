@@ -25,6 +25,12 @@ export function checklistProgress(title: string): { done: number; total: number 
   return { done: checks.filter((l) => l.kind === 'check' && l.checked).length, total: checks.length };
 }
 
+/** 체크박스가 있고 전부 체크됐는지 — 블록 완료로 본다 */
+export function isAllChecked(title: string): boolean {
+  const { done, total } = checklistProgress(title);
+  return total > 0 && done === total;
+}
+
 /** lineIndex 번째 줄의 체크 상태를 뒤집는다 */
 export function toggleCheck(title: string, lineIndex: number): string {
   const lines = title.split('\n');

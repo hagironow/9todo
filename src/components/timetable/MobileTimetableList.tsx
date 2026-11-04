@@ -6,7 +6,7 @@ import { TimePeriod, Priority, ScheduledItem, SlotCoord, Project } from '@/lib/t
 import Badge from '@/components/ui/Badge';
 import ColorDot from '@/components/ui/ColorDot';
 import ChecklistText from '@/components/ui/ChecklistText';
-import { hasChecklist } from '@/lib/checklist';
+import { hasChecklist, isAllChecked } from '@/lib/checklist';
 import { useLocale } from '@/i18n/context';
 
 interface MobileTimetableListProps {
@@ -203,7 +203,10 @@ function MobileCard({
             {hasChecklist(title) ? (
               <ChecklistText
                 title={title}
-                onToggle={!isReadOnly && !isCompleted && !isRoutine && onUpdateTitle ? (next) => onUpdateTitle(item, next) : undefined}
+                onToggle={!isReadOnly && !isCompleted && !isRoutine && onUpdateTitle ? (next) => {
+                  onUpdateTitle(item, next);
+                  if (isAllChecked(next)) onComplete(item);
+                } : undefined}
               />
             ) : title}
           </p>

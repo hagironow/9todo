@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import type { AppState } from '@/lib/types';
 import { shouldCreateRecurringInstance, createRecurringInstance } from '@/lib/recurrence';
 import { formatLocalDate } from '@/lib/date';
+import { isAllChecked } from '@/lib/checklist';
 
 interface UseDailyRolloverOptions {
   state: AppState;
@@ -38,6 +39,10 @@ export function useDailyRollover({
             // 미뤄진 태스크는 이미 복제본이 백로그에 있으므로 백로그로 다시 이동하지 않고 원본 자리에 보존
             if (t.isDeferred) return t;
             changed = true;
+            // 체크박스를 전부 체크했으면 완료로 본다 — 그날 자리에 완료로 남긴다
+            if (isAllChecked(t.title)) {
+              return { ...t, completedAt: new Date(`${t.date}T23:59:00`).toISOString() };
+            }
             return { ...t, slot: null, date: null };
           }
           return t;
