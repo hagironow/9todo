@@ -8,6 +8,9 @@ import { Check, SkipForward, Repeat, RefreshCw, Trash2, Clock, Pencil, GripVerti
 import { ScheduledItem, Project } from '@/lib/types';
 import ColorDot from '@/components/ui/ColorDot';
 import Badge from '@/components/ui/Badge';
+import ChecklistText from '@/components/ui/ChecklistText';
+import { hasChecklist, checklistProgress, dropEmptyChecks } from '@/lib/checklist';
+import { useChecklistShiftEnter } from '@/hooks/useChecklistShiftEnter';
 import { useLocale } from '@/i18n/context';
 
 interface ItemCardProps {
@@ -77,10 +80,16 @@ export default function ItemCard({
 
   const activeProjects = (projects ?? []).filter((p) => !p.archived);
 
+  // 체크박스 — 체크박스가 있는 블록은 hover 액션을 우상단으로 줄여 체크박스를 누를 수 있게 한다
+  const isChecklist = hasChecklist(title);
+  const progress = isChecklist ? checklistProgress(title) : null;
+  const canToggleCheck = !isReadOnly && !isInactive && !!onUpdateTitle;
+
   // 편집 모드 (제목 + 프로젝트)
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(title);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const checklistKeys = useChecklistShiftEnter(setEditValue);
 
   // 프로젝트 드롭다운
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
@@ -97,7 +106,7 @@ export default function ItemCard({
   const commitEdit = () => {
     setEditing(false);
     setProjectDropdownOpen(false);
-    const trimmed = editValue.trim();
+    const trimmed = dropEmptyChecks(editValue).trim();
     if (trimmed && trimmed !== title && onUpdateTitle) {
       onUpdateTitle(item, trimmed);
     }
@@ -257,9 +266,11 @@ export default function ItemCard({
                   onChange={(e) => setEditValue(e.target.value)}
                   onBlur={() => { if (!projectDropdownOpen) commitEdit(); }}
                   onKeyDown={(e) => {
+                    if (checklistKeys.onKeyDown(e)) return;
                     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); commitEdit(); }
                     if (e.key === 'Escape') cancelEdit();
                   }}
+                  onCompositionEnd={checklistKeys.onCompositionEnd}
                   rows={1}
                   onInput={(e) => { const t = e.currentTarget; t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; }}
                   className="flex-1 text-[14px] font-medium text-[var(--card-foreground)] leading-snug bg-transparent border-b border-[var(--accent)] outline-none resize-none"
@@ -294,7 +305,12 @@ export default function ItemCard({
                 onDoubleClick={(e) => { e.stopPropagation(); startEdit(); }}
                 style={{ pointerEvents: 'auto', cursor: onItemSelect ? 'pointer' : undefined }}
               >
-                {title}
+                {isChecklist ? (
+                  <ChecklistText
+                    title={title}
+                    onToggle={canToggleCheck ? (next) => onUpdateTitle!(item, next) : undefined}
+                  />
+                ) : title}
               </p>
             )}
           </div>
@@ -308,6 +324,9 @@ export default function ItemCard({
             )}
             {isRecurring && (
               <span title={t.repeat}><Repeat size={11} strokeWidth={1.8} className="text-[var(--muted-foreground)]" /></span>
+            )}
+            {progress && (
+              <span className="text-[11px] font-medium text-[var(--muted-foreground)]">{progress.done}/{progress.total}</span>
             )}
           </div>
           <div className="flex items-center gap-1.5">
@@ -346,8 +365,9 @@ export default function ItemCard({
       {!editing && !isReadOnly && !isInactive && (
         <div
           className={[
-            'absolute inset-0 rounded-lg',
-            'flex items-center justify-center gap-1.5',
+            isChecklist
+              ? 'absolute top-1.5 right-1.5 rounded-full p-1 flex items-center gap-1'
+              : 'absolute inset-0 rounded-lg flex items-center justify-center gap-1.5',
             'bg-[var(--surface-inset)]/95 backdrop-blur-sm',
             'opacity-0 group-hover:opacity-100 transition-opacity duration-150',
             'pointer-events-none',
